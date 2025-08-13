@@ -2,61 +2,143 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>POR Records</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='1.1') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='2.0') }}?t={{ timestamp }}">
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Prevent browser autocomplete dropdown */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 30px white inset !important;
+            -webkit-text-fill-color: inherit !important;
+        }
+        
+        /* Hide browser autocomplete dropdown */
+        input::-webkit-calendar-picker-indicator {
+            display: none !important;
+        }
+        
+        /* Ensure input positioning is correct */
+        .editable-box input,
+        .editable-cell input {
+            position: relative !important;
+            z-index: 1000 !important;
+                }
+    </style>
 </head>
 <body>
     <div class="harbour-scene">
-        <div class="upload-card" style="width: 90%; max-width: 800px;">
-            <h1>⚓ Purchase Orders</h1>
+        <div class="upload-card" style="width: 95%; max-width: 1200px; padding-top: 20px; height: 100vh; overflow-y: auto;" id="mainContainer">
+            <div id="topSpacer" style="height: 20px;"></div>
             
-            <div class="header-actions" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="margin: 0; color: #022b3a;">📋 Records</h2>
-                <a href="/" class="nav-link">🔙 Back to Upload</a>
+            <div class="header-actions" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #e3f0fa; padding: 15px; border-radius: 10px; border: 2px solid #3e8ed0;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    {% if request.args.get('from_search') %}
+                        <a href="/search?{{ request.args.get('from_search', '')|clean_query_string }}" class="nav-link" style="background: #6c757d; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.2); border: none; cursor: pointer;">⬅️ Back to Search</a>
+                    {% endif %}
+                    <h2 style="margin: 0; color: #022b3a; font-size: 20px;">📋 PO Details</h2>
+                </div>
+                    <a href="/" class="nav-link" style="background: #017bb5; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🔙 Back to Upload</a>
             </div>
             
-            <form method="get" style="margin-bottom: 20px;">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div style="margin-bottom: 20px;">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'error' if category == 'error' else 'success' }}" 
+                                 style="padding: 12px; border-radius: 8px; margin-bottom: 10px; font-weight: bold; 
+                                        {% if category == 'error' %}
+                                            background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;
+                                        {% else %}
+                                            background: #d4edda; color: #155724; border: 1px solid #c3e6cb;
+                                        {% endif %}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <!-- Search Bar -->
+            <form method="get" action="/search" style="margin-bottom: 20px;">
                 <div style="display: flex; gap: 10px;">
-                    <input type="text" name="q" placeholder="Search..." value="{{ request.args.get('q','') }}" 
-                           style="flex: 1; padding: 10px; border: 2px solid #3e8ed0; border-radius: 10px; font-size: 14px;">
+                    <input type="text" name="q" placeholder="Search by PO number, requestor, job number, or date..." value="{{ request.args.get('q','') }}" 
+                           autocomplete="off"
+                           style="flex: 1; padding: 12px; border: 2px solid #3e8ed0; border-radius: 10px; font-size: 14px;">
                     <button type="submit" class="nav-link" style="margin: 0;">🔍 Search</button>
                 </div>
             </form>
             
-            <!-- Record count and pagination info -->
-            <div class="pagination-info" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 10px; background: #f8f9fa; border-radius: 10px;">
-                <div class="record-count">
-                    <strong>📊 Showing {{ pors|length }} of {{ total_records }} records</strong>
+            {% if por %}
+                <!-- Navigation and Record Info -->
+                <div class="navigation-info" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px;">
+                    <div class="navigation-buttons" style="display: flex; gap: 10px;">
+                        {% if not request.args.get('from_search') %}
+                            <button onclick="scrollToTop()" style="background: #28a745; color: white; border: none; border-radius: 8px; padding: 8px 15px; font-size: 14px; font-weight: bold; cursor: pointer;">⬆️ Top</button>
+                            {% if prev_id %}
+                                <a href="{{ url_for('view', id=prev_id, from_search=request.args.get('from_search', '')) }}" class="nav-link" style="padding: 8px 15px;">⬅️ Previous</a>
+                            {% endif %}
+                            {% if next_id %}
+                                <a href="{{ url_for('view', id=next_id, from_search=request.args.get('from_search', '')) }}" class="nav-link" style="padding: 8px 15px;">Next ➡️</a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
                 </div>
-                {% if total_pages > 1 %}
-                <div class="page-info">
-                    <strong>📄 Page {{ current_page }} of {{ total_pages }}</strong>
-                </div>
-                {% endif %}
-            </div>
             
-            {% if pors %}
-                <div class="records-container" style="max-height: 500px; overflow-y: auto;">
-                    {% for p in pors %}
-                        <div class="record-card" data-por-id="{{ p.id }}" style="background: #f8f9fa; border: 2px solid #3e8ed0; border-radius: 15px; padding: 24px; margin-bottom: 18px; position: relative;">
+                <!-- Main PO Record -->
+                <div class="record-card" data-por-id="{{ por.id }}" style="background: #f8f9fa; border: 2px solid #3e8ed0; border-radius: 15px; padding: 30px; margin-bottom: 20px; position: relative;">
                             <!-- Email Drop Zone -->
-                            <div class="email-drop-zone" data-por-id="{{ p.id }}" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 15px; background: rgba(1, 123, 181, 0.1); display: none; align-items: center; justify-content: center; z-index: 5;">
+                    <div class="email-drop-zone" data-por-id="{{ por.id }}" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 15px; background: rgba(1, 123, 181, 0.1); display: none; align-items: center; justify-content: center; z-index: 5;">
                                 <div style="text-align: center; color: #017bb5; font-weight: bold; font-size: 18px;">
                                     📧 Drop Email File Here<br>
                                     <small>Drag .msg or .eml file to attach</small>
                                 </div>
                             </div>
                             
+                    <!-- PO Header -->
+                    <div class="record-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #e3f0fa;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <span style="background: #017bb5; color: white; padding: 8px 15px; border-radius: 15px; font-size: 14px;">
+                                📄 PO {{ current_position }} of {{ total_records }}
+                            </span>
+                            <h3 class="por-number-copy" data-por-number="{{ por.po_number }}" style="margin: 0; color: #017bb5; font-size: 24px; cursor: pointer; user-select: none; transition: background-color 0.2s ease;" title="Single click: Copy number | Double click: Copy 'PO: X'">PO: {{ por.po_number }}</h3>
+                            
+                            <!-- Order Type Dropdown -->
+                            <div class="order-type-dropdown" style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
+                                <label style="font-weight: bold; font-size: 12px; color: #017bb5; margin: 0;">Order Type</label>
+                                <select class="order-type-select" data-por-id="{{ por.id }}" 
+                                        style="padding: 6px 12px; border: 2px solid #017bb5; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; background: white; color: #017bb5; outline: none; min-width: 120px;">
+                                    <option value="new" {% if por.order_type == 'new' %}selected{% endif %}>🆕 New</option>
+                                    <option value="revised" {% if por.order_type == 'revised' %}selected{% endif %}>📝 Revised</option>
+                                    <option value="cancelled" {% if por.order_type == 'cancelled' %}selected{% endif %}>❌ Cancelled</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Content Type Dropdown -->
+                            <div class="content-type-dropdown" style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
+                                <label style="font-weight: bold; font-size: 12px; color: #017bb5; margin: 0;">Content Type</label>
+                                <select class="content-type-select" data-por-id="{{ por.id }}" 
+                                        style="padding: 6px 12px; border: 2px solid #017bb5; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; background: white; color: #017bb5; outline: none; min-width: 120px;">
+                                    <option value="work_iwo" {% if por.content_type == 'work_iwo' %}selected{% endif %}>🔧 Work IWO</option>
+                                    <option value="supply_and_fit" {% if por.content_type == 'supply_and_fit' %}selected{% endif %}>🔧 Supply and Fit</option>
+                                    <option value="supply" {% if por.content_type == 'supply' %}selected{% endif %}>📦 Supply</option>
+                                </select>
+                            </div>
+                            
 
-                            <div class="record-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                                <h3 style="margin: 0; color: #017bb5; font-size: 18px; text-align: center; flex: 1; width: 100%;">PO No. {{ p.po_number }}</h3>
-                                <div style="display: flex; align-items: center; gap: 10px;">
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 15px;">
                                     <!-- File Type Status Icons -->
-                                    {% if p.file_count > 0 %}
+                            {% if por.file_count > 0 %}
                                         {% set por_files = [] %}
                                         {% set other_files = [] %}
-                                        {% for file in p.files %}
+                                {% for file in por.files %}
                                             {% if file.original_filename.lower().endswith(('.xls', '.xlsx')) %}
                                                 {% set _ = por_files.append(1) %}
                                             {% elif file.original_filename.lower().endswith(('.doc', '.docx', '.pdf', '.msg', '.eml')) %}
@@ -64,259 +146,645 @@
                                             {% endif %}
                                         {% endfor %}
                                         {% if por_files|length > 0 %}
-                                            <span class="file-status-icon por-icon" title="POR file attached" style="background: #28a745; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">P</span>
+                                            {% for file in por.files %}
+                                                {% if file.original_filename.lower().endswith(('.xls', '.xlsx')) %}
+                                    <span class="file-status-icon por-icon" data-file-id="{{ file.id }}" title="Double-click to open: {{ file.original_filename }}" style="background: #28a745; color: white; border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; cursor: pointer; transition: transform 0.2s ease;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'" ondblclick="openFile('{{ file.id }}')">P</span>
+                                                {% endif %}
+                                            {% endfor %}
                                         {% endif %}
                                         {% if other_files|length > 0 %}
-                                            <span class="file-status-icon quote-icon" title="Quote/Other file attached" style="background: #dc3545; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;">Q</span>
+                                            {% for file in por.files %}
+                                                {% if file.original_filename.lower().endswith(('.doc', '.docx', '.pdf', '.msg', '.eml')) %}
+                                    <span class="file-status-icon quote-icon" data-file-id="{{ file.id }}" title="Double-click to open: {{ file.original_filename }}" style="background: #dc3545; color: white; border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; cursor: pointer; transition: transform 0.2s ease;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'" ondblclick="openFile('{{ file.id }}')">Q</span>
+                                                {% endif %}
+                                            {% endfor %}
                                         {% endif %}
                                     {% endif %}
                                     
-                                    <a href="{{ url_for('attach_files', por_id=p.id) }}" class="nav-link attachment-icon" style="padding: 5px 10px; font-size: 12px;" 
-                                       title="{% if p.file_count > 0 %}{{ p.file_count }} file(s) attached{% else %}No files attached - Click to add files{% endif %}">
-                                        📎
-                                        {% if p.file_count > 0 %}
-                                            <span class="file-count-badge">
-                                                {{ p.file_count }}
-                                            </span>
-                                        {% endif %}
-                                    </a>
-                                    <span style="background: #017bb5; color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px;">
-                                        {{ p.date_order_raised }}
+                            {% set from_search_param = request.args.get('from_search', '') %}
+                            <a href="{{ url_for('attach_files', por_id=por.id, from_search=from_search_param) if from_search_param else url_for('attach_files', por_id=por.id) }}" 
+                               style="background: #017bb5; color: white; padding: 8px 15px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"
+                               title="{% if por.file_count > 0 %}{{ por.file_count }} file(s) attached{% else %}No files attached - Click to add files{% endif %}">
+                                Attachments
+                                {% if por.file_count > 0 %}
+                                    <span style="background: #28a745; color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px; font-weight: bold; margin-left: 5px;">
+                                        {{ por.file_count }}
                                     </span>
+                                {% endif %}
+                            </a>
+                            <button class="delete-po-btn" data-po-id="{{ por.id }}" data-po-number="{{ por.po_number }}" 
+                                    style="background: #dc3545; color: white; border: none; border-radius: 8px; padding: 8px 15px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;"
+                                    title="Delete PO {{ por.po_number }}">
+                                🗑️ Delete
+                            </button>
                                 </div>
                             </div>
                             
-                            <div class="record-details">
-                                <div class="editable-box" data-field="requestor_name" data-por-id="{{ p.id }}" data-value="{{ p.requestor_name }}">
-                                    <div><strong>Requestor</strong><br><span class="editable-text">{{ p.requestor_name }}</span></div>
+                    <!-- Timeline Section -->
+                    <div class="timeline-section" style="margin-bottom: 20px; padding: 15px; background: white; border-radius: 10px; border: 1px solid #e3f0fa;">
+                        <!-- Upload Date Display -->
+                        <div style="text-align: right; margin-bottom: 10px; font-size: 12px; color: #666;">
+                            {{ por.created_at.strftime('%d/%m/%Y') if por.created_at else 'Unknown' }}
+                        </div>
+                        
+                        <!-- Timeline Progress Bar -->
+                        <div class="timeline-container" style="position: relative; margin-bottom: 10px;">
+                            <div class="timeline-bar" id="timelineBar" style="height: 16px; background: #e3f0fa; border-radius: 8px; position: relative; cursor: pointer; border: 3px solid #017bb5; transition: all 0.3s ease;" title="Click and drag to change timeline stage">
+                                <div class="timeline-progress" id="timelineProgress" 
+                                     style="height: 100%; background: linear-gradient(90deg, #28a745 0%, #017bb5 50%, #017bb5 50%, #6c757d 100%); border-radius: 8px; transition: width 0.3s ease;"
+                                     data-current-stage="{{ por.current_stage or 'received' }}"></div>
+                            </div>
+                            
+                            <!-- Timeline Markers -->
+                            <div class="timeline-markers" style="display: flex; justify-content: space-between; position: absolute; top: -4px; left: -12px; right: -12px;">
+                                <div class="timeline-marker received" data-stage="received" 
+                                     style="width: 24px; height: 24px; border-radius: 50%; background: #28a745; border: 2px solid white; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"
+                                     title="Received - Click to drag timeline">
                                 </div>
-                                <div class="editable-box" data-field="ship_project_name" data-por-id="{{ p.id }}" data-value="{{ p.ship_project_name or '' }}">
-                                    <div><strong>Ship/Project Name</strong><br><span class="editable-text">{{ p.ship_project_name or 'N/A' }}</span></div>
+                                <div class="timeline-marker sent" data-stage="sent" 
+                                     style="width: 24px; height: 24px; border-radius: 50%; background: #017bb5; border: 2px solid white; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"
+                                     title="Sent - Click to drag timeline">
                                 </div>
-                                <div class="editable-box" data-field="supplier" data-por-id="{{ p.id }}" data-value="{{ p.supplier or '' }}">
-                                    <div><strong>Supplier</strong><br><span class="editable-text">{{ p.supplier or 'N/A' }}</span></div>
-                                </div>
-                                <div class="editable-box" data-field="job_contract_no" data-por-id="{{ p.id }}" data-value="{{ p.job_contract_no or '' }}">
-                                    <div><strong>Job No.</strong><br><span class="editable-text">{{ p.job_contract_no or 'N/A' }}</span></div>
-                                </div>
-                                <div class="editable-box" data-field="op_no" data-por-id="{{ p.id }}" data-value="{{ p.op_no or '' }}">
-                                    <div><strong>OP No.</strong><br><span class="editable-text">{{ p.op_no or 'N/A' }}</span></div>
-                                </div>
-                                <div class="editable-box" data-field="order_total" data-por-id="{{ p.id }}" data-value="{{ '%.2f'|format(p.order_total or 0) }}">
-                                    <div><strong>Order Total</strong><br><span class="editable-text">£{{ '%.2f'|format(p.order_total or 0) }}</span></div>
-                                </div>
-                                <div class="editable-box" data-field="quote_ref" data-por-id="{{ p.id }}" data-value="{{ p.quote_ref or '' }}">
-                                    <div><strong>Quote Ref</strong><br><span class="editable-text">{{ p.quote_ref or 'N/A' }}</span></div>
-                                </div>
-                                <div class="editable-box" data-field="quote_date" data-por-id="{{ p.id }}" data-value="{{ p.quote_date or '' }}">
-                                    <div><strong>Quote Date</strong><br><span class="editable-text">{{ p.quote_date or 'N/A' }}</span></div>
+                                <div class="timeline-marker filed" data-stage="filed" 
+                                     style="width: 24px; height: 24px; border-radius: 50%; background: #6c757d; border: 2px solid white; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"
+                                     title="Filed - Click to drag timeline">
                                 </div>
                             </div>
                             
-                            {# Line Items Table #}
-                            {% if p.line_items and p.line_items|length > 0 %}
-                                <div style="margin-top: 20px;">
-                                    <table class="line-items-table" style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
+                            <!-- Timeline Labels -->
+                            <div class="timeline-labels" style="display: flex; justify-content: space-between; margin-top: 20px;">
+                                <div style="text-align: center; font-weight: bold; color: #28a745; font-size: 12px;">📥 Received</div>
+                                <div style="text-align: center; font-weight: bold; color: #017bb5; font-size: 12px;">📤 Sent</div>
+                                <div style="text-align: center; font-weight: bold; color: #6c757d; font-size: 12px;">📁 Filed</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Color Controls -->
+                        <div class="status-controls" style="display: flex; gap: 8px; margin-bottom: 10px; justify-content: center;">
+                            <button class="status-btn" data-color="normal" 
+                                    style="padding: 6px 12px; border: 2px solid #000000; background: white; color: #000000; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;"
+                                    title="Normal Status">Normal</button>
+                            <button class="status-btn" data-color="orange" 
+                                    style="padding: 6px 12px; border: 2px solid #000000; background: white; color: #000000; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;"
+                                    title="Halted Status">Halted</button>
+                            <button class="status-btn" data-color="red" 
+                                    style="padding: 6px 12px; border: 2px solid #000000; background: white; color: #000000; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;"
+                                    title="Abandoned Status">Abandoned</button>
+                        </div>
+                        
+                        <!-- Comments Section -->
+                        <div class="comments-section">
+                            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                <h4 style="color: #017bb5; margin: 0; font-size: 14px;">Comments</h4>
+                                <button id="toggleComments" style="padding: 4px 8px; background: #017bb5; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px;">Show</button>
+                            </div>
+                            
+                            <div id="commentsContent" style="display: none;">
+                                <!-- Comment Input -->
+                                <div class="comment-input" style="display: flex; gap: 8px; margin-bottom: 10px;">
+                                    <input type="text" id="commentText" placeholder="Add a comment for current stage..." 
+                                           autocomplete="off"
+                                           style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;">
+                                    <button id="addCommentBtn" style="padding: 6px 12px; background: #017bb5; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Add</button>
+                                </div>
+                                
+                                <!-- Comments Display -->
+                                <div class="comments-display" style="background: #f8f9fa; padding: 8px; border-radius: 6px; max-height: 80px; overflow-y: auto;">
+                                    {% if por.received_comments or por.sent_comments or por.filed_comments %}
+                                        {% if por.received_comments %}
+                                            <div class="comment-group" data-stage="received" style="margin-bottom: 8px;">
+                                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                                                    <h5 style="color: #28a745; margin: 0; font-size: 11px;">Received:</h5>
+                                                    <button class="delete-comment-btn" data-stage="received" style="padding: 2px 6px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px;">Delete</button>
+                                                </div>
+                                                <div style="white-space: pre-line; font-size: 11px; color: #333;">{{ por.received_comments.split('] ')[-1] if '] ' in por.received_comments else por.received_comments }}</div>
+                                            </div>
+                                        {% endif %}
+                                        {% if por.sent_comments %}
+                                            <div class="comment-group" data-stage="sent" style="margin-bottom: 8px;">
+                                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                                                    <h5 style="color: #017bb5; margin: 0; font-size: 11px;">Sent:</h5>
+                                                    <button class="delete-comment-btn" data-stage="sent" style="padding: 2px 6px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px;">Delete</button>
+                                                </div>
+                                                <div style="white-space: pre-line; font-size: 11px; color: #333;">{{ por.sent_comments.split('] ')[-1] if '] ' in por.sent_comments else por.sent_comments }}</div>
+                                            </div>
+                                        {% endif %}
+                                        {% if por.filed_comments %}
+                                            <div class="comment-group" data-stage="filed" style="margin-bottom: 8px;">
+                                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                                                    <h5 style="color: #6c757d; margin: 0; font-size: 11px;">Filed:</h5>
+                                                    <button class="delete-comment-btn" data-stage="filed" style="padding: 2px 6px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px;">Delete</button>
+                                                </div>
+                                                <div style="white-space: pre-line; font-size: 11px; color: #333;">{{ por.filed_comments.split('] ')[-1] if '] ' in por.filed_comments else por.filed_comments }}</div>
+                                            </div>
+                                        {% endif %}
+                                    {% else %}
+                                        <div style="text-align: center; color: #888; font-style: italic; font-size: 11px;">No comments yet.</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                            
+                    <!-- PO Details Grid -->
+                    <div class="record-details" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                        <div class="editable-box" data-field="requestor_name" data-por-id="{{ por.id }}" data-value="{{ por.requestor_name }}" style="cursor: pointer; transition: background-color 0.2s ease; padding: 10px; background: white; border-radius: 8px; border: 1px solid #e3f0fa;">
+                            <div><strong>Requestor</strong><br><span class="editable-text">{{ por.requestor_name }}</span></div>
+                        </div>
+                        <div class="editable-box" data-field="date_order_raised" data-por-id="{{ por.id }}" data-value="{{ por.date_order_raised or '' }}" style="cursor: pointer; transition: background-color 0.2s ease; padding: 10px; background: white; border-radius: 8px; border: 1px solid #e3f0fa;">
+                            <div><strong>Date Order Raised</strong><br><span class="editable-text">{{ por.date_order_raised or 'N/A' }}</span></div>
+                        </div>
+                        <div class="editable-box" data-field="date_required_by" data-por-id="{{ por.id }}" data-value="{{ por.date_required_by or '' }}" style="cursor: pointer; transition: background-color 0.2s ease; padding: 10px; background: white; border-radius: 8px; border: 1px solid #e3f0fa;">
+                            <div><strong>Date Required By</strong><br><span class="editable-text">{{ por.date_required_by or 'N/A' }}</span></div>
+                        </div>
+                        <div class="editable-box" data-field="show_price" data-por-id="{{ por.id }}" data-value="{{ por.show_price or '' }}" style="cursor: pointer; transition: background-color 0.2s ease; padding: 10px; background: white; border-radius: 8px; border: 1px solid #e3f0fa;">
+                            <div><strong>Show Price</strong><br><span class="editable-text">{{ por.show_price or 'N/A' }}</span></div>
+                        </div>
+                        <div class="editable-box" data-field="ship_project_name" data-por-id="{{ por.id }}" data-value="{{ por.ship_project_name or '' }}" style="cursor: pointer; transition: background-color 0.2s ease; padding: 10px; background: white; border-radius: 8px; border: 1px solid #e3f0fa; grid-column: span 2;">
+                            <div><strong>Ship/Project Name</strong><br><span class="editable-text">{{ por.ship_project_name or 'N/A' }}</span></div>
+                        </div>
+                        <div class="editable-box" data-field="supplier" data-por-id="{{ por.id }}" data-value="{{ por.supplier or '' }}" style="cursor: pointer; transition: background-color 0.2s ease; padding: 10px; background: white; border-radius: 8px; border: 1px solid #e3f0fa; grid-column: span 2;">
+                            <div><strong>Supplier</strong><br><span class="editable-text">{{ por.supplier or 'N/A' }}</span></div>
+                        </div>
+                        <div class="editable-box" data-field="job_contract_no" data-por-id="{{ por.id }}" data-value="{{ por.job_contract_no or '' }}" style="cursor: pointer; transition: background-color 0.2s ease; padding: 10px; background: white; border-radius: 8px; border: 1px solid #e3f0fa;">
+                            <div><strong>Job No.</strong><br><span class="editable-text">{{ por.job_contract_no or 'N/A' }}</span></div>
+                        </div>
+                        <div class="editable-box" data-field="op_no" data-por-id="{{ por.id }}" data-value="{{ por.op_no or '' }}" style="cursor: pointer; transition: background-color 0.2s ease; padding: 10px; background: white; border-radius: 8px; border: 1px solid #e3f0fa;">
+                            <div><strong>OP No.</strong><br><span class="editable-text">{{ por.op_no or 'N/A' }}</span></div>
+                        </div>
+                        <div class="editable-box" data-field="order_total" data-por-id="{{ por.id }}" data-value="{{ '%.2f'|format(por.order_total or 0) }}" style="cursor: pointer; transition: background-color 0.2s ease; padding: 10px; background: white; border-radius: 8px; border: 1px solid #e3f0fa;">
+                            <div><strong>Order Total (£)</strong><br><span class="editable-text">{{ '%.2f'|format(por.order_total or 0) }}</span></div>
+                        </div>
+                        <div class="editable-box" data-field="quote_ref" data-por-id="{{ por.id }}" data-value="{{ por.quote_ref or '' }}" style="cursor: pointer; transition: background-color 0.2s ease; padding: 10px; background: white; border-radius: 8px; border: 1px solid #e3f0fa;">
+                            <div><strong>Quote Ref</strong><br><span class="editable-text">{{ por.quote_ref or 'N/A' }}</span></div>
+                        </div>
+                        <div class="editable-box" data-field="quote_date" data-por-id="{{ por.id }}" data-value="{{ por.quote_date or '' }}" style="cursor: pointer; transition: background-color 0.2s ease; padding: 10px; background: white; border-radius: 8px; border: 1px solid #e3f0fa;">
+                            <div><strong>Quote Date</strong><br><span class="editable-text">{{ por.quote_date or 'N/A' }}</span></div>
+                        </div>
+                        <div id="subjectLine" class="editable-box" 
+                             style="cursor: pointer; transition: background-color 0.2s ease; padding: 10px; background: white; border-radius: 8px; border: 1px solid #e3f0fa; grid-column: span 2;"
+                             title="Click to copy subject line">
+                            <div><strong>Subject Line</strong><br>
+                                {% set order_type_display = 'NEW ORDER' if por.order_type == 'new' else 'REVISED ORDER' if por.order_type == 'revised' else 'CANCELLED ORDER' %}
+                                {% set supplier_name = por.supplier or 'UNKNOWN SUPPLIER' %}
+                                {% set project_name = por.ship_project_name or 'UNKNOWN PROJECT' %}
+                                <span class="editable-text">{{ order_type_display }} | {{ supplier_name.upper() }} | {{ project_name.upper() }} | PO {{ por.po_number }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {# Line Items Table #}
+                    {% if por.line_items and por.line_items|length > 0 %}
+                        <div id="lineItemsSection" style="margin-top: 20px;">
+                            <h4 style="color: #017bb5; margin: 0 0 15px 0;">📋 Line Items</h4>
+                            
+                            <!-- Specifications Line -->
+                            {% if por.specification_standards %}
+                            <div style="display: grid; grid-template-columns: 200px 1fr; gap: 12px; margin-bottom: 20px;">
+                                <div style="background: white; padding: 10px; border-radius: 8px; border: 1px solid #e3f0fa; display: flex; align-items: center; justify-content: center;">
+                                    <div><strong style="color: #017bb5;">SPECIFICATIONS</strong></div>
+                                </div>
+                                <div class="editable-box" data-field="specification_standards" data-por-id="{{ por.id }}" data-value="{{ por.specification_standards or '' }}" style="cursor: pointer; transition: background-color 0.2s ease; padding: 10px; background: white; border-radius: 8px; border: 1px solid #e3f0fa;">
+                                    <span class="editable-text">{{ por.specification_standards or 'N/A' }}</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Amazon Comment Line (only show if supplier is Amazon) -->
+                            {% if por.supplier and 'amazon' in por.supplier.lower() %}
+                            <div style="display: grid; grid-template-columns: 200px 1fr; gap: 12px; margin-bottom: 20px;">
+                                <div style="background: white; padding: 10px; border-radius: 8px; border: 1px solid #e3f0fa; display: flex; align-items: center; justify-content: center;">
+                                    <div><strong style="color: #017bb5;">📦 AMAZON ORDER</strong></div>
+                                </div>
+                                <div class="editable-box" data-field="amazon_comment" data-por-id="{{ por.id }}" data-value="{{ por.amazon_comment or '' }}" style="cursor: pointer; transition: background-color 0.2s ease; padding: 10px; background: white; border-radius: 8px; border: 1px solid #e3f0fa;" title="Click to edit Amazon order number">
+                                    <span class="editable-text">{{ por.amazon_comment or 'ENTER ORDER NO. HERE' }}</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                                                       <!-- Work Date Comment Line (only show if content type is work_iwo or supply_and_fit) -->
+                           {% if por.content_type in ['work_iwo', 'supply_and_fit'] %}
+                            <div style="display: grid; grid-template-columns: 200px 1fr; gap: 12px; margin-bottom: 20px;">
+                                <div style="background: white; padding: 10px; border-radius: 8px; border: 1px solid #e3f0fa; display: flex; align-items: center; justify-content: center;">
+                                    <div><strong style="color: #017bb5;">WORK DATE</strong></div>
+                                </div>
+                                <div class="editable-box" data-field="work_date_comment" data-por-id="{{ por.id }}" data-value="{{ por.work_date_comment or '' }}" style="cursor: pointer; transition: background-color 0.2s ease; padding: 10px; background: white; border-radius: 8px; border: 1px solid #e3f0fa;" title="Click to edit work date">
+                                    <span class="editable-text">{{ por.work_date_comment or 'WORK DATE CARRIED OUT TBC' }}</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+                                <div style="display: flex; gap: 8px;">
+                                    <button id="addLineBtn" data-por-id="{{ por.id }}" style="background: #017bb5; color: white; border: none; border-radius: 8px; padding: 8px 15px; font-size: 14px; font-weight: bold; cursor: pointer;" title="Add a new line item">➕ Add Line</button>
+                                    <button id="collapseAll" style="background: #6c757d; color: white; border: none; border-radius: 8px; padding: 8px 15px; font-size: 14px; font-weight: bold; cursor: pointer;" title="Collapse to save space">📉 Collapse</button>
+                                    <button id="expandAll" style="background: #28a745; color: white; border: none; border-radius: 8px; padding: 8px 15px; font-size: 14px; font-weight: bold; cursor: pointer;" title="Expand to view all items">📈 Expand</button>
+                                </div>
+                            </div>
+                            <div id="lineItemsContent" style="display: none;">
+                                <table class="line-items-table" style="width: 100%; border-collapse: collapse; margin-bottom: 20px; background: white; border-radius: 10px; overflow: hidden;">
                                         <thead>
                                             <tr style="background: #e3f0fa;">
-                                                <th style="padding: 8px; border: 1px solid #b3c6d9;">Job No.</th>
-                                                <th style="padding: 8px; border: 1px solid #b3c6d9;">OP No.</th>
-                                                <th style="padding: 8px; border: 1px solid #b3c6d9;">Description</th>
-                                                <th style="padding: 8px; border: 1px solid #b3c6d9;">Quantity</th>
-                                                <th style="padding: 8px; border: 1px solid #b3c6d9;">Price Each</th>
-                                                <th style="padding: 8px; border: 1px solid #b3c6d9;">Line Total</th>
+                                        <th style="padding: 12px; border: 1px solid #b3c6d9; text-align: left;">Job No.</th>
+                                        <th style="padding: 12px; border: 1px solid #b3c6d9; text-align: left;">OP No.</th>
+                                        <th style="padding: 12px; border: 1px solid #b3c6d9; text-align: left;">Description</th>
+                                        <th style="padding: 12px; border: 1px solid #b3c6d9; text-align: left;">Quantity</th>
+                                        <th style="padding: 12px; border: 1px solid #b3c6d9; text-align: left;">Price Each (£)</th>
+                                        <th style="padding: 12px; border: 1px solid #b3c6d9; text-align: left;">Line Total (£)</th>
+                                        <th style="padding: 12px; border: 1px solid #b3c6d9; text-align: center; width: 80px;">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {% for item in p.line_items %}
+                                    {% for item in por.line_items %}
                                                 {% set has_data = item.job_contract_no or item.op_no or item.description or item.quantity or item.price_each or item.line_total %}
                                                 {% if has_data %}
                                                 <tr data-line-item-id="{{ item.id }}">
-                                                    <td class="editable-cell" data-field="job_contract_no" data-line-item-id="{{ item.id }}" data-value="{{ item.job_contract_no or '' }}" style="padding: 8px; border: 1px solid #b3c6d9; cursor: pointer;">
+                                            <td class="editable-cell" data-field="job_contract_no" data-line-item-id="{{ item.id }}" data-value="{{ item.job_contract_no or '' }}" style="padding: 12px; border: 1px solid #b3c6d9; cursor: pointer; transition: background-color 0.2s ease;">
                                                         <span class="editable-text">{{ item.job_contract_no if item.job_contract_no else '' }}</span>
                                                     </td>
-                                                    <td class="editable-cell" data-field="op_no" data-line-item-id="{{ item.id }}" data-value="{{ item.op_no or '' }}" style="padding: 8px; border: 1px solid #b3c6d9; cursor: pointer;">
+                                            <td class="editable-cell" data-field="op_no" data-line-item-id="{{ item.id }}" data-value="{{ item.op_no or '' }}" style="padding: 12px; border: 1px solid #b3c6d9; cursor: pointer; transition: background-color 0.2s ease;">
                                                         <span class="editable-text">{{ item.op_no if item.op_no else '' }}</span>
                                                     </td>
-                                                    <td class="editable-cell" data-field="description" data-line-item-id="{{ item.id }}" data-value="{{ item.description or '' }}" style="padding: 8px; border: 1px solid #b3c6d9; cursor: pointer;">
+                                            <td class="editable-cell" data-field="description" data-line-item-id="{{ item.id }}" data-value="{{ item.description or '' }}" style="padding: 12px; border: 1px solid #b3c6d9; cursor: pointer; transition: background-color 0.2s ease;">
                                                         <span class="editable-text">{{ item.description if item.description else '' }}</span>
                                                     </td>
-                                                    <td class="editable-cell" data-field="quantity" data-line-item-id="{{ item.id }}" data-value="{{ item.quantity or '' }}" style="padding: 8px; border: 1px solid #b3c6d9; cursor: pointer;">
+                                            <td class="editable-cell" data-field="quantity" data-line-item-id="{{ item.id }}" data-value="{{ item.quantity or '' }}" style="padding: 12px; border: 1px solid #b3c6d9; cursor: pointer; transition: background-color 0.2s ease;">
                                                         <span class="editable-text">{{ item.quantity if item.quantity else '' }}</span>
                                                     </td>
-                                                    <td class="editable-cell" data-field="price_each" data-line-item-id="{{ item.id }}" data-value="{{ '%.2f'|format(item.price_each) if item.price_each else '' }}" style="padding: 8px; border: 1px solid #b3c6d9; cursor: pointer;">
-                                                        <span class="editable-text">{{ '£%.2f'|format(item.price_each) if item.price_each else '' }}</span>
+                                            <td class="editable-cell" data-field="price_each" data-line-item-id="{{ item.id }}" data-value="{{ '%.2f'|format(item.price_each) if item.price_each else '' }}" style="padding: 12px; border: 1px solid #b3c6d9; cursor: pointer; transition: background-color 0.2s ease;">
+                                                <span class="editable-text">{{ '%.2f'|format(item.price_each) if item.price_each else '' }}</span>
                                                     </td>
-                                                    <td class="editable-cell" data-field="line_total" data-line-item-id="{{ item.id }}" data-value="{{ '%.2f'|format(item.line_total) if item.line_total else '' }}" style="padding: 8px; border: 1px solid #b3c6d9; cursor: pointer;">
-                                                        <span class="editable-text">{{ '£%.2f'|format(item.line_total) if item.line_total else '' }}</span>
+                                            <td class="editable-cell" data-field="line_total" data-line-item-id="{{ item.id }}" data-value="{{ '%.2f'|format(item.line_total) if item.line_total else '' }}" style="padding: 12px; border: 1px solid #b3c6d9; cursor: pointer; transition: background-color 0.2s ease;">
+                                                <span class="editable-text">{{ '%.2f'|format(item.line_total) if item.line_total else '' }}</span>
                                                     </td>
+                                            <td style="padding: 8px; border: 1px solid #b3c6d9; text-align: center;">
+                                                <button class="delete-line-btn" data-line-item-id="{{ item.id }}" data-line-description="{{ item.description or 'this line item' }}" 
+                                                        style="background: #dc3545; color: white; border: none; border-radius: 4px; padding: 6px 10px; font-size: 12px; font-weight: bold; cursor: pointer; transition: all 0.2s ease;"
+                                                        title="Delete this line item">
+                                                    🗑️
+                                                </button>
+                                            </td>
                                                 </tr>
                                                 {% endif %}
                                             {% endfor %}
                                         </tbody>
                                     </table>
+                            </div>
                                 </div>
                             {% else %}
-                                <div style="margin-top: 20px; color: #888;">No line items found for this PO.</div>
+                        <div style="margin-top: 30px; color: #888; text-align: center; padding: 20px; background: white; border-radius: 10px;">No line items found for this PO.</div>
                             {% endif %}
                             
-                            {% if p.files %}
-                            <div class="attached-files">
-                                <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;">
-                                    <strong style="color: #017bb5;">📎 Attached Files:</strong>
-                                    <a href="{{ url_for('attach_files', por_id=p.id) }}" class="nav-link" style="font-size: 12px; padding: 3px 8px;">Manage Files</a>
-                                </div>
-                                <div class="file-list">
-                                    {% for file in p.files %}
+                    {% if por.files %}
+                    <div class="attached-files" style="margin-top: 30px;">
+                        <h4 style="color: #017bb5; margin-bottom: 15px;">📎 Attached Files</h4>
+                        <div class="file-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px;">
+                            {% for file in por.files %}
                                     <a href="{{ url_for('download_file', file_id=file.id) }}" class="file-link" 
-                                       title="{{ file.description or file.original_filename }} ({{ (file.file_size / 1024)|round(1) }} KB)">
-                                        <span class="file-icon">
+                               title="{{ file.description or file.original_filename }} ({{ (file.file_size / 1024)|round(1) }} KB)"
+                               style="display: flex; align-items: center; gap: 10px; padding: 10px; background: white; border-radius: 8px; border: 1px solid #e3f0fa; text-decoration: none; color: inherit; transition: background-color 0.2s ease;">
+                                <span class="file-icon" style="font-size: 20px;">
                                             {% if file.file_type == 'original' %}📄
                                             {% elif file.file_type == 'quote' %}💰
                                             {% else %}📎{% endif %}
                                         </span>
-                                        <span class="file-name">{{ file.original_filename[:20] }}{% if file.original_filename|length > 20 %}...{% endif %}</span>
+                                <span class="file-name" style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ file.original_filename }}</span>
                                     </a>
                                     {% endfor %}
-                                </div>
-                            </div>
-                            {% endif %}
                         </div>
-                    {% endfor %}
-                </div>
-                
-                <!-- Pagination Controls -->
-                {% if total_pages > 1 %}
-                <div class="pagination-controls" style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 30px;">
-                    {% if has_prev %}
-                        <a href="{{ url_for('view', page=current_page-1, q=request.args.get('q','')) }}" class="nav-link">
-                            ⬅️ Previous
-                        </a>
-                    {% endif %}
-                    
-                    <div class="page-numbers" style="display: flex; gap: 5px;">
-                        {% for p in range(1, total_pages + 1) %}
-                            {% if p == current_page %}
-                                <span class="current-page" style="background: #017bb5; color: white; padding: 8px 12px; border-radius: 20px; font-weight: bold;">
-                                    {{ p }}
-                                </span>
-                            {% elif p <= 3 or p > total_pages - 3 or (p >= current_page - 1 and p <= current_page + 1) %}
-                                <a href="{{ url_for('view', page=p, q=request.args.get('q','')) }}" class="nav-link" style="padding: 8px 12px;">
-                                    {{ p }}
-                                </a>
-                            {% elif p == 4 and current_page > 6 %}
-                                <span style="padding: 8px 12px;">...</span>
-                            {% elif p == total_pages - 3 and current_page < total_pages - 5 %}
-                                <span style="padding: 8px 12px;">...</span>
-                            {% endif %}
-                        {% endfor %}
                     </div>
-                    
-                    {% if has_next %}
-                        <a href="{{ url_for('view', page=current_page+1, q=request.args.get('q','')) }}" class="nav-link">
-                            Next ➡️
-                        </a>
                     {% endif %}
                 </div>
-                {% endif %}
             {% else %}
-                <div class="no-records" style="text-align: center; padding: 40px; color: #666;">
-                    <div style="font-size: 48px; margin-bottom: 20px;">📭</div>
-                    <h3>No records found</h3>
-                    <p>No purchase orders match your search criteria.</p>
+                <div style="text-align: center; padding: 50px; color: #888;">
+                    <h3>No PO records found</h3>
+                    <p>Upload your first PO to get started!</p>
                 </div>
             {% endif %}
-            
-            <div class="navigation-links" style="margin-top: 30px;">
-                <a href="/change-batch" class="nav-link">⚙️ Update Batch: {{ current_po }}</a>
+        </div>
+    </div>
+
+    <!-- Scroll to Top Button -->
+    <button id="scrollToTopBtn" style="display: none; position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #017bb5; color: white; border: none; border-radius: 50%; font-size: 24px; cursor: pointer; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.3s ease;" title="Scroll to Top">
+        ⬆️
+    </button>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 400px;">
+            <h3 style="color: #dc3545; margin-bottom: 20px;">🗑️ Delete PO</h3>
+            <p style="margin-bottom: 20px;">Are you sure you want to delete this PO? This action cannot be undone.</p>
+            <p style="margin-bottom: 20px; font-weight: bold;">Type "DELETE" to confirm:</p>
+            <input type="text" id="deleteConfirm" placeholder="Type DELETE" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; margin-bottom: 20px;">
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="closeDeleteModal()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;">Cancel</button>
+                <button onclick="confirmDelete()" id="confirmDeleteBtn" disabled style="padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer;">Delete</button>
             </div>
         </div>
     </div>
+
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Handle editable boxes (main POR fields)
-        document.querySelectorAll('.editable-box').forEach(function(box) {
-            box.addEventListener('click', function() {
-                startEditing(box, 'por');
+
+        // Scroll to top functionality
+        const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+        
+        // Show/hide scroll to top button based on scroll position
+        window.addEventListener('scroll', function() {
+            if (window.pageYOffset > 100) { // Show after scrolling 100px (earlier)
+                scrollToTopBtn.style.display = 'block';
+            } else {
+                scrollToTopBtn.style.display = 'none';
+            }
+        });
+        
+        // Scroll to top when button is clicked
+        scrollToTopBtn.addEventListener('click', function() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
             });
         });
         
-        // Handle editable cells (line items)
-        document.querySelectorAll('.editable-cell').forEach(function(cell) {
-            cell.addEventListener('click', function() {
-                startEditing(cell, 'line_item');
+        // Global scroll to top function
+        window.scrollToTop = function() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        };
+        
+        // Screen size detection and responsive adjustments
+        function adjustForScreenSize() {
+            const topSpacer = document.getElementById('topSpacer');
+            const mainContainer = document.getElementById('mainContainer');
+            
+            if (topSpacer && mainContainer) {
+                const screenHeight = window.innerHeight;
+                const screenWidth = window.innerWidth;
+                
+                // Adjust top spacing based on screen size
+                if (screenHeight < 600) {
+                    // Small screens - add more top padding
+                    topSpacer.style.height = '40px';
+                    mainContainer.style.paddingTop = '40px';
+                } else if (screenHeight < 800) {
+                    // Medium screens
+                    topSpacer.style.height = '30px';
+                    mainContainer.style.paddingTop = '30px';
+                } else {
+                    // Large screens
+                    topSpacer.style.height = '20px';
+                    mainContainer.style.paddingTop = '20px';
+                }
+                
+                // Adjust for mobile devices
+                if (screenWidth < 768) {
+                    topSpacer.style.height = '60px';
+                    mainContainer.style.paddingTop = '60px';
+                }
+                
+                // Check if we're in a browser with bookmarks bar or other UI
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                if (scrollTop === 0) {
+                    // We're at the top, ensure content is visible
+                    topSpacer.style.height = Math.max(parseInt(topSpacer.style.height), 50) + 'px';
+                }
+            }
+        }
+        
+        // Run on page load
+        adjustForScreenSize();
+        
+        // Run on window resize
+        window.addEventListener('resize', adjustForScreenSize);
+        
+        // Run on scroll to ensure top content is always visible
+        window.addEventListener('scroll', function() {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const topSpacer = document.getElementById('topSpacer');
+            
+            if (scrollTop === 0 && topSpacer) {
+                // We're at the very top, ensure adequate spacing
+                topSpacer.style.height = '50px';
+            }
+        });
+        
+        // Line items toggle functionality
+        const collapseAll = document.getElementById('collapseAll');
+        const expandAll = document.getElementById('expandAll');
+        const lineItemsContent = document.getElementById('lineItemsContent');
+        let lineItemsVisible = false; // Start collapsed
+        
+        if (collapseAll && expandAll && lineItemsContent) {
+            // Collapse button
+            if (collapseAll) {
+                collapseAll.addEventListener('click', function() {
+                    lineItemsContent.style.display = 'none';
+                    lineItemsVisible = false;
+                    // Show success feedback
+                    this.style.background = '#28a745';
+                    this.textContent = '✅ Collapsed';
+                    setTimeout(() => {
+                        this.style.background = '#6c757d';
+                        this.textContent = '📉 Collapse';
+                    }, 1000);
+                });
+            }
+            
+            // Expand button
+            if (expandAll) {
+                expandAll.addEventListener('click', function() {
+                    lineItemsContent.style.display = 'block';
+                    lineItemsVisible = true;
+                    // Show success feedback
+                    this.style.background = '#017bb5';
+                    this.textContent = '✅ Expanded';
+                    setTimeout(() => {
+                        this.style.background = '#28a745';
+                        this.textContent = '📈 Expand';
+                    }, 1000);
+                });
+            }
+        }
+        
+        // Delete confirmation logic
+        let currentDeletePoId = null;
+        let currentDeletePoNumber = null;
+        
+        document.querySelectorAll('.delete-po-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                currentDeletePoId = this.getAttribute('data-po-id');
+                currentDeletePoNumber = this.getAttribute('data-po-number');
+                document.getElementById('deleteModal').style.display = 'block';
+                document.getElementById('deleteConfirm').focus();
             });
         });
         
-        function startEditing(element, type) {
-            const currentValue = element.getAttribute('data-value');
-            const field = element.getAttribute('data-field');
-            const id = type === 'por' ? element.getAttribute('data-por-id') : element.getAttribute('data-line-item-id');
+        document.getElementById('deleteConfirm').addEventListener('input', function() {
+            const confirmBtn = document.getElementById('confirmDeleteBtn');
+            confirmBtn.disabled = this.value !== 'DELETE';
+        });
+        
+        window.closeDeleteModal = function() {
+            document.getElementById('deleteModal').style.display = 'none';
+            document.getElementById('deleteConfirm').value = '';
+            document.getElementById('confirmDeleteBtn').disabled = true;
+        };
+        
+        window.confirmDelete = function() {
+            if (document.getElementById('deleteConfirm').value === 'DELETE') {
+                fetch('/delete_por', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        por_id: currentDeletePoId,
+                        po_number: currentDeletePoNumber
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Redirect to the previous PO or the latest PO
+                        window.location.href = '/view';
+                    } else {
+                        alert('Error deleting PO: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting PO. Please try again.');
+                });
+                
+                closeDeleteModal();
+            }
+        };
+        
+        // Close modal when clicking outside
+        document.getElementById('deleteModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDeleteModal();
+            }
+        });
+        
+        // Editable field functionality
+        document.querySelectorAll('.editable-box, .editable-cell').forEach(function(element) {
+            // Skip PO number field as it has its own copy functionality
+            if (element.classList.contains('por-number-copy')) {
+                return;
+            }
             
-            // Find the text span to edit
-            const textSpan = element.querySelector('.editable-text');
-            const originalText = textSpan.textContent;
+            // Skip subject line as it has its own copy functionality
+            if (element.id === 'subjectLine') {
+                return;
+            }
             
-            // Create input element that matches the text span styling
+            let clickTimeout;
+            let clickCount = 0;
+            let isEditing = false;
+            
+            element.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Don't allow new interactions if already editing
+                if (isEditing) {
+                    return;
+                }
+                
+                clickCount++;
+                
+                if (clickCount === 1) {
+                    clickTimeout = setTimeout(() => {
+                        // Single click - copy the value
+                        const currentValue = this.getAttribute('data-value') || '';
+                        if (currentValue && currentValue !== 'N/A') {
+                            copyToClipboard(currentValue);
+                            showSimpleTooltip(this, 'Value copied!');
+                        }
+                        clickCount = 0;
+                    }, 300);
+                } else {
+                    // Double click - open edit mode
+                    clearTimeout(clickTimeout);
+                    clickCount = 0;
+                    
+                    // Prevent multiple edit sessions
+                    if (isEditing) {
+                        return;
+                    }
+                    
+                    isEditing = true;
+                    
+                    const field = this.getAttribute('data-field');
+                    const porId = this.getAttribute('data-por-id');
+                    const lineItemId = this.getAttribute('data-line-item-id');
+                    const currentValue = this.getAttribute('data-value');
+                    
+                    // Create inline edit input
             const input = document.createElement('input');
             input.type = 'text';
-            input.value = currentValue;
-            input.className = 'edit-input';
+                    input.value = currentValue || '';
+            input.autocomplete = 'off';
             input.style.cssText = `
-                width: 100%;
-                padding: 0;
-                border: none;
-                background: transparent;
+                        width: calc(100% - 16px);
+                        padding: 8px;
+                        border: 2px solid #017bb5;
+                        border-radius: 4px;
+                        font-size: 14px;
+                        background: white;
                 outline: none;
-                font-size: inherit;
-                font-family: inherit;
-                color: inherit;
-                text-align: inherit;
-                margin: 0;
+                        z-index: 1000;
+                        margin-top: 5px;
                 box-sizing: border-box;
+                        position: relative;
             `;
             
-            // Replace only the text content with input
-            textSpan.style.display = 'none';
-            textSpan.parentNode.insertBefore(input, textSpan.nextSibling);
+                    // Replace the content with input
+                    const textElement = this.querySelector('.editable-text');
+                    const originalContent = textElement.innerHTML;
+                    textElement.style.display = 'none';
+                    
+                    // Create container and position input below the text
+                    const inputContainer = document.createElement('div');
+                    inputContainer.style.cssText = `
+                        position: relative;
+                        width: 100%;
+                        margin-top: 5px;
+                        box-sizing: border-box;
+                    `;
+                    inputContainer.appendChild(input);
+                    
+                    // Insert the input container after the text element's parent
+                    const textParent = textElement.parentElement;
+                    textParent.appendChild(inputContainer);
+                    
+                    // Focus and select all text
+                    setTimeout(() => {
             input.focus();
             input.select();
+                    }, 10);
             
             // Handle save on Enter or blur
             function saveEdit() {
+                        if (!isEditing) return;
+                        
                 const newValue = input.value.trim();
+                        
                 if (newValue !== currentValue) {
-                    updateField(type, id, field, newValue, element, originalText);
-                } else {
-                    cancelEdit();
-                }
-            }
-            
-            function cancelEdit() {
-                textSpan.style.display = '';
-                if (input.parentNode) {
-                    input.parentNode.removeChild(input);
-                }
-            }
-            
-            input.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    saveEdit();
-                } else if (e.key === 'Escape') {
-                    cancelEdit();
-                }
-            });
-            
-            input.addEventListener('blur', saveEdit);
-        }
-        
-        function updateField(type, id, field, value, element, originalText) {
-            const url = type === 'por' ? '/update_por_field' : '/update_line_item_field';
-            const data = type === 'por' ? 
-                { por_id: id, field: field, value: value } : 
-                { line_item_id: id, field: field, value: value };
-            
-            fetch(url, {
+                            const endpoint = lineItemId ? '/update_line_item_field' : '/update_por_field';
+                            const data = lineItemId ? {
+                                line_item_id: lineItemId,
+                                field: field,
+                                value: newValue
+                            } : {
+                                por_id: porId,
+                                field: field,
+                                value: newValue
+                            };
+                            
+                            fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -324,77 +792,137 @@
                 body: JSON.stringify(data)
             })
             .then(response => response.json())
-            .then(data => {
+                                        .then(data => {
                 if (data.success) {
                     // Update the display
-                    const textSpan = element.querySelector('.editable-text');
-                    const input = element.querySelector('.edit-input');
-                    
-                    // Format the display value based on field type
-                    let displayValue = value;
-                    if (field === 'order_total' || field === 'price_each' || field === 'line_total') {
-                        displayValue = '£' + parseFloat(value || 0).toFixed(2);
+                                    textElement.textContent = newValue || 'N/A';
+                                    element.setAttribute('data-value', newValue);
+                                    
+                                    // Auto-calculate line total if quantity or price_each changed
+                                    if (lineItemId && (field === 'quantity' || field === 'price_each')) {
+                                        const row = element.closest('tr');
+                                        const quantityCell = row.querySelector('[data-field="quantity"]');
+                                        const priceCell = row.querySelector('[data-field="price_each"]');
+                                        const totalCell = row.querySelector('[data-field="line_total"]');
+                                        
+                                        if (quantityCell && priceCell && totalCell) {
+                                            const quantity = parseFloat(quantityCell.getAttribute('data-value')) || 0;
+                                            const price = parseFloat(priceCell.getAttribute('data-value')) || 0;
+                                            const lineTotal = quantity * price;
+                                            
+                                            // Update line total display
+                                            totalCell.querySelector('.editable-text').textContent = lineTotal.toFixed(2);
+                                            totalCell.setAttribute('data-value', lineTotal.toFixed(2));
+                                            
+                                            // Update line total in database
+                                            fetch('/update_line_item_field', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                },
+                                                body: JSON.stringify({
+                                                    line_item_id: lineItemId,
+                                                    field: 'line_total',
+                                                    value: lineTotal.toFixed(2)
+                                                })
+                                            });
+                                        }
+                                    }
+                                    
+                                    // Update order total display if it's a price-related field
+                                    if (lineItemId && (field === 'quantity' || field === 'price_each' || field === 'line_total')) {
+                                        // Find and update the order total display
+                                        const orderTotalElement = document.querySelector('[data-field="order_total"]');
+                                        if (orderTotalElement) {
+                                            // Recalculate total from all line items
+                                            let newTotal = 0.0;
+                                            document.querySelectorAll('[data-field="line_total"]').forEach(cell => {
+                                                const value = parseFloat(cell.getAttribute('data-value')) || 0;
+                                                newTotal += value;
+                                            });
+                                            
+                                            orderTotalElement.querySelector('.editable-text').textContent = newTotal.toFixed(2);
+                                            orderTotalElement.setAttribute('data-value', newTotal.toFixed(2));
+                                        }
+                                    }
+                                    
+                                    // Success indicator removed
+                                } else {
+                                    alert('Error updating field: ' + data.error);
+                                    // Restore original value on error
+                                    textElement.textContent = originalContent;
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                alert('Error updating field. Please try again.');
+                                // Restore original value on error
+                                textElement.textContent = originalContent;
+                            });
+                        }
+                        
+                        // Clean up
+                        cleanupEdit();
                     }
                     
-                    textSpan.textContent = displayValue || 'N/A';
-                    textSpan.style.display = '';
-                    if (input && input.parentNode) {
-                        input.parentNode.removeChild(input);
+                    // Handle cancel on Escape
+                    function cancelEdit() {
+                        if (!isEditing) return;
+                        
+                        // Restore original content
+                        textElement.textContent = originalContent;
+                        cleanupEdit();
                     }
                     
-                    // Update data attributes
-                    element.setAttribute('data-value', value);
-                    
-                    // Show success indicator
-                    showEditSuccess(element);
-                } else {
-                    alert('Error updating field: ' + (data.error || 'Unknown error'));
-                    // Restore original text
-                    const textSpan = element.querySelector('.editable-text');
-                    const input = element.querySelector('.edit-input');
-                    textSpan.textContent = originalText;
-                    textSpan.style.display = '';
-                    if (input && input.parentNode) {
-                        input.parentNode.removeChild(input);
+                    // Cleanup function
+                    function cleanupEdit() {
+                        if (inputContainer.parentNode) {
+                            inputContainer.parentNode.removeChild(inputContainer);
+                        }
+                        textElement.style.display = '';
+                        isEditing = false;
                     }
+                    
+                    // Prevent clicks inside input from bubbling
+                    input.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                    });
+                    
+                    input.addEventListener('keydown', function(e) {
+                        e.stopPropagation();
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            saveEdit();
+                        } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            cancelEdit();
+                        }
+                    });
+                    
+                    input.addEventListener('blur', function() {
+                        setTimeout(() => {
+                            if (isEditing) {
+                                saveEdit();
+                            }
+                        }, 100);
+                    });
+                    
+                    // Handle clicks outside to save
+                    document.addEventListener('click', function outsideClickHandler(e) {
+                        if (!element.contains(e.target) && isEditing) {
+                            saveEdit();
+                            document.removeEventListener('click', outsideClickHandler);
+                        }
+                    });
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error updating field. Please try again.');
-                // Restore original text
-                const textSpan = element.querySelector('.editable-text');
-                const input = element.querySelector('.edit-input');
-                textSpan.textContent = originalText;
-                textSpan.style.display = '';
-                element.removeChild(input);
             });
-        }
-        
-        function showEditSuccess(element) {
-            // Add a temporary success indicator
-            const successIndicator = document.createElement('span');
-            successIndicator.textContent = '✅';
-            successIndicator.style.cssText = `
-                position: absolute;
-                top: 8px;
-                right: 8px;
-                font-size: 1.1em;
-                background: rgba(255, 255, 255, 0.9);
-                border-radius: 50%;
-                width: 20px;
-                height: 20px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 10;
-            `;
-            element.appendChild(successIndicator);
             
-            setTimeout(() => { 
-                element.removeChild(successIndicator);
-            }, 1200);
-        }
+            // Reset click count if user moves mouse
+            element.addEventListener('mouseleave', function() {
+                clearTimeout(clickTimeout);
+                clickCount = 0;
+            });
+        });
         
         // Email drag and drop functionality
         document.querySelectorAll('.record-card').forEach(function(card) {
@@ -440,8 +968,6 @@
                 }
             });
         });
-        
-
         
         function uploadEmailToPor(file, porId, card) {
             const formData = new FormData();
@@ -504,6 +1030,1285 @@
                 alert('Error uploading email. Please try again.');
             });
         }
+        
+        // POR Number Copy Functionality
+        document.querySelectorAll('.por-number-copy').forEach(function(element) {
+            let clickTimeout;
+            let clickCount = 0;
+            
+            element.addEventListener('click', function(e) {
+                e.preventDefault();
+                clickCount++;
+                
+                if (clickCount === 1) {
+                    clickTimeout = setTimeout(() => {
+                        // Single click - copy just the number
+                        const porNumber = this.getAttribute('data-por-number');
+                        copyToClipboard(porNumber);
+                        showSimpleTooltip(this, 'Number copied!');
+                        clickCount = 0;
+                    }, 200);
+                } else {
+                    // Double click - copy the full "PO: X" format
+                    clearTimeout(clickTimeout);
+                    const porNumber = this.getAttribute('data-por-number');
+                    const fullText = `PO: ${porNumber}`;
+                    copyToClipboard(fullText);
+                    showSimpleTooltip(this, 'Full format copied!');
+                    clickCount = 0;
+                }
+            });
+            
+            // Reset click count if user moves mouse
+            element.addEventListener('mouseleave', function() {
+                clearTimeout(clickTimeout);
+                clickCount = 0;
+            });
+        });
+        
+        function copyToClipboard(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                // Use modern clipboard API
+                navigator.clipboard.writeText(text).then(() => {
+                    console.log('Text copied successfully');
+                }).catch(err => {
+                    console.error('Failed to copy text: ', err);
+                    fallbackCopyToClipboard(text);
+                });
+            } else {
+                // Fallback for older browsers
+                fallbackCopyToClipboard(text);
+            }
+        }
+        
+        function fallbackCopyToClipboard(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                console.log('Text copied using fallback method');
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        function showSimpleTooltip(element, message) {
+            // Create a simple tooltip
+            const tooltip = document.createElement('div');
+            tooltip.textContent = message;
+            tooltip.style.cssText = `
+                position: absolute;
+                top: -30px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #333;
+                color: white;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 11px;
+                z-index: 1000;
+                white-space: nowrap;
+                opacity: 0;
+                transition: opacity 0.2s ease;
+            `;
+            
+            // Make sure the parent element has relative positioning
+            element.style.position = 'relative';
+            element.appendChild(tooltip);
+            
+            // Show tooltip
+            setTimeout(() => {
+                tooltip.style.opacity = '1';
+            }, 10);
+            
+            // Hide tooltip after 1.5 seconds
+            setTimeout(() => {
+                tooltip.style.opacity = '0';
+                setTimeout(() => {
+                    if (tooltip.parentNode) {
+                        tooltip.parentNode.removeChild(tooltip);
+                    }
+                }, 200);
+            }, 1500);
+        }
+        
+        // Timeline Functionality
+        const timelineProgress = document.getElementById('timelineProgress');
+        const timelineBar = document.querySelector('.timeline-bar');
+        const markers = document.querySelectorAll('.timeline-marker');
+        const statusButtons = document.querySelectorAll('.status-btn');
+        const addCommentBtn = document.getElementById('addCommentBtn');
+        const commentText = document.getElementById('commentText');
+        const recordCard = document.querySelector('.record-card');
+        const porId = recordCard ? recordCard.getAttribute('data-por-id') : null;
+        
+
+        
+
+        
+        // Get current stage from data attribute
+        const currentStage = '{{ por.current_stage or "received" }}';
+        const stages = ['received', 'sent', 'filed'];
+        const currentStageIndex = stages.indexOf(currentStage);
+        
+        // Set global variables for timeline state
+        window.currentStage = currentStage;
+        window.currentStageIndex = currentStageIndex;
+        
+        // Initialize timeline progress
+        function updateTimelineProgress() {
+            if (!timelineProgress) return;
+            
+            // Calculate progress based on stage boundaries (0%, 50%, 100%)
+            // Stage 0 (received): 0%
+            // Stage 1 (sent): 50%
+            // Stage 2 (filed): 100%
+            const progress = window.currentStageIndex * 50;
+            timelineProgress.style.width = progress + '%';
+            
+            // Update marker states
+            markers.forEach((marker, index) => {
+                if (index <= window.currentStageIndex) {
+                    marker.style.transform = 'scale(1.2)';
+                    marker.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+                } else {
+                    marker.style.transform = 'scale(1)';
+                    marker.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+                }
+            });
+        }
+        
+        // Add drag functionality to timeline
+        let isDragging = false;
+        
+        if (timelineBar) {
+            console.log('Adding drag functionality to timeline bar');
+            
+            timelineBar.addEventListener('mousedown', function(e) {
+                console.log('Timeline bar mousedown');
+                e.preventDefault();
+                isDragging = true;
+                this.style.background = '#017bb5';
+                this.style.borderColor = '#02699d';
+                updateTimelineFromMouse(e);
+            });
+            
+            // Add hover effect
+            timelineBar.addEventListener('mouseenter', function() {
+                if (!isDragging) {
+                    this.style.background = '#d1e7f9';
+                    this.style.borderColor = '#02699d';
+                }
+            });
+            
+            timelineBar.addEventListener('mouseleave', function() {
+                if (!isDragging) {
+                    this.style.background = '#e3f0fa';
+                    this.style.borderColor = '#017bb5';
+                }
+            });
+            
+            // Add click handler as fallback
+            timelineBar.addEventListener('click', function(e) {
+                console.log('Timeline bar clicked');
+                updateTimelineFromMouse(e);
+            });
+        }
+        
+        document.addEventListener('mousemove', function(e) {
+            if (isDragging) {
+                updateTimelineFromMouse(e);
+            }
+        });
+        
+        document.addEventListener('mouseup', function() {
+            if (isDragging) {
+                if (timelineBar) {
+                    timelineBar.style.background = '#e3f0fa';
+                    timelineBar.style.borderColor = '#017bb5';
+                }
+            }
+            isDragging = false;
+        });
+        
+        function updateTimelineFromMouse(e) {
+            if (!timelineBar) return;
+            
+            const rect = timelineBar.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const width = rect.width;
+            const percentage = Math.max(0, Math.min(1, x / width));
+            
+            console.log('Mouse position:', { x, width, percentage });
+            
+            // Determine stage based on percentage
+            let newStageIndex;
+            if (percentage < 0.33) {
+                newStageIndex = 0; // received
+            } else if (percentage < 0.66) {
+                newStageIndex = 1; // sent
+            } else {
+                newStageIndex = 2; // filed
+            }
+            
+            const newStage = stages[newStageIndex];
+            console.log('New stage:', newStage, 'Current stage:', window.currentStage);
+            
+            if (newStage !== window.currentStage) {
+                updateTimelineStage(newStage);
+            }
+        }
+        
+        // Timeline marker click handlers
+        markers.forEach(marker => {
+            marker.addEventListener('click', function() {
+                const newStage = this.getAttribute('data-stage');
+                updateTimelineStage(newStage);
+            });
+        });
+        
+        function updateTimelineStage(newStage) {
+            if (!porId) return;
+            
+            fetch('/update_timeline_stage', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    por_id: porId,
+                    stage: newStage
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update current stage and reinitialize
+                    window.currentStage = newStage;
+                    window.currentStageIndex = stages.indexOf(newStage);
+                    updateTimelineProgress();
+                    updateRecordCardColor(data.status_color);
+                } else {
+                    alert('Error updating timeline: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating timeline. Please try again.');
+            });
+        }
+        
+        // Status color button handlers
+        statusButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const color = this.getAttribute('data-color');
+                updateStatusColor(color);
+            });
+        });
+        
+        function updateStatusColor(color) {
+            if (!porId) return;
+            
+            // Update visual state
+            updateRecordCardColor(color);
+            
+            // Update button states
+            statusButtons.forEach(btn => {
+                btn.style.background = 'white';
+                btn.style.color = btn.getAttribute('data-color') === 'normal' ? '#6c757d' : 
+                                 btn.getAttribute('data-color') === 'orange' ? '#fd7e14' : '#dc3545';
+            });
+            
+            // Highlight selected button
+            const selectedBtn = document.querySelector(`[data-color="${color}"]`);
+            if (selectedBtn) {
+                selectedBtn.style.background = selectedBtn.style.color;
+                selectedBtn.style.color = 'white';
+            }
+        }
+        
+        function updateRecordCardColor(color) {
+            if (!recordCard) return;
+            
+            // Remove existing color classes
+            recordCard.style.border = '2px solid #3e8ed0';
+            recordCard.style.background = '#f8f9fa';
+            
+            // Apply new color
+            switch(color) {
+                case 'green':
+                    recordCard.style.border = '3px solid #28a745';
+                    recordCard.style.background = '#f8fff9';
+                    break;
+                case 'orange':
+                    recordCard.style.border = '3px solid #fd7e14';
+                    recordCard.style.background = '#fffbf8';
+                    break;
+                case 'red':
+                    recordCard.style.border = '3px solid #dc3545';
+                    recordCard.style.background = '#fff8f8';
+                    break;
+            }
+        }
+        
+        // Comment functionality
+        addCommentBtn.addEventListener('click', function() {
+            const comment = commentText.value.trim();
+            const currentStage = window.currentStage || '{{ por.current_stage or "received" }}';
+            
+            if (!comment) {
+                alert('Please enter a comment');
+                return;
+            }
+            
+            if (!porId) return;
+            
+            // Get current status color
+            const currentColor = document.querySelector('.status-btn[style*="background"]')?.getAttribute('data-color') || 'normal';
+            
+            fetch('/add_timeline_comment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    por_id: porId,
+                    stage: currentStage,
+                    comment: comment,
+                    status_color: currentColor
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Clear input
+                    commentText.value = '';
+                    
+                    // Update status color if changed
+                    if (data.status_color !== 'normal') {
+                        updateStatusColor(data.status_color);
+                    }
+                    
+                    // Reload page to show new comment
+                    window.location.reload();
+                } else {
+                    alert('Error adding comment: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error adding comment. Please try again.');
+            });
+        });
+        
+        // Enter key to add comment
+        commentText.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addCommentBtn.click();
+            }
+        });
+        
+        // Comments expand/collapse functionality
+        const toggleCommentsBtn = document.getElementById('toggleComments');
+        const commentsContent = document.getElementById('commentsContent');
+        
+        toggleCommentsBtn.addEventListener('click', function() {
+            if (commentsContent.style.display === 'none') {
+                commentsContent.style.display = 'block';
+                toggleCommentsBtn.textContent = 'Hide';
+            } else {
+                commentsContent.style.display = 'none';
+                toggleCommentsBtn.textContent = 'Show';
+            }
+        });
+        
+        // Delete comment functionality
+        document.querySelectorAll('.delete-comment-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const stage = this.getAttribute('data-stage');
+                
+                if (confirm(`Are you sure you want to delete the ${stage} comment?`)) {
+                    deleteComment(stage);
+                }
+            });
+        });
+        
+        function deleteComment(stage) {
+            if (!porId) return;
+            
+            fetch('/delete_timeline_comment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    por_id: porId,
+                    stage: stage
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove the comment from the DOM without reloading
+                    const commentGroup = document.querySelector(`[data-stage="${stage}"]`).closest('.comment-group');
+                    if (commentGroup) {
+                        commentGroup.remove();
+                    }
+                    
+                    // Check if there are any comments left
+                    const remainingComments = document.querySelectorAll('.comment-group');
+                    if (remainingComments.length === 0) {
+                        const commentsDisplay = document.querySelector('.comments-display');
+                        commentsDisplay.innerHTML = '<div style="text-align: center; color: #888; font-style: italic; font-size: 11px;">No comments yet.</div>';
+                    }
+                } else {
+                    alert('Error deleting comment: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error deleting comment. Please try again.');
+            });
+        }
+        
+        // Initialize timeline on page load
+        updateTimelineProgress();
+        
+        // Undo/Redo functionality
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+Z for undo
+            if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                undoLastChange();
+            }
+            // Ctrl+Y or Ctrl+Shift+Z for redo
+            if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'z')) {
+                e.preventDefault();
+                redoLastChange();
+            }
+        });
+        
+        function undoLastChange() {
+            if (!porId) return;
+            
+            fetch('/undo_change', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    por_id: porId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Reload page to show changes
+                    window.location.reload();
+                } else {
+                    console.log('Undo failed:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+        
+        function redoLastChange() {
+            if (!porId) return;
+            
+            fetch('/redo_change', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    por_id: porId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Reload page to show changes
+                    window.location.reload();
+                } else {
+                    console.log('Redo failed:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+        
+        // Function to open files when double-clicked
+        window.openFile = function(fileId) {
+            // Open file in new tab/window using the new route
+            console.log('Opening file with ID:', fileId);
+            window.open(`/open-file/${fileId}`, '_blank');
+        };
+        
+        // Order type dropdown functionality
+        document.querySelectorAll('.order-type-select').forEach(select => {
+            select.addEventListener('change', function() {
+                const orderType = this.value;
+                const porId = this.getAttribute('data-por-id');
+                
+                if (!porId) return;
+                
+                // Send update to server
+                fetch('/update_order_type', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        por_id: porId,
+                        order_type: orderType
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('Order type updated successfully:', orderType);
+                        // Update subject line when order type changes
+                        updateSubjectLine(orderType);
+                    } else {
+                        alert('Error updating order type: ' + data.error);
+                        // Reset to previous value on error
+                        this.value = '{{ por.order_type or "new" }}';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error updating order type. Please try again.');
+                    // Reset to previous value on error
+                    this.value = '{{ por.order_type or "new" }}';
+                });
+            });
+        });
+        
+        // Content type dropdown functionality
+        document.querySelectorAll('.content-type-select').forEach(select => {
+            select.addEventListener('change', function() {
+                const contentType = this.value;
+                const porId = this.getAttribute('data-por-id');
+                
+                if (!porId) return;
+                
+                // Send update to server
+                fetch('/update_content_type', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        por_id: porId,
+                        content_type: contentType
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('Content type updated successfully:', contentType);
+                        
+                        // Handle work date comment visibility based on content type
+                        if (contentType === 'work_iwo' || contentType === 'supply_and_fit') {
+                            // Show work date comment box for work_iwo and supply_and_fit content types
+                            let workDateContainer = document.querySelector('[data-field="work_date_comment"]')?.closest('div[style*="grid"]') || 
+                                                   document.querySelector('[data-field="work_date_comment"]')?.closest('div[style*="display"]');
+                            
+                            if (!workDateContainer) {
+                                // If work date container doesn't exist, create it dynamically
+                                const specificationsContainer = document.querySelector('[data-field="specification_standards"]')?.closest('div[style*="grid"]') || 
+                                                              document.querySelector('[data-field="specification_standards"]')?.closest('div[style*="display"]');
+                                if (specificationsContainer) {
+                                    const newWorkDateContainer = specificationsContainer.cloneNode(true);
+                                    newWorkDateContainer.querySelector('[data-field="specification_standards"]').setAttribute('data-field', 'work_date_comment');
+                                    newWorkDateContainer.querySelector('.editable-text').textContent = 'WORK DATE CARRIED OUT TBC';
+                                    newWorkDateContainer.querySelector('strong').textContent = 'WORK DATE';
+                                    specificationsContainer.parentNode.insertBefore(newWorkDateContainer, specificationsContainer.nextSibling);
+                                    workDateContainer = newWorkDateContainer;
+                                }
+                            }
+                            
+                            if (workDateContainer) {
+                                workDateContainer.style.display = 'grid';
+                            }
+                        } else {
+                            // Hide work date comment box for supply and other content types
+                            const workDateContainer = document.querySelector('[data-field="work_date_comment"]')?.closest('div[style*="grid"]') || 
+                                                   document.querySelector('[data-field="work_date_comment"]')?.closest('div[style*="display"]');
+                            if (workDateContainer) {
+                                workDateContainer.style.display = 'none';
+                            }
+                        }
+                    } else {
+                        alert('Error updating content type: ' + data.error);
+                        // Reset to previous value on error
+                        this.value = '{{ por.content_type or "supply" }}';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error updating content type. Please try again.');
+                    // Reset to previous value on error
+                    this.value = '{{ por.content_type or "supply" }}';
+                });
+            });
+        });
+        
+        // Define updateSubjectLine function first
+        function updateSubjectLine(orderType) {
+            // Get current POR data
+            const poNumber = '{{ por.po_number }}';
+            const supplierName = '{{ por.supplier or "UNKNOWN SUPPLIER" }}'.toUpperCase();
+            const projectName = '{{ por.ship_project_name or "UNKNOWN PROJECT" }}'.toUpperCase();
+            
+            // Determine order type display
+            let orderTypeDisplay;
+            switch(orderType) {
+                case 'new':
+                    orderTypeDisplay = 'NEW ORDER';
+                    break;
+                case 'revised':
+                    orderTypeDisplay = 'REVISED ORDER';
+                    break;
+                case 'cancelled':
+                    orderTypeDisplay = 'CANCELLED ORDER';
+                    break;
+                default:
+                    orderTypeDisplay = 'NEW ORDER';
+            }
+            
+            // Update subject line - target the editable-text span specifically
+            const newSubjectLine = `${orderTypeDisplay} | ${supplierName} | ${projectName} | PO ${poNumber}`;
+            const subjectLine = document.getElementById('subjectLine');
+            const editableTextSpan = subjectLine ? subjectLine.querySelector('.editable-text') : null;
+            if (editableTextSpan) {
+                editableTextSpan.textContent = newSubjectLine;
+            }
+        }
+        
+
+        
+        // Subject line functionality - copy and edit
+        const subjectLine = document.getElementById('subjectLine');
+        
+        let subjectLineClickTimeout;
+        let subjectLineClickCount = 0;
+        let subjectLineIsEditing = false;
+        
+        // Click on subject line to copy or edit
+        subjectLine.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Don't allow new interactions if already editing
+            if (subjectLineIsEditing) {
+                return;
+            }
+            
+            subjectLineClickCount++;
+            
+            if (subjectLineClickCount === 1) {
+                subjectLineClickTimeout = setTimeout(() => {
+                    // Single click - copy the value
+                    const text = this.querySelector('.editable-text').textContent.trim();
+                    if (text) {
+                        copyToClipboard(text);
+                        showSimpleTooltip(this, 'Subject line copied!');
+                    }
+                    subjectLineClickCount = 0;
+                }, 300);
+            } else {
+                // Double click - open edit mode
+                clearTimeout(subjectLineClickTimeout);
+                subjectLineClickCount = 0;
+                
+                // Prevent multiple edit sessions
+                if (subjectLineIsEditing) {
+                    return;
+                }
+                
+                subjectLineIsEditing = true;
+                
+                const currentValue = this.querySelector('.editable-text').textContent.trim();
+                
+                // Create inline edit input
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = currentValue || '';
+                input.autocomplete = 'off';
+                input.style.cssText = `
+                    width: calc(100% - 16px);
+                    padding: 8px;
+                    border: 2px solid #017bb5;
+                    border-radius: 4px;
+                    font-size: 14px;
+                    background: white;
+                    outline: none;
+                    z-index: 1000;
+                    margin-top: 5px;
+                    box-sizing: border-box;
+                    position: relative;
+                `;
+                
+                // Replace the content with input
+                const textElement = this.querySelector('.editable-text');
+                const originalContent = textElement.innerHTML;
+                textElement.style.display = 'none';
+                
+                // Create container and position input below the text
+                const inputContainer = document.createElement('div');
+                inputContainer.style.cssText = `
+                    position: relative;
+                    width: 100%;
+                    margin-top: 5px;
+                    box-sizing: border-box;
+                `;
+                inputContainer.appendChild(input);
+                
+                // Insert the input container after the text element's parent
+                const textParent = textElement.parentElement;
+                textParent.appendChild(inputContainer);
+                
+                // Focus and select all text
+                setTimeout(() => {
+                    input.focus();
+                    input.select();
+                }, 10);
+                
+                // Handle save on Enter or blur
+                function saveSubjectLineEdit() {
+                    if (!subjectLineIsEditing) return;
+                    
+                    const newValue = input.value.trim();
+                    
+                    if (newValue !== currentValue) {
+                        // For subject line, we'll just update the display
+                        // No server update needed since it's auto-generated
+                        textElement.textContent = newValue;
+                    }
+                    
+                    // Clean up
+                    cleanupSubjectLineEdit();
+                }
+                
+                // Handle cancel on Escape
+                function cancelSubjectLineEdit() {
+                    if (!subjectLineIsEditing) return;
+                    
+                    // Restore original content
+                    textElement.textContent = originalContent;
+                    cleanupSubjectLineEdit();
+                }
+                
+                // Cleanup function
+                function cleanupSubjectLineEdit() {
+                    if (inputContainer.parentNode) {
+                        inputContainer.parentNode.removeChild(inputContainer);
+                    }
+                    textElement.style.display = '';
+                    subjectLineIsEditing = false;
+                }
+                
+                // Prevent clicks inside input from bubbling
+                input.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+                
+                input.addEventListener('keydown', function(e) {
+                    e.stopPropagation();
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        saveSubjectLineEdit();
+                    } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        cancelSubjectLineEdit();
+                    }
+                });
+                
+                input.addEventListener('blur', function() {
+                    setTimeout(() => {
+                        if (subjectLineIsEditing) {
+                            saveSubjectLineEdit();
+                        }
+                    }, 100);
+                });
+                
+                // Handle clicks outside to save
+                document.addEventListener('click', function outsideClickHandler(e) {
+                    if (!subjectLine.contains(e.target) && subjectLineIsEditing) {
+                        saveSubjectLineEdit();
+                        document.removeEventListener('click', outsideClickHandler);
+                    }
+                });
+            }
+        });
+        
+        // Reset click count if user moves mouse
+        subjectLine.addEventListener('mouseleave', function() {
+            clearTimeout(subjectLineClickTimeout);
+            subjectLineClickCount = 0;
+        });
+        
+        // Delete line item functionality
+        document.querySelectorAll('.delete-line-btn').forEach(function(button) {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const lineItemId = this.getAttribute('data-line-item-id');
+                const lineDescription = this.getAttribute('data-line-description');
+                
+                if (confirm(`Are you sure you want to delete "${lineDescription}"? This action cannot be undone.`)) {
+                    // Show loading state
+                    this.textContent = '⏳';
+                    this.disabled = true;
+                    this.style.background = '#6c757d';
+                    
+                    fetch(`/delete_line_item/${lineItemId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Remove the row from the table
+                            const row = this.closest('tr');
+                            if (row) {
+                                row.style.background = '#f8d7da';
+                                row.style.transition = 'all 0.3s ease';
+                                setTimeout(() => {
+                                    row.remove();
+                                    
+                                                                // Check if there are any remaining line items
+                            const tbody = row.parentElement;
+                            if (tbody && tbody.children.length === 0) {
+                                // No more line items, show message
+                                const table = tbody.closest('table');
+                                if (table) {
+                                    const container = table.closest('#lineItemsSection');
+                                    if (container) {
+                                        container.innerHTML = '<div style="margin-top: 30px; color: #888; text-align: center; padding: 20px; background: white; border-radius: 10px;">No line items found for this PO.</div>';
+                                    }
+                                }
+                            }
+                            
+                            // Update order total display
+                            const orderTotalElement = document.querySelector('[data-field="order_total"]');
+                            if (orderTotalElement) {
+                                // Recalculate total from remaining line items
+                                let newTotal = 0.0;
+                                document.querySelectorAll('[data-field="line_total"]').forEach(cell => {
+                                    const value = parseFloat(cell.getAttribute('data-value')) || 0;
+                                    newTotal += value;
+                                });
+                                
+                                orderTotalElement.querySelector('.editable-text').textContent = newTotal.toFixed(2);
+                                orderTotalElement.setAttribute('data-value', newTotal.toFixed(2));
+                            }
+                        }, 300);
+                    }
+                    
+                    // Show success message
+                    showSimpleTooltip(this, 'Line item deleted successfully!');
+                        } else {
+                            // Restore button
+                            this.textContent = '🗑️';
+                            this.disabled = false;
+                            this.style.background = '#dc3545';
+                            alert('Error deleting line item: ' + (data.error || 'Unknown error'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        // Restore button
+                        this.textContent = '🗑️';
+                        this.disabled = false;
+                        this.style.background = '#dc3545';
+                        alert('Error deleting line item. Please try again.');
+                    });
+                }
+            });
+        });
+        
+        // Add line item functionality
+        document.querySelectorAll('#addLineBtn').forEach(function(button) {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const porId = this.getAttribute('data-por-id');
+                
+                // Show loading state
+                this.textContent = '⏳ Adding...';
+                this.disabled = true;
+                this.style.background = '#6c757d';
+                
+                fetch('/add_line_item', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        por_id: porId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Create new row in the table
+                        const tbody = document.querySelector('.line-items-table tbody');
+                        if (tbody) {
+                            const newRow = document.createElement('tr');
+                            newRow.setAttribute('data-line-item-id', data.line_item_id);
+                            newRow.innerHTML = `
+                                <td class="editable-cell" data-field="job_contract_no" data-line-item-id="${data.line_item_id}" data-value="" style="padding: 12px; border: 1px solid #b3c6d9; cursor: pointer; transition: background-color 0.2s ease;">
+                                    <span class="editable-text"></span>
+                                </td>
+                                <td class="editable-cell" data-field="op_no" data-line-item-id="${data.line_item_id}" data-value="" style="padding: 12px; border: 1px solid #b3c6d9; cursor: pointer; transition: background-color 0.2s ease;">
+                                    <span class="editable-text"></span>
+                                </td>
+                                <td class="editable-cell" data-field="description" data-line-item-id="${data.line_item_id}" data-value="" style="padding: 12px; border: 1px solid #b3c6d9; cursor: pointer; transition: background-color 0.2s ease;">
+                                    <span class="editable-text"></span>
+                                </td>
+                                <td class="editable-cell" data-field="quantity" data-line-item-id="${data.line_item_id}" data-value="" style="padding: 12px; border: 1px solid #b3c6d9; cursor: pointer; transition: background-color 0.2s ease;">
+                                    <span class="editable-text"></span>
+                                </td>
+                                <td class="editable-cell" data-field="price_each" data-line-item-id="${data.line_item_id}" data-value="" style="padding: 12px; border: 1px solid #b3c6d9; cursor: pointer; transition: background-color 0.2s ease;">
+                                    <span class="editable-text"></span>
+                                </td>
+                                <td class="editable-cell" data-field="line_total" data-line-item-id="${data.line_item_id}" data-value="" style="padding: 12px; border: 1px solid #b3c6d9; cursor: pointer; transition: background-color 0.2s ease;">
+                                    <span class="editable-text"></span>
+                                </td>
+                                <td style="padding: 8px; border: 1px solid #b3c6d9; text-align: center;">
+                                    <button class="delete-line-btn" data-line-item-id="${data.line_item_id}" data-line-description="this line item" 
+                                            style="background: #dc3545; color: white; border: none; border-radius: 4px; padding: 6px 10px; font-size: 12px; font-weight: bold; cursor: pointer; transition: all 0.2s ease;"
+                                            title="Delete this line item">
+                                        🗑️
+                                    </button>
+                                </td>
+                            `;
+                            
+                            // Add the new row to the table
+                            tbody.appendChild(newRow);
+                            
+                            // Add event listeners to the new row
+                            newRow.querySelectorAll('.editable-cell').forEach(function(cell) {
+                                // Re-initialize editable functionality for the new cells
+                                let clickTimeout;
+                                let clickCount = 0;
+                                let isEditing = false;
+                                
+                                cell.addEventListener('click', function(e) {
+                                    e.preventDefault();
+                                    
+                                    if (isEditing) return;
+                                    
+                                    clickCount++;
+                                    
+                                    if (clickCount === 1) {
+                                        clickTimeout = setTimeout(() => {
+                                            const currentValue = this.getAttribute('data-value') || '';
+                                            if (currentValue && currentValue !== 'N/A') {
+                                                copyToClipboard(currentValue);
+                                                showSimpleTooltip(this, 'Value copied!');
+                                            }
+                                            clickCount = 0;
+                                        }, 300);
+                                    } else {
+                                        clearTimeout(clickTimeout);
+                                        clickCount = 0;
+                                        
+                                        if (isEditing) return;
+                                        
+                                        isEditing = true;
+                                        
+                                        const field = this.getAttribute('data-field');
+                                        const lineItemId = this.getAttribute('data-line-item-id');
+                                        const currentValue = this.getAttribute('data-value');
+                                        
+                                        const input = document.createElement('input');
+                                        input.type = 'text';
+                                        input.value = currentValue || '';
+                                        input.autocomplete = 'off';
+                                        input.style.cssText = `
+                                            width: calc(100% - 16px);
+                                            padding: 8px;
+                                            border: 2px solid #017bb5;
+                                            border-radius: 4px;
+                                            font-size: 14px;
+                                            background: white;
+                                            outline: none;
+                                            z-index: 1000;
+                                            margin-top: 5px;
+                                            box-sizing: border-box;
+                                            position: relative;
+                                        `;
+                                        
+                                        const textElement = this.querySelector('.editable-text');
+                                        const originalContent = textElement.innerHTML;
+                                        textElement.style.display = 'none';
+                                        
+                                        const inputContainer = document.createElement('div');
+                                        inputContainer.style.cssText = `
+                                            position: relative;
+                                            width: 100%;
+                                            margin-top: 5px;
+                                            box-sizing: border-box;
+                                        `;
+                                        inputContainer.appendChild(input);
+                                        
+                                        const textParent = textElement.parentElement;
+                                        textParent.appendChild(inputContainer);
+                                        
+                                        setTimeout(() => {
+                                            input.focus();
+                                            input.select();
+                                        }, 10);
+                                        
+                                        function saveEdit() {
+                                            if (!isEditing) return;
+                                            
+                                            const newValue = input.value.trim();
+                                            
+                                            if (newValue !== currentValue) {
+                                                fetch('/update_line_item_field', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                    },
+                                                    body: JSON.stringify({
+                                                        line_item_id: lineItemId,
+                                                        field: field,
+                                                        value: newValue
+                                                    })
+                                                })
+                                                .then(response => response.json())
+                                                .then(data => {
+                                                    if (data.success) {
+                                                        textElement.textContent = newValue || 'N/A';
+                                                        this.setAttribute('data-value', newValue);
+                                                        
+                                                        // Auto-calculate line total if quantity or price_each changed
+                                                        if (field === 'quantity' || field === 'price_each') {
+                                                            const row = this.closest('tr');
+                                                            const quantityCell = row.querySelector('[data-field="quantity"]');
+                                                            const priceCell = row.querySelector('[data-field="price_each"]');
+                                                            const totalCell = row.querySelector('[data-field="line_total"]');
+                                                            
+                                                            if (quantityCell && priceCell && totalCell) {
+                                                                const quantity = parseFloat(quantityCell.getAttribute('data-value')) || 0;
+                                                                const price = parseFloat(priceCell.getAttribute('data-value')) || 0;
+                                                                const lineTotal = quantity * price;
+                                                                
+                                                                totalCell.querySelector('.editable-text').textContent = lineTotal.toFixed(2);
+                                                                totalCell.setAttribute('data-value', lineTotal.toFixed(2));
+                                                                
+                                                                fetch('/update_line_item_field', {
+                                                                    method: 'POST',
+                                                                    headers: {
+                                                                        'Content-Type': 'application/json',
+                                                                    },
+                                                                    body: JSON.stringify({
+                                                                        line_item_id: lineItemId,
+                                                                        field: 'line_total',
+                                                                        value: lineTotal.toFixed(2)
+                                                                    })
+                                                                });
+                                                            }
+                                                        }
+                                                        
+                                                        // Update order total display
+                                                        if (field === 'quantity' || field === 'price_each' || field === 'line_total') {
+                                                            const orderTotalElement = document.querySelector('[data-field="order_total"]');
+                                                            if (orderTotalElement) {
+                                                                let newTotal = 0.0;
+                                                                document.querySelectorAll('[data-field="line_total"]').forEach(cell => {
+                                                                    const value = parseFloat(cell.getAttribute('data-value')) || 0;
+                                                                    newTotal += value;
+                                                                });
+                                                                
+                                                                orderTotalElement.querySelector('.editable-text').textContent = newTotal.toFixed(2);
+                                                                orderTotalElement.setAttribute('data-value', newTotal.toFixed(2));
+                                                            }
+                                                        }
+                                                    } else {
+                                                        alert('Error updating field: ' + data.error);
+                                                        textElement.textContent = originalContent;
+                                                    }
+                                                })
+                                                .catch(error => {
+                                                    console.error('Error:', error);
+                                                    alert('Error updating field. Please try again.');
+                                                    textElement.textContent = originalContent;
+                                                });
+                                            }
+                                            
+                                            cleanupEdit();
+                                        }
+                                        
+                                        function cancelEdit() {
+                                            if (!isEditing) return;
+                                            textElement.textContent = originalContent;
+                                            cleanupEdit();
+                                        }
+                                        
+                                        function cleanupEdit() {
+                                            if (inputContainer.parentNode) {
+                                                inputContainer.parentNode.removeChild(inputContainer);
+                                            }
+                                            textElement.style.display = '';
+                                            isEditing = false;
+                                        }
+                                        
+                                        input.addEventListener('click', function(e) {
+                                            e.stopPropagation();
+                                        });
+                                        
+                                        input.addEventListener('keydown', function(e) {
+                                            e.stopPropagation();
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                saveEdit();
+                                            } else if (e.key === 'Escape') {
+                                                e.preventDefault();
+                                                cancelEdit();
+                                            }
+                                        });
+                                        
+                                        input.addEventListener('blur', function() {
+                                            setTimeout(() => {
+                                                if (isEditing) {
+                                                    saveEdit();
+                                                }
+                                            }, 100);
+                                        });
+                                        
+                                        document.addEventListener('click', function outsideClickHandler(e) {
+                                            if (!cell.contains(e.target) && isEditing) {
+                                                saveEdit();
+                                                document.removeEventListener('click', outsideClickHandler);
+                                            }
+                                        });
+                                    }
+                                    
+                                    cell.addEventListener('mouseleave', function() {
+                                        clearTimeout(clickTimeout);
+                                        clickCount = 0;
+                                    });
+                                });
+                            });
+                            
+                            // Add event listener to the new delete button
+                            const newDeleteBtn = newRow.querySelector('.delete-line-btn');
+                            newDeleteBtn.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                
+                                const lineItemId = this.getAttribute('data-line-item-id');
+                                const lineDescription = this.getAttribute('data-line-description');
+                                
+                                if (confirm(`Are you sure you want to delete "${lineDescription}"? This action cannot be undone.`)) {
+                                    this.textContent = '⏳';
+                                    this.disabled = true;
+                                    this.style.background = '#6c757d';
+                                    
+                                    fetch(`/delete_line_item/${lineItemId}`, {
+                                        method: 'DELETE',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                        }
+                                    })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.success) {
+                                            const row = this.closest('tr');
+                                            if (row) {
+                                                row.style.background = '#f8d7da';
+                                                row.style.transition = 'all 0.3s ease';
+                                                setTimeout(() => {
+                                                    row.remove();
+                                                    
+                                                    const tbody = row.parentElement;
+                                                    if (tbody && tbody.children.length === 0) {
+                                                        const table = tbody.closest('table');
+                                                        if (table) {
+                                                            const container = table.closest('#lineItemsSection');
+                                                            if (container) {
+                                                                container.innerHTML = '<div style="margin-top: 30px; color: #888; text-align: center; padding: 20px; background: white; border-radius: 10px;">No line items found for this PO.</div>';
+                                                            }
+                                                        }
+                                                    }
+                                                    
+                                                    const orderTotalElement = document.querySelector('[data-field="order_total"]');
+                                                    if (orderTotalElement) {
+                                                        let newTotal = 0.0;
+                                                        document.querySelectorAll('[data-field="line_total"]').forEach(cell => {
+                                                            const value = parseFloat(cell.getAttribute('data-value')) || 0;
+                                                            newTotal += value;
+                                                        });
+                                                        
+                                                        orderTotalElement.querySelector('.editable-text').textContent = newTotal.toFixed(2);
+                                                        orderTotalElement.setAttribute('data-value', newTotal.toFixed(2));
+                                                    }
+                                                }, 300);
+                                            }
+                                            
+                                            showSimpleTooltip(this, 'Line item deleted successfully!');
+                                        } else {
+                                            this.textContent = '🗑️';
+                                            this.disabled = false;
+                                            this.style.background = '#dc3545';
+                                            alert('Error deleting line item: ' + (data.error || 'Unknown error'));
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('Error:', error);
+                                        this.textContent = '🗑️';
+                                        this.disabled = false;
+                                        this.style.background = '#dc3545';
+                                        alert('Error deleting line item. Please try again.');
+                                    });
+                                }
+                            });
+                            
+                            // Highlight the new row
+                            newRow.style.background = '#d4edda';
+                            setTimeout(() => {
+                                newRow.style.background = '';
+                            }, 2000);
+                        }
+                        
+                        // Show success message
+                        showSimpleTooltip(this, 'New line item added successfully!');
+                    } else {
+                        alert('Error adding line item: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error adding line item. Please try again.');
+                })
+                .finally(() => {
+                    // Restore button
+                    this.textContent = '➕ Add Line';
+                    this.disabled = false;
+                    this.style.background = '#017bb5';
+                });
+            });
+        });
+        
     });
     </script>
 </body>

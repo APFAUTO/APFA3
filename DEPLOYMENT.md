@@ -1,82 +1,108 @@
-# Free Hosting Setup Guide
+# 🚀 Deployment Guide
 
-## Railway Deployment (Recommended - Free)
+## Quick Start
 
-### Step 1: Prepare Your Repository
-1. Make sure all files are committed to Git
-2. Your repository should now have these new files:
-   - `railway.json` - Railway configuration
-   - `Procfile` - Tells Railway how to run your app
-   - `runtime.txt` - Specifies Python version
+### Local Development
+```bash
+# 1. Create virtual environment
+python -m venv venv
+venv\Scripts\activate  # Windows
+# source venv/bin/activate  # Unix/MacOS
 
-### Step 2: Deploy to Railway
-1. Go to [railway.app](https://railway.app)
-2. Sign up with your GitHub account
-3. Click "New Project" → "Deploy from GitHub repo"
-4. Select your repository
-5. Railway will automatically detect it's a Python app and deploy
+# 2. Install dependencies
+pip install -r requirements.txt
 
-### Step 3: Add Database (Free)
-1. In your Railway project dashboard
-2. Click "New" → "Database" → "PostgreSQL"
-3. Railway will automatically set the `DATABASE_URL` environment variable
-4. Your app will automatically use this database
 
-### Step 4: Set Environment Variables (Optional)
-In Railway dashboard, go to your app's "Variables" tab and add:
-- `SECRET_KEY`: A random string for Flask security
-- `FLASK_ENV`: Set to `production`
 
-### Step 5: Access Your App
-- Railway will provide a URL like `https://your-app-name.railway.app`
-- Your app will be live and accessible!
+# 4. Run the application
+python app.py
+```
 
-## Alternative Free Options
+### Production Deployment
 
-### Render (750 hours/month free)
-1. Go to [render.com](https://render.com)
-2. Connect your GitHub repo
-3. Choose "Web Service"
-4. Set build command: `pip install -r requirements.txt`
-5. Set start command: `python app.py`
+#### Option 1: Traditional Server
+```bash
+# Install dependencies
+pip install -r requirements.txt
 
-### PythonAnywhere (512MB RAM free)
-1. Go to [pythonanywhere.com](https://pythonanywhere.com)
-2. Create free account
-3. Upload your files via Files tab
-4. Set up a web app pointing to your `app.py`
+# Set environment variables
+export FLASK_DEBUG=False
+export SECRET_KEY="your-secure-secret-key"
 
-## Important Notes
+# Run with production server
+gunicorn -w 4 -b 0.0.0.0:5000 app:app
+```
 
-### File Storage
-- Railway and other cloud platforms don't provide persistent file storage
-- Uploaded files will be temporary
-- For production, consider using cloud storage (AWS S3, etc.)
+#### Option 2: Docker
+```bash
+# Build and run
+docker build -t por-automator .
+docker run -p 5000:5000 por-automator
+```
 
-### Database
-- Railway provides free PostgreSQL database
-- Your app will automatically migrate to use it
-- Data persists between deployments
+#### Option 3: Railway/Heroku
+- The `Procfile` and `runtime.txt` are already configured
+- Just push to your repository and deploy
 
-### Environment
-- Set `FLASK_ENV=production` for security
-- Add a strong `SECRET_KEY`
-- Disable debug mode (already done in app.py)
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FLASK_DEBUG` | `True` | Enable debug mode |
+| `SECRET_KEY` | `dev-secret-key` | Flask secret key |
+| `DATABASE_URL` | `sqlite:///a&p_por.db` | Database connection |
+| `HOST` | `0.0.0.0` | Server host |
+| `PORT` | `5000` | Server port |
+
+## Database Setup
+
+The application automatically creates the database on first run. For production:
+
+1. **SQLite** (default): No setup required
+2. **PostgreSQL**: Set `DATABASE_URL` environment variable
+3. **MySQL**: Set `DATABASE_URL` environment variable
+
+
+
+## Security Considerations
+
+- Change `SECRET_KEY` in production
+- Set `FLASK_DEBUG=False` in production
+- Use HTTPS in production
+- Restrict file uploads to trusted sources
+- Monitor file upload sizes
+
+## Performance Tuning
+
+- **Database**: Add indexes for large datasets
+- **File Processing**: Monitor memory usage for large files
+- **Classification**: Pattern matching is optimized for speed
+- **Caching**: Consider Redis for session storage
+
+## Monitoring
+
+- Check application logs
+- Monitor database performance
+- Track classification accuracy
+- Monitor file upload success rates
 
 ## Troubleshooting
 
-### Common Issues:
-1. **Port issues**: App now uses `PORT` environment variable
-2. **Database connection**: Check `DATABASE_URL` is set correctly
-3. **File uploads**: Files are temporary on Railway
+### Common Issues
+1. **Classification Issues**: Check pattern matching rules in app.py
+2. **Database Errors**: Check file permissions and database URL
+3. **File Upload Issues**: Verify file size limits and allowed extensions
+4. **Memory Issues**: Reduce `RECORDS_PER_PAGE` in config.py
 
-### Railway Logs:
-- Check Railway dashboard for deployment logs
-- Use `railway logs` command if using Railway CLI
+### Logs
+- Application logs are written to console
+- Set `LOG_LEVEL=DEBUG` for detailed logging
+- Check system logs for server errors
 
-## Cost
-- **Railway**: 500 hours/month free (enough for personal use)
-- **Render**: 750 hours/month free
-- **PythonAnywhere**: Always free tier available
+## Support
 
-All options are completely free for your use case! 
+For deployment issues:
+1. Check the README.md for detailed setup instructions
+2. Verify all dependencies are installed
+3. Check environment variables are set correctly
+4. Review application logs for error messages

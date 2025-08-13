@@ -9,7 +9,7 @@
 </head>
 <body>
     <div class="harbour-scene">
-        <div class="upload-card">
+        <div class="upload-card" style="height: 100vh; overflow-y: auto;">
             <h1>⚓ POR Upload</h1>
             
             <form method="post" enctype="multipart/form-data" id="uploadForm">
@@ -21,14 +21,17 @@
                         <button type="button" class="browse-btn" onclick="document.getElementById('fileInput').click()">
                             Browse Files
                         </button>
-                        <p class="file-info">Supported formats: .xlsx, .xls, .msg, .eml</p>
+                        <p class="file-info">Supported formats: .xlsx, .xls (Excel files only)</p>
                     </div>
-                    <input type="file" name="file" id="fileInput" accept=".xlsx,.xls,.msg,.eml" style="display: none;">
+                    <input type="file" name="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
                 </div>
                 
                 <div class="file-preview" id="filePreview" style="display: none;">
                     <div class="selected-file">
-                        <span class="file-name" id="fileName"></span>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span class="attachment-icon" style="font-size: 24px;">&#128206;</span>
+                            <span class="file-name" id="fileName"></span>
+                        </div>
                         <button type="button" class="remove-file" onclick="removeFile()">×</button>
                     </div>
                 </div>
@@ -59,7 +62,14 @@
             
             <div class="navigation-links" style="margin-top: 30px; text-align: center;">
                 <a href="/view" class="nav-link">📋 View Records</a>
-                <a href="/change-batch" class="nav-link">⚙️ Batch: {{ current_po }}</a>
+                <a href="/change-batch" class="nav-link" id="batchLink">⚙️ Batch Manager</a>
+            </div>
+            
+            <!-- Batch Status Display -->
+            <div id="batchStatus" style="margin-top: 15px; text-align: center; display: none;">
+                <div style="background: #e3f0fa; padding: 10px; border-radius: 8px; border: 1px solid #017bb5;">
+                    <span id="batchInfo" style="font-weight: bold; color: #017bb5;"></span>
+                </div>
             </div>
         </div>
     </div>
@@ -119,21 +129,48 @@
 
         function handleFile(file) {
             // Check file type
-            const allowedTypes = ['.xlsx', '.xls', '.msg', '.eml'];
+            const allowedTypes = ['.xlsx', '.xls'];
             const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
             
             if (!allowedTypes.includes(fileExtension)) {
-                alert('Please select a valid file (.xlsx, .xls, .msg, or .eml)');
+                alert('Please select a valid Excel file (.xlsx or .xls)');
                 return;
             }
 
-            // Display file info
-            fileName.textContent = file.name;
+            // Display file info with appropriate icon
+            const fileIcon = getFileIcon(file.name);
+            fileName.innerHTML = `<span class="attachment-icon" style="font-size: 20px; color: #28a745; margin-right: 8px;">${fileIcon}</span>${file.name}`;
+            // Force HTML entity decoding
+            fileName.innerHTML = fileName.innerHTML.replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(dec));
             filePreview.style.display = 'block';
             uploadBtn.disabled = false;
             
             // Update drag drop area
             dragDropArea.classList.add('file-selected');
+        }
+        
+        // Function to get appropriate icon based on file extension
+        function getFileIcon(filename) {
+            const extension = filename.split('.').pop().toLowerCase();
+            switch (extension) {
+                case 'xlsx':
+                case 'xls':
+                    return '&#128202;'; // 📊
+                case 'pdf':
+                    return '&#128196;'; // 📄
+                case 'doc':
+                case 'docx':
+                    return '&#128221;'; // 📝
+                case 'jpg':
+                case 'jpeg':
+                case 'png':
+                    return '&#128443;'; // 🖼️
+                case 'msg':
+                case 'eml':
+                    return '&#128231;'; // 📧
+                default:
+                    return '&#128206;'; // 📎
+            }
         }
 
         function removeFile() {
@@ -150,6 +187,47 @@
                 alert('Please select a file to upload');
             }
         });
+        
+        // Check batch status on page load
+        function checkBatchStatus() {
+            fetch('/check-batch-status')
+            .then(response => response.json())
+            .then(data => {
+                const batchStatusDiv = document.getElementById('batchStatus');
+                const batchInfoSpan = document.getElementById('batchInfo');
+                const batchLink = document.getElementById('batchLink');
+                
+                if (data.batch_start && data.batch_end) {
+                    // Active batch
+                    const remaining = data.batch_end - data.current_po + 1;
+                    const total = data.batch_end - data.batch_start + 1;
+                    const used = total - remaining;
+                    
+                    if (remaining <= 0) {
+                        // Batch complete
+                        batchInfoSpan.textContent = `⚠️ Batch Complete! (${data.batch_start}-${data.batch_end}) - Please update with more numbers`;
+                        batchInfoSpan.style.color = '#dc3545';
+                        batchLink.textContent = '🚨 Update Batch';
+                    } else {
+                        // Batch in progress
+                        batchInfoSpan.textContent = `📊 Batch: ${data.batch_start}-${data.batch_end} (${used}/${total} used)`;
+                        batchInfoSpan.style.color = '#017bb5';
+                        batchLink.textContent = '⚙️ Batch Manager';
+                    }
+                    batchStatusDiv.style.display = 'block';
+                } else {
+                    // No active batch
+                    batchStatusDiv.style.display = 'none';
+                    batchLink.textContent = '⚙️ Set Batch Range';
+                }
+            })
+            .catch(error => {
+                console.error('Error checking batch status:', error);
+            });
+        }
+        
+        // Check batch status when page loads
+        checkBatchStatus();
     </script>
 </body>
 </html> 

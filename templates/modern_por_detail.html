@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A&P POR Automator - POR Detail</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Simple rounded corners for dropdown boxes */
+        select {
+            border-radius: 12px;
+        }
+        
+        /* Geometric background pattern */
+        .geometric-bg {
+            background-color: #e5e5f7;
+            background-image: repeating-radial-gradient( circle at 0 0, transparent 0, #e5e5f7 10px ), repeating-linear-gradient( #444cf755, #444cf7 );
+            min-height: 100%;
+            background-attachment: local;
+            background-size: 20px 20px, 100% 100%;
+        }
+        
+        /* Enhanced Attach Files Button */
+        .btn {
+            font-size: 1.2rem;
+            padding: 1rem 2.5rem;
+            border: none;
+            outline: none;
+            border-radius: 0.4rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            font-weight: 700;
+            transition: 0.6s;
+            box-shadow: 0px 0px 60px #1f4c65;
+        }
+        
+        .btn:active {
+            scale: 0.92;
+        }
+        
+        .btn:hover {
+            background: rgb(2,29,78);
+            background: linear-gradient(270deg, rgba(2, 29, 78, 0.681) 0%, rgba(31, 215, 232, 0.873) 60%);
+            color: rgb(4, 4, 38);
+        }
+    </style>
+    <style>
+        /* Dark Mode Styles */
+        .dark-mode {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460) !important;
+            color: #e2e8f0 !important;
+        }
+        
+        .dark-mode .bg-white\/80 {
+            background-color: rgba(30, 41, 59, 0.8) !important;
+        }
+        
+        .dark-mode .text-gray-900 {
+            color: #f1f5f9 !important;
+        }
+        
+        .dark-mode .text-gray-600 {
+            color: #cbd5e1 !important;
+        }
+        
+        .dark-mode .text-gray-700 {
+            color: #e2e8f0 !important;
+        }
+        
+        .dark-mode .bg-gray-50 {
+            background-color: #1e293b !important;
+        }
+        
+        .dark-mode .border-gray-200\/50 {
+            border-color: rgba(51, 65, 85, 0.5) !important;
+        }
+        
+        .dark-mode .bg-gray-100 {
+            background-color: #334155 !important;
+        }
+        
+        .dark-mode .hover\:bg-gray-100:hover {
+            background-color: #475569 !important;
+        }
+        
+        .dark-mode .bg-blue-100 {
+            background-color: #1e3a8a !important;
+        }
+        
+        .dark-mode .text-blue-600 {
+            color: #60a5fa !important;
+        }
+        
+        .dark-mode .bg-green-100 {
+            background-color: #065f46 !important;
+        }
+        
+        .dark-mode .text-green-600 {
+            color: #34d399 !important;
+        }
+        
+        .dark-mode .bg-yellow-100 {
+            background-color: #92400e !important;
+        }
+        
+        .dark-mode .text-yellow-600 {
+            color: #fbbf24 !important;
+        }
+        
+        .dark-mode .bg-purple-100 {
+            background-color: #581c87 !important;
+        }
+        
+        .dark-mode .text-purple-600 {
+            color: #a855f7 !important;
+        }
+        
+        .dark-mode .bg-pink-100 {
+            background-color: #831843 !important;
+        }
+        
+        .dark-mode .text-pink-600 {
+            color: #ec4899 !important;
+        }
+        
+        .dark-mode .bg-teal-100 {
+            background-color: #134e4a !important;
+        }
+        
+        .dark-mode .text-teal-600 {
+            color: #0d9488 !important;
+        }
+        
+        .dark-mode .bg-orange-100 {
+            background-color: #7c2d12 !important;
+        }
+        
+        .dark-mode .text-orange-600 {
+            color: #ea580c !important;
+        }
+        
+        .dark-mode .bg-indigo-100 {
+            background-color: #312e81 !important;
+        }
+        
+        .dark-mode .text-indigo-600 {
+            color: #4f46e5 !important;
+        }
+        
+        .dark-mode .bg-emerald-100 {
+            background-color: #064e3b !important;
+        }
+        
+        .dark-mode .text-emerald-600 {
+            color: #059669 !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen font-inter bg-gray-50">
+    <!-- Animated Background Pattern -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-blue-300/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+    </div>
+
+    <div class="relative z-10 flex min-h-screen">
+        <!-- Compact Sidebar -->
+        <aside class="w-20 bg-white/80 backdrop-blur-xl border-r border-gray-200/50 shadow-xl">
+            <div class="flex flex-col items-center py-6 space-y-8">
+                <!-- Logo -->
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg cursor-pointer hover:scale-110 transition-transform duration-300" onclick="window.location.href='/dashboard'">
+                    <span class="text-white font-bold text-sm">A&P</span>
+                </div>
+                
+                <!-- Navigation -->
+                <nav class="flex flex-col space-y-4">
+                    <a href="/dashboard" class="group relative">
+                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
+                            <i class="fas fa-home text-lg"></i>
+                        </div>
+                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                            Dashboard
+                        </span>
+                    </a>
+                    
+                    <a href="/upload" class="group relative">
+                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
+                            <i class="fas fa-upload text-lg"></i>
+                        </div>
+                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                            Upload
+                        </span>
+                    </a>
+                    
+                    <a href="/view" class="group relative">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg transition-all duration-300 group-hover:scale-110">
+                            <i class="fas fa-eye text-lg"></i>
+                        </div>
+                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                            View PORs
+                        </span>
+                    </a>
+                    
+                    <a href="/search" class="group relative">
+                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
+                            <i class="fas fa-search text-lg"></i>
+                        </div>
+                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                            Search
+                        </span>
+                    </a>
+                    
+                    <a href="/analytics" class="group relative">
+                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-orange-500 hover:to-orange-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
+                            <i class="fas fa-chart-bar text-lg"></i>
+                        </div>
+                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                            Analytics
+                        </span>
+                    </a>
+                    
+                    <a href="/change-batch" class="group relative">
+                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
+                            <i class="fas fa-exchange-alt text-lg"></i>
+                        </div>
+                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                            Batch Change
+                        </span>
+                    </a>
+                </nav>
+                
+                <!-- Version -->
+                <div class="absolute bottom-6">
+                    <span class="text-xs text-gray-400 font-medium">v3.2.5</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content with Background -->
+        <main class="flex-1 p-8 geometric-bg">
+            <!-- Header -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h1 class="text-4xl font-bold text-gray-900 mb-2">POR Details</h1>
+                        <p class="text-gray-600 text-lg">Purchase Order Request ID: {{ por.id }}</p>
+                    </div>
+                    <div class="flex space-x-3">
+                        <a href="{{ url_for('view') }}" class="px-6 py-3 bg-white text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center space-x-2 border border-gray-200">
+                            <i class="fas fa-arrow-left"></i>
+                            <span>Back to Records</span>
+                        </a>
+                        
+                        <a href="{{ url_for('attach_files', por_id=por.id) }}" class="btn">
+                            <i class="fas fa-paperclip mr-2"></i>
+                            <span>Attach Files</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- POR Data Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Basic Information Card -->
+                <div class="bg-white rounded-2xl p-6 shadow-xl border border-gray-200/50">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white mr-3">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-900">Basic Information</h2>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-gray-50/50 rounded-xl">
+                            <span class="text-gray-600 font-medium">Ship/Project Name</span>
+                            <div class="flex items-center space-x-2">
+                                <span id="ship_project_name_{{ por.id }}" onclick="makeEditable('ship_project_name_{{ por.id }}', 'ship_project_name_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.ship_project_name or 'Not specified')|title }}</span>
+                                <button onclick="copyToClipboard('{{ por.ship_project_name or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-50/50 rounded-xl">
+                            <span class="text-gray-600 font-medium">Supplier</span>
+                            <div class="flex items-center space-x-2">
+                                <span id="supplier_{{ por.id }}" onclick="makeEditable('supplier_{{ por.id }}', 'supplier_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.supplier or 'Not specified')|title }}</span>
+                                <button onclick="copyToClipboard('{{ por.supplier or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-50/50 rounded-xl">
+                            <span class="text-gray-600 font-medium">Requestor Name</span>
+                            <div class="flex items-center space-x-2">
+                                <span id="requestor_name_{{ por.id }}" onclick="makeEditable('requestor_name_{{ por.id }}', 'requestor_name_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.requestor_name or 'Not specified')|title }}</span>
+                                <button onclick="copyToClipboard('{{ por.requestor_name or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-gray-50/50 rounded-xl">
+                            <label class="block text-gray-600 font-medium mb-2">Company</label>
+                            <select id="companySelect" onchange="updateCompany('{{ por.id }}', this.value)" class="w-full p-3 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="a&p" {% if por.company == 'a&p' %}selected{% endif %}>A&P</option>
+                                <option value="fdec" {% if por.company == 'fdec' %}selected{% endif %}>FDEC</option>
+                            </select>
+                        </div>
+                        <div class="p-3 bg-gray-50/50 rounded-xl">
+                            <label class="block text-gray-600 font-medium mb-2">Order Type</label>
+                            <select id="orderTypeSelect" onchange="updateOrderType('{{ por.id }}', this.value)" class="w-full p-3 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="new" {% if por.order_type == 'new' %}selected{% endif %}>New Order</option>
+                                <option value="revised" {% if por.order_type == 'revised' %}selected{% endif %}>Revised Order</option>
+                                <option value="cancelled" {% if por.order_type == 'cancelled' %}selected{% endif %}>Cancelled Order</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial Information Card -->
+                <div class="bg-white rounded-2xl p-6 shadow-xl border border-gray-200/50">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white mr-3">
+                            <i class="fas fa-pound-sign"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-900">Financial Details</h2>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-gray-50/50 rounded-xl">
+                            <span class="text-gray-600 font-medium">Order Total</span>
+                            <div class="flex items-center space-x-2">
+                                <span id="order_total_{{ por.id }}" onclick="makeEditable('order_total_{{ por.id }}', 'order_total_{{ por.id }}')" class="text-gray-900 font-bold text-lg cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">£{{ "%.2f"|format(por.order_total or 0) }}</span>
+                                <button onclick="copyToClipboard('£{{ "%.2f"|format(por.order_total or 0) }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-50/50 rounded-xl">
+                            <span class="text-gray-600 font-medium">Date Order Raised</span>
+                            <div class="flex items-center space-x-2">
+                                <span id="date_order_raised_{{ por.id }}" onclick="makeEditable('date_order_raised_{{ por.id }}', 'date_order_raised_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.date_order_raised or 'Not specified' }}</span>
+                                <button onclick="copyToClipboard('{{ por.date_order_raised or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-50/50 rounded-xl">
+                            <span class="text-gray-600 font-medium">Date Required By</span>
+                            <div class="flex items-center space-x-2">
+                                <span id="date_required_by_{{ por.id }}" onclick="makeEditable('date_required_by_{{ por.id }}', 'date_required_by_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.date_required_by or 'Not specified' }}</span>
+                                <button onclick="copyToClipboard('{{ por.date_required_by or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-gray-50/50 rounded-xl">
+                            <span class="text-gray-600 font-medium">Show Price</span>
+                            <div class="flex items-center space-x-2">
+                                <span id="show_price_{{ por.id }}" onclick="makeEditable('show_price_{{ por.id }}', 'show_price_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.show_price or 'Not specified' }}</span>
+                                <button onclick="copyToClipboard('{{ por.show_price or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline & Stage Management Card -->
+            <div class="bg-white rounded-2xl p-6 shadow-xl border border-gray-200/50 mb-8">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-white mr-3">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-900">Timeline & Stage Management</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="p-4 bg-gray-50/50 rounded-xl relative">
+                        <label class="block text-gray-600 font-medium mb-2">Current Stage</label>
+                        <select id="stageSelect" onchange="updateStage('{{ por.id }}', this.value)" class="w-full p-3 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="received" {% if por.current_stage == 'received' %}selected{% endif %}>Received</option>
+                            <option value="sent" {% if por.current_stage == 'sent' %}selected{% endif %}>Sent</option>
+                            <option value="filed" {% if por.current_stage == 'filed' %}selected{% endif %}>Filed</option>
+                        </select>
+                    </div>
+                    <div class="p-4 bg-gray-50/50 rounded-xl">
+                        <label class="block text-gray-600 font-medium mb-2">Content Type</label>
+                        <select id="contentTypeSelect" onchange="updateContentType('{{ por.id }}', this.value)" class="w-full p-3 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="work_iwo" {% if por.content_type == 'work_iwo' %}selected{% endif %}>Work IWO</option>
+                            <option value="supply_and_fit" {% if por.content_type == 'supply_and_fit' %}selected{% endif %}>Supply & Fit</option>
+                            <option value="supply" {% if por.content_type == 'supply' %}selected{% endif %}>Supply Only</option>
+                        </select>
+                    </div>
+                    <div class="p-4 bg-gray-50/50 rounded-xl">
+                        <label class="block text-gray-600 font-medium mb-2">Created</label>
+                        <div class="flex items-center justify-between">
+                            <span id="created_at_{{ por.id }}" onclick="makeEditable('created_at_{{ por.id }}', 'created_at_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.created_at.strftime('%d/%m/%Y %H:%M') if por.created_at else 'Not specified' }}</span>
+                            <button onclick="copyToClipboard('{{ por.created_at.strftime('%d/%m/%Y %H:%M') if por.created_at else 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quote & Contact Information Card -->
+            <div class="bg-white rounded-2xl p-6 shadow-xl border border-gray-200/50 mb-8">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center text-white mr-3">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-900">Quote & Contact Information</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-4 bg-gray-50/50 rounded-xl">
+                        <label class="block text-gray-600 font-medium mb-2">Quote Reference</label>
+                        <div class="flex items-center justify-between">
+                            <span id="quote_ref_{{ por.id }}" onclick="makeEditable('quote_ref_{{ por.id }}', 'quote_ref_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.quote_ref or 'Not specified')|title }}</span>
+                            <button onclick="copyToClipboard('{{ por.quote_ref or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-gray-50/50 rounded-xl">
+                        <label class="block text-gray-600 font-medium mb-2">Quote Date</label>
+                        <div class="flex items-center justify-between">
+                            <span id="quote_date_{{ por.id }}" onclick="makeEditable('quote_date_{{ por.id }}', 'quote_date_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.quote_date or 'Not specified')|title }}</span>
+                            <button onclick="copyToClipboard('{{ por.quote_date or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-gray-50/50 rounded-xl">
+                        <label class="block text-gray-600 font-medium mb-2">Supplier Contact Name</label>
+                        <div class="flex items-center justify-between">
+                            <span id="supplier_contact_name_{{ por.id }}" onclick="makeEditable('supplier_contact_name_{{ por.id }}', 'supplier_contact_name_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.supplier_contact_name or 'Not specified')|title }}</span>
+                            <button onclick="copyToClipboard('{{ por.supplier_contact_name or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-gray-50/50 rounded-xl">
+                        <label class="block text-gray-600 font-medium mb-2">Supplier Contact Email</label>
+                        <div class="flex items-center justify-between">
+                            <span id="supplier_contact_email_{{ por.id }}" onclick="makeEditable('supplier_contact_email_{{ por.id }}', 'supplier_contact_email_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.supplier_contact_email or 'Not specified')|title }}</span>
+                            <button onclick="copyToClipboard('{{ por.supplier_contact_email or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Specifications & Requirements Card -->
+            <div class="bg-white rounded-2xl p-6 shadow-xl border border-gray-200/50 mb-8">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center text-white mr-3">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-900">Specifications & Requirements</h2>
+                </div>
+                <div class="p-4 bg-gray-50/50 rounded-xl">
+                    <label class="block text-gray-600 font-medium mb-2">Specification/Standards</label>
+                    <div class="flex items-start justify-between">
+                        <span id="specification_standards_{{ por.id }}" onclick="makeEditable('specification_standards_{{ por.id }}', 'specification_standards_{{ por.id }}')" class="text-gray-900 font-semibold flex-1 mr-4 cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.specification_standards or 'Not specified' }}</span>
+                        <button onclick="copyToClipboard('{{ por.specification_standards or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200 flex-shrink-0">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Line Items Card -->
+            <div class="bg-white rounded-2xl p-6 shadow-xl border border-gray-200/50 mb-8">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center text-white mr-3">
+                        <i class="fas fa-boxes"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-900">Line Items</h2>
+                </div>
+                {% if por.job_contract_no or por.description %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Item</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Job/Contract No</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">OP No</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Description</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Quantity</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Unit Price</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-gray-100">
+                                <td class="py-3 px-4 text-sm text-gray-900">1</td>
+                                <td class="py-3 px-4 text-sm text-gray-900">
+                                    <div class="flex items-center justify-between">
+                                        <span id="job_contract_no_{{ por.id }}" onclick="makeEditable('job_contract_no_{{ por.id }}', 'job_contract_no_{{ por.id }}')" class="cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.job_contract_no or 'N/A')|title }}</span>
+                                        <button onclick="copyToClipboard('{{ por.job_contract_no or 'N/A' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200 ml-2">
+                                            <i class="fas fa-copy text-xs"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-4 text-sm text-gray-900">
+                                    <div class="flex items-center justify-between">
+                                        <span id="op_no_{{ por.id }}" onclick="makeEditable('op_no_{{ por.id }}', 'op_no_{{ por.id }}')" class="cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.op_no or 'N/A')|title }}</span>
+                                        <button onclick="copyToClipboard('{{ por.op_no or 'N/A' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200 ml-2">
+                                            <i class="fas fa-copy text-xs"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-4 text-sm text-gray-900">
+                                    <span id="desc_{{ por.id }}" onclick="makeEditable('desc_{{ por.id }}', 'description_{{ por.id }}')" class="cursor-pointer text-blue-600 hover:text-blue-800 underline" title="Click to edit">{{ (por.description or 'No description')|title }}</span>
+                                </td>
+                                <td class="py-3 px-4 text-sm text-gray-900">
+                                    <span id="quantity_{{ por.id }}" onclick="makeEditable('quantity_{{ por.id }}', 'quantity_{{ por.id }}')" class="cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.quantity or 1 }}</span>
+                                </td>
+                                <td class="py-3 px-4 text-sm text-gray-900">
+                                    <span id="price_each_{{ por.id }}" onclick="makeEditable('price_each_{{ por.id }}', 'price_each_{{ por.id }}')" class="cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">£{{ "%.2f"|format(por.price_each or 0) }}</span>
+                                </td>
+                                <td class="py-3 px-4 text-sm text-gray-900 font-semibold">£{{ "%.2f"|format((por.quantity or 1) * (por.price_each or 0)) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-12 text-gray-500">
+                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-box-open text-2xl text-gray-400"></i>
+                    </div>
+                    <p class="text-lg font-medium">No line items found for this POR</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Attached Files Card -->
+            <div class="bg-white rounded-2xl p-6 shadow-xl border border-gray-200/50">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl flex items-center justify-center text-white mr-3">
+                        <i class="fas fa-paperclip"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-900">Attached Files</h2>
+                </div>
+                {% if por.files %}
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {% for file in por.files %}
+                    <div class="bg-gray-50/50 rounded-xl p-4 border border-gray-200/50">
+                        <div class="flex items-center mb-3">
+                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-file-alt text-blue-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-semibold text-gray-900 truncate">{{ file.filename }}</p>
+                                <p class="text-xs text-gray-500">{{ file.upload_date.strftime('%d/%m/%Y %H:%M') if file.upload_date else 'Unknown date' }}</p>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <a href="{{ url_for('download_file', file_id=file.id) }}" class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs px-3 py-2 rounded-lg hover:shadow-lg transition-all duration-300 text-center font-medium">
+                                <i class="fas fa-download mr-1"></i>
+                                Download
+                            </a>
+                            <button onclick="deleteFile({{ file.id }})" class="px-3 py-2 bg-red-500 text-white text-xs rounded-lg hover:bg-red-600 transition-colors duration-300">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-12 text-gray-500">
+                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-paperclip text-2xl text-gray-400"></i>
+                    </div>
+                    <p class="text-lg font-medium mb-4">No files attached to this POR</p>
+                    
+                    <!-- File Type Classification Dropdown -->
+                    <div class="mb-6 max-w-xs mx-auto">
+                        <label class="block text-gray-600 font-medium mb-2 text-center">File Type Classification</label>
+                        <select id="fileTypeSelect" class="w-full p-3 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="por">P.O.R</option>
+                            <option value="quote">Quote</option>
+                            <option value="correspondence">Correspondence</option>
+                            <option value="order_confirmation">Order Confirmation</option>
+                            <option value="order_update">Order Update</option>
+                        </select>
+                    </div>
+                    
+                    <a href="{{ url_for('attach_files', por_id=por.id) }}" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                        <i class="fas fa-plus mr-2"></i>
+                        Attach Files
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Email Subject Line Card -->
+            <div class="bg-white rounded-2xl p-6 shadow-xl border border-gray-200/50 mb-8">
+                <div class="flex items-center mb-4">
+                    <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center text-white mr-3">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-900">Email Subject Line</h2>
+                </div>
+                <div class="p-4 bg-gray-50/50 rounded-xl">
+                    <label class="block text-gray-600 font-medium mb-2">Generated Subject</label>
+                    <div class="flex items-center justify-between">
+                        <span id="emailSubject" class="text-gray-900 font-semibold text-lg">
+                            {{ (por.order_type or 'New Order')|title|replace('_', ' ') }} | {{ (por.supplier or 'Supplier')|title }} | {{ (por.ship_project_name or 'Project Name')|title }} | PO {{ por.id }}
+                        </span>
+                        <button onclick="copyToClipboard(document.getElementById('emailSubject').textContent)" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Copy to Clipboard Feedback -->
+    <div id="copyFeedback" class="fixed top-6 right-6 bg-green-500 text-white px-6 py-3 rounded-xl shadow-xl transform translate-x-full transition-transform duration-300 z-50 opacity-0 pointer-events-none">
+        <div class="flex items-center space-x-2">
+            <i class="fas fa-check"></i>
+            <span>Copied to clipboard!</span>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="fixed inset-0 bg-black/50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-8 border w-full max-w-2xl shadow-2xl rounded-2xl bg-white">
+            <div class="mb-6">
+                <h3 class="text-2xl font-bold text-gray-900">Edit Field</h3>
+                <p class="text-gray-600 mt-2">Update the value for this field</p>
+            </div>
+            <textarea id="editTextarea" class="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" rows="4" placeholder="Enter value..."></textarea>
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="closeEditModal()" class="px-6 py-3 bg-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-400 transition-colors duration-300">
+                    Cancel
+                </button>
+                <button onclick="saveEdit()" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300">
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentEditId = null;
+        let currentEditField = null;
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                const feedback = document.getElementById('copyFeedback');
+                feedback.classList.remove('translate-x-full', 'opacity-0', 'pointer-events-none');
+                setTimeout(() => {
+                    feedback.classList.add('translate-x-full', 'opacity-0', 'pointer-events-none');
+                }, 2000);
+            });
+        }
+
+        function makeEditable(elementId, fieldName) {
+            const element = document.getElementById(elementId);
+            const currentText = element.textContent;
+            
+            currentEditId = elementId;
+            currentEditField = fieldName;
+            
+            const textarea = document.getElementById('editTextarea');
+            textarea.value = currentText;
+            
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+            currentEditId = null;
+            currentEditField = null;
+        }
+
+        function saveEdit() {
+            const newText = document.getElementById('editTextarea').value;
+            const element = document.getElementById(currentEditId);
+            element.textContent = newText;
+            
+            // Here you would typically send the update to the server
+            // For now, we'll just update the display
+            closeEditModal();
+        }
+
+        function deleteFile(fileId) {
+            if (confirm('Are you sure you want to delete this file?')) {
+                fetch(`/delete_file/${fileId}`, {
+                    method: 'DELETE',
+                }).then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        alert('Error deleting file');
+                    }
+                });
+            }
+        }
+
+        function updateStage(porId, newStage) {
+            fetch(`/update_timeline_stage`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    por_id: porId, 
+                    stage: newStage 
+                })
+            }).then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Network response was not ok');
+                }
+            }).then(data => {
+                if (data.success) {
+                    // Show success feedback
+                    const feedback = document.getElementById('copyFeedback');
+                    feedback.innerHTML = '<div class="flex items-center space-x-2"><i class="fas fa-check"></i><span>Stage updated successfully!</span></div>';
+                    feedback.classList.remove('translate-x-full');
+                    setTimeout(() => {
+                        feedback.classList.add('translate-x-full');
+                    }, 2000);
+                } else {
+                    alert('Error updating stage: ' + (data.error || 'Unknown error'));
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+                alert('Error updating stage: ' + error.message);
+            });
+        }
+
+        function updateContentType(porId, newContentType) {
+            fetch(`/update_content_type`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    por_id: porId, 
+                    content_type: newContentType 
+                })
+            }).then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Network response was not ok');
+                }
+            }).then(data => {
+                if (data.success) {
+                    // Show success feedback
+                    const feedback = document.getElementById('copyFeedback');
+                    feedback.innerHTML = '<div class="flex items-center space-x-2"><i class="fas fa-check"></i><span>Content type updated successfully!</span></div>';
+                    feedback.classList.remove('translate-x-full');
+                    setTimeout(() => {
+                        feedback.classList.add('translate-x-full');
+                    }, 2000);
+                    
+                    // Update email subject line
+                    updateEmailSubject();
+                    
+                    // Apply work order logic
+                    applyWorkOrderLogic(newContentType);
+                } else {
+                    alert('Error updating content type: ' + (data.error || 'Unknown error'));
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+                alert('Error updating content type: ' + error.message);
+            });
+        }
+        
+        function updateCompany(porId, newCompany) {
+            fetch(`/update_company`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    por_id: porId, 
+                    company: newCompany 
+                })
+            }).then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Network response was not ok');
+                }
+            }).then(data => {
+                if (data.success) {
+                    // Show success feedback
+                    const feedback = document.getElementById('copyFeedback');
+                    feedback.innerHTML = '<div class="flex items-center space-x-2"><i class="fas fa-check"></i><span>Company updated successfully!</span></div>';
+                    feedback.classList.remove('translate-x-full', 'opacity-0', 'pointer-events-none');
+                    setTimeout(() => {
+                        feedback.classList.add('translate-x-full', 'opacity-0', 'pointer-events-none');
+                    }, 2000);
+                } else {
+                    alert('Error updating company: ' + (data.error || 'Unknown error'));
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+                alert('Error updating company: ' + error.message);
+            });
+        }
+        
+        function updateOrderType(porId, newOrderType) {
+            fetch(`/update_order_type`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    por_id: porId, 
+                    order_type: newOrderType 
+                })
+            }).then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Network response was not ok');
+                }
+            }).then(data => {
+                if (data.success) {
+                    // Show success feedback
+                    const feedback = document.getElementById('copyFeedback');
+                    feedback.innerHTML = '<div class="flex items-center space-x-2"><i class="fas fa-check"></i><span>Order type updated successfully!</span></div>';
+                    feedback.classList.remove('translate-x-full', 'opacity-0', 'pointer-events-none');
+                    setTimeout(() => {
+                        feedback.classList.add('translate-x-full', 'opacity-0', 'pointer-events-none');
+                    }, 2000);
+                    
+                    // Update email subject line
+                    updateEmailSubject();
+                } else {
+                    alert('Error updating order type: ' + (data.error || 'Unknown error'));
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+                alert('Error updating order type: ' + error.message);
+            });
+        }
+        
+        function updateEmailSubject() {
+            const orderType = document.getElementById('orderTypeSelect').value;
+            const supplier = '{{ por.supplier or "Supplier" }}';
+            const projectName = '{{ por.ship_project_name or "Project Name" }}';
+            const poNumber = '{{ por.id }}';
+            
+            let orderTypeText = 'New Order';
+            if (orderType === 'new') orderTypeText = 'New Order';
+            else if (orderType === 'revised') orderTypeText = 'Revised Order';
+            else if (orderType === 'cancelled') orderTypeText = 'Cancelled Order';
+            
+            const emailSubject = `${orderTypeText} | ${supplier} | ${projectName} | PO ${poNumber}`;
+            document.getElementById('emailSubject').textContent = emailSubject;
+        }
+        
+        function applyWorkOrderLogic(contentType) {
+            const supplier = '{{ por.supplier or "" }}';
+            const isEAPL = supplier.toLowerCase().includes('eapl');
+            
+            let prefix = '';
+            if (contentType === 'work_iwo' || contentType === 'supply_and_fit') {
+                if (isEAPL) {
+                    prefix = 'Provide Labour I.W.O';
+                } else {
+                    prefix = contentType === 'work_iwo' ? 'Work I.W.O' : 'Supply & Fit';
+                }
+            }
+            
+            // Update line item descriptions if prefix is needed
+            if (prefix) {
+                const descriptionElement = document.getElementById('desc_{{ por.id }}');
+                if (descriptionElement && !descriptionElement.textContent.startsWith(prefix)) {
+                    descriptionElement.textContent = `${prefix} ${descriptionElement.textContent}`;
+                }
+            }
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEditModal();
+            }
+        });
+        
+        // Load theme preference based on database on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const activeDB = localStorage.getItem('activeDatabase');
+            if (activeDB === 'FDEC') {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('darkMode', 'enabled');
+            } else {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('darkMode', 'disabled');
+            }
+        });
+    </script>
+</body>
+</html>

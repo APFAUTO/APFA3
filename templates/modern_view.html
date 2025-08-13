@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ company_info.name }} POR Automator - View PORs</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Simple refresh mechanism - just reload the page to get latest data
+        function refreshPage() {
+            location.reload();
+        }
+        
+        // Load theme preference based on database on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const activeDB = localStorage.getItem('activeDatabase');
+            if (activeDB === 'FDEC') {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('darkMode', 'enabled');
+            } else {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('darkMode', 'disabled');
+            }
+        });
+    </script>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 min-h-screen font-inter">
+    <!-- Animated Background Pattern -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-blue-300/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+    </div>
+
+    <div class="relative z-10 flex min-h-screen">
+        <!-- Compact Sidebar -->
+        <aside class="w-20 bg-white/80 backdrop-blur-xl border-r border-gray-200/50 shadow-xl">
+            <div class="flex flex-col items-center py-6 space-y-8">
+                <!-- Logo -->
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg cursor-pointer hover:scale-110 transition-transform duration-300" onclick="window.location.href='/dashboard'">
+                    <span class="text-white font-bold text-sm">{{ company_info.name[:3] }}</span>
+                </div>
+                
+                <!-- Navigation -->
+                <nav class="flex flex-col space-y-4">
+                    <a href="/dashboard" class="group relative">
+                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
+                            <i class="fas fa-home text-lg"></i>
+                        </div>
+                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                            Dashboard
+                        </span>
+                    </a>
+                    
+                    <a href="/upload" class="group relative">
+                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
+                            <i class="fas fa-upload text-lg"></i>
+                        </div>
+                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                            Upload
+                        </span>
+                    </a>
+                    
+                    <a href="/view" class="group relative">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg transition-all duration-300 group-hover:scale-110">
+                            <i class="fas fa-eye text-lg"></i>
+                        </div>
+                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                            View PORs
+                        </span>
+                    </a>
+                    
+                    <a href="/search" class="group relative">
+                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
+                            <i class="fas fa-search text-lg"></i>
+                        </div>
+                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                            Search
+                        </span>
+                    </a>
+                    
+                    <a href="/analytics" class="group relative">
+                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-orange-500 hover:to-orange-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
+                            <i class="fas fa-chart-bar text-lg"></i>
+                        </div>
+                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                            Analytics
+                        </span>
+                    </a>
+                    
+                    <a href="/change-batch" class="group relative">
+                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
+                            <i class="fas fa-exchange-alt text-lg"></i>
+                        </div>
+                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                            Batch Change
+                        </span>
+                    </a>
+                </nav>
+                
+                <!-- Version -->
+                <div class="absolute bottom-6">
+                    <span class="text-xs text-gray-400 font-medium">v3.2.5</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-8">
+            <!-- Header -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h1 class="text-4xl font-bold text-gray-900 mb-2">Purchase Order Requests</h1>
+                        <p class="text-gray-600 text-lg">View and manage all purchase order requests in the system</p>
+                    </div>
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="window.location.href='/upload'" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center space-x-2 relative z-10">
+                            <i class="fas fa-plus"></i>
+                            <span>New Upload</span>
+                        </button>
+                        
+                        <button onclick="exportData()" class="px-6 py-3 bg-white text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center space-x-2 border border-gray-200 relative z-10">
+                            <i class="fas fa-download"></i>
+                            <span>Export</span>
+                        </button>
+                        <button onclick="window.location.href='/dashboard'" class="px-6 py-3 bg-gray-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center space-x-2 relative z-10">
+                            <i class="fas fa-home"></i>
+                            <span>Dashboard</span>
+                        </button>
+                        <button onclick="refreshPage()" class="px-6 py-3 bg-blue-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center space-x-2 relative z-10">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>Refresh</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters and Search -->
+            <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900">Filters & Search</h2>
+                    <button onclick="clearFilters()" class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-200 flex items-center space-x-2">
+                        <i class="fas fa-times"></i>
+                        <span>Clear All</span>
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                        <input type="text" id="searchInput" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
+                               placeholder="Search PORs, projects, requestors...">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                        <select id="statusFilter" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                            <option value="">All Statuses</option>
+                            <option value="received">Received</option>
+                            <option value="sent">Sent</option>
+                            <option value="filed">Filed</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Company</label>
+                        <select id="companyFilter" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                            <option value="">All Companies</option>
+                            <option value="a&p">A&P</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                        <select id="dateFilter" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200">
+                            <option value="">All Time</option>
+                            <option value="today">Today</option>
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
+                            <option value="quarter">This Quarter</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Summary -->
+            <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-4">
+                        <h2 class="text-lg font-semibold text-gray-900">Results</h2>
+                        <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium" id="resultCount">0 PORs found</span>
+                    </div>
+                    <div class="flex items-center space-x-2 text-sm text-gray-600">
+                        <span>Page</span>
+                        <span id="currentPage">1</span>
+                        <span>of</span>
+                        <span id="totalPages">1</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PORs Table -->
+            <div class="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-200/50 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+        
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Name</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requestor</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Created</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="porsTableBody">
+                            <!-- PORs will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <div class="bg-white px-6 py-4 border-t border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2 text-sm text-gray-700">
+                            <span>Show</span>
+                            <select id="pageSize" class="px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="10">10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                            <span>entries per page</span>
+                        </div>
+                        
+                        <div class="flex items-center space-x-2">
+                            <button onclick="previousPage()" class="px-3 py-2 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" id="prevBtn">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            
+                            <div class="flex items-center space-x-1" id="pageNumbers">
+                                <!-- Page numbers will be populated here -->
+                            </div>
+                            
+                            <button onclick="nextPage()" class="px-3 py-2 text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" id="nextBtn">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        let pageSize = 10;
+        let totalPages = 1;
+        let allPORs = [];
+
+        // Load PORs from API
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize PORs data from backend
+            {% if all_pors %}
+                window.allPORsData = {{ all_pors|tojson }};
+                allPORs = window.allPORsData;
+                totalPages = Math.ceil(allPORs.length / pageSize);
+            {% else %}
+                window.allPORsData = [];
+                allPORs = [];
+                totalPages = 1;
+            {% endif %}
+            
+            loadPORs();
+            setupEventListeners();
+        });
+
+        function loadPORs() {
+            // Filter the existing PORs data based on current filters
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const companyFilter = document.getElementById('companyFilter').value;
+            const dateFilter = document.getElementById('dateFilter').value;
+            
+            // Get all PORs from the backend data
+            let filteredPORs = window.allPORsData || [];
+            
+            // Apply filters
+            if (searchQuery) {
+                filteredPORs = filteredPORs.filter(por => 
+                    por.project.toLowerCase().includes(searchQuery) ||
+                    por.requestor.toLowerCase().includes(searchQuery) ||
+                    por.po_number.toString().includes(searchQuery)
+                );
+            }
+            
+            if (statusFilter && statusFilter !== 'all') {
+                filteredPORs = filteredPORs.filter(por => por.status === statusFilter);
+            }
+            
+            if (companyFilter && companyFilter !== 'all') {
+                filteredPORs = filteredPORs.filter(por => por.company === companyFilter);
+            }
+            
+            if (dateFilter) {
+                const today = new Date();
+                const filterDate = new Date();
+                
+                if (dateFilter === 'today') {
+                    filterDate.setDate(today.getDate());
+                } else if (dateFilter === 'week') {
+                    filterDate.setDate(today.getDate() - 7);
+                } else if (dateFilter === 'month') {
+                    filterDate.setMonth(today.getMonth() - 1);
+                } else if (dateFilter === 'quarter') {
+                    filterDate.setMonth(today.getMonth() - 3);
+                }
+                
+                filteredPORs = filteredPORs.filter(por => {
+                    const porDate = new Date(por.date.split('/').reverse().join('-'));
+                    return porDate >= filterDate;
+                });
+            }
+            
+            // Update the global PORs array
+            allPORs = filteredPORs;
+            
+            // Calculate pagination
+            totalPages = Math.ceil(allPORs.length / pageSize);
+            if (currentPage > totalPages) {
+                currentPage = 1;
+            }
+            
+            renderPORs();
+            updateResultCount();
+            renderPagination();
+            updatePaginationButtons();
+        }
+
+        function setupEventListeners() {
+            document.getElementById('searchInput').addEventListener('input', filterPORs);
+            document.getElementById('statusFilter').addEventListener('change', filterPORs);
+            document.getElementById('companyFilter').addEventListener('change', filterPORs);
+            document.getElementById('dateFilter').addEventListener('change', filterPORs);
+            document.getElementById('pageSize').addEventListener('change', function() {
+                pageSize = parseInt(this.value);
+                currentPage = 1;
+                loadPORs();
+            });
+        }
+
+        function filterPORs() {
+            currentPage = 1;
+            loadPORs();
+        }
+
+        function renderPORs() {
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = startIndex + pageSize;
+            const pagePORs = allPORs.slice(startIndex, endIndex);
+            
+            totalPages = Math.ceil(allPORs.length / pageSize);
+            
+            // Update result count
+            document.getElementById('resultCount').textContent = `${allPORs.length} PORs found`;
+            document.getElementById('currentPage').textContent = currentPage;
+            document.getElementById('totalPages').textContent = totalPages;
+            
+            // Render table
+            const tableBody = document.getElementById('porsTableBody');
+            tableBody.innerHTML = pagePORs.map(por => `
+                <tr class="hover:bg-gray-50 transition-colors duration-200">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${por.project}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${por.requestor}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-500">${por.date}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusClass(por.status)}">
+                            ${getStatusText(por.status)}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="viewPOR(${por.id})" class="text-blue-600 hover:text-blue-900 mr-3">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button onclick="attachFiles(${por.id})" class="text-purple-600 hover:text-purple-900 mr-3">
+                            <i class="fas fa-paperclip"></i> Attach Files
+                        </button>
+
+                        <button onclick="deletePOR(${por.id})" class="text-red-600 hover:text-red-900">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            // Update result count and pagination
+            updateResultCount();
+            renderPagination();
+            updatePaginationButtons();
+        }
+
+        function getStatusClass(status) {
+            switch (status) {
+                case 'filed': return 'bg-green-100 text-green-800';
+                case 'sent': return 'bg-yellow-100 text-yellow-800';
+                case 'received': return 'bg-blue-100 text-blue-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        function getStatusText(status) {
+            switch (status) {
+                case 'filed': return 'Filed';
+                case 'sent': return 'Sent';
+                case 'received': return 'Received';
+                default: return 'Unknown';
+            }
+        }
+
+        function renderPagination() {
+            const pageNumbers = document.getElementById('pageNumbers');
+            let paginationHTML = '';
+            
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === currentPage) {
+                    paginationHTML += `<button class="px-3 py-2 bg-blue-600 text-white rounded-lg font-medium">${i}</button>`;
+                } else {
+                    paginationHTML += `<button onclick="goToPage(${i})" class="px-3 py-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">${i}</button>`;
+                }
+            }
+            
+            pageNumbers.innerHTML = paginationHTML;
+        }
+
+        function updatePaginationButtons() {
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages;
+        }
+
+        function updateResultCount() {
+            const resultCountElement = document.getElementById('resultCount');
+            if (resultCountElement) {
+                resultCountElement.textContent = `${allPORs.length} PORs found`;
+            }
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            loadPORs();
+        }
+
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                loadPORs();
+            }
+        }
+
+        function nextPage() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                loadPORs();
+            }
+        }
+
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('companyFilter').value = '';
+            document.getElementById('dateFilter').value = '';
+            filterPORs();
+        }
+
+        function exportData() {
+            // Implement export functionality
+            alert('Export functionality will be implemented here');
+        }
+
+        function viewPOR(porId) {
+            // Navigate to POR detail view
+            window.location.href = `/view?id=${porId}`;
+        }
+
+
+
+        function attachFiles(porId) {
+            // Navigate to attach files page
+            window.location.href = `/attach-files/${porId}`;
+        }
+
+        function deletePOR(porId) {
+            if (confirm('Are you sure you want to delete this POR?')) {
+                // Implement delete functionality
+                alert('Delete functionality will be implemented here');
+            }
+        }
+    </script>
+    <style>
+        /* Dark Mode Styles */
+        .dark-mode {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460) !important;
+            color: #e2e8f0 !important;
+        }
+        
+        .dark-mode .bg-white\/80 {
+            background-color: rgba(30, 41, 59, 0.8) !important;
+        }
+        
+        .dark-mode .text-gray-900 {
+            color: #f1f5f9 !important;
+        }
+        
+        .dark-mode .text-gray-600 {
+            color: #cbd5e1 !important;
+        }
+        
+        .dark-mode .text-gray-700 {
+            color: #e2e8f0 !important;
+        }
+        
+        .dark-mode .bg-gray-50 {
+            background-color: #1e293b !important;
+        }
+        
+        .dark-mode .border-gray-200\/50 {
+            border-color: rgba(51, 65, 85, 0.5) !important;
+        }
+        
+        .dark-mode .bg-gray-100 {
+            background-color: #334155 !important;
+        }
+        
+        .dark-mode .hover\:bg-gray-100:hover {
+            background-color: #475569 !important;
+        }
+        
+        /* Enhanced dark mode for all UI elements */
+        .dark-mode .bg-white {
+            background-color: #1e293b !important;
+        }
+        
+        .dark-mode .bg-gray-50\/50 {
+            background-color: rgba(30, 41, 59, 0.5) !important;
+        }
+        
+        .dark-mode .border-gray-200 {
+            border-color: #475569 !important;
+        }
+        
+        .dark-mode .bg-blue-50 {
+            background-color: #1e3a8a !important;
+        }
+        
+        .dark-mode .text-blue-900 {
+            color: #60a5fa !important;
+        }
+        
+        .dark-mode .text-blue-700 {
+            color: #93c5fd !important;
+        }
+        
+        .dark-mode .bg-green-50 {
+            background-color: #065f46 !important;
+        }
+        
+        .dark-mode .text-green-600 {
+            color: #34d399 !important;
+        }
+        
+        .dark-mode .bg-orange-50 {
+            background-color: #92400e !important;
+        }
+        
+        .dark-mode .text-orange-600 {
+            color: #fbbf24 !important;
+        }
+        
+        .dark-mode .bg-purple-50 {
+            background-color: #581c87 !important;
+        }
+        
+        .dark-mode .text-purple-600 {
+            color: #a78bfa !important;
+        }
+        
+        /* Dark mode for form elements */
+        .dark-mode input[type="text"],
+        .dark-mode input[type="email"],
+        .dark-mode input[type="password"],
+        .dark-mode select,
+        .dark-mode textarea {
+            background-color: #334155 !important;
+            border-color: #475569 !important;
+            color: #f1f5f9 !important;
+        }
+        
+        .dark-mode input[type="text"]:focus,
+        .dark-mode input[type="email"]:focus,
+        .dark-mode input[type="password"]:focus,
+        .dark-mode select:focus,
+        .dark-mode textarea:focus {
+            border-color: #60a5fa !important;
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1) !important;
+        }
+        
+        /* Dark mode for tables */
+        .dark-mode table {
+            background-color: #1e293b !important;
+        }
+        
+        .dark-mode th {
+            background-color: #334155 !important;
+            color: #f1f5f9 !important;
+        }
+        
+        .dark-mode td {
+            background-color: #1e293b !important;
+            color: #e2e8f0 !important;
+        }
+        
+        .dark-mode tr:hover td {
+            background-color: #334155 !important;
+        }
+        
+        /* Dark mode for modals */
+        .dark-mode .modal {
+            background-color: #1e293b !important;
+        }
+        
+        .dark-mode .modal-content {
+            background-color: #334155 !important;
+            border-color: #475569 !important;
+        }
+    </style>
+</body>
+</html>

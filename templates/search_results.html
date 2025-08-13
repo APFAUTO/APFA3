@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Search Results - POR Records</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='2.0') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Table view enhancements */
+        .table-view table {
+            font-size: 14px;
+        }
+        
+        .table-view th {
+            position: sticky;
+            top: 0;
+            background: #e3f0fa !important;
+            z-index: 10;
+        }
+        
+        .table-view th:hover {
+            background: #d1e7f9 !important;
+        }
+        
+        .table-view tr:hover {
+            background-color: #f8f9fa !important;
+        }
+        
+        /* Responsive table */
+        @media (max-width: 768px) {
+            .table-view {
+                font-size: 12px;
+            }
+            
+            .table-view th,
+            .table-view td {
+                padding: 8px 6px !important;
+            }
+        }
+        
+        /* Smooth transitions */
+        .card-view,
+        .table-view {
+            transition: opacity 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="harbour-scene">
+        <div class="upload-card" style="width: 95%; max-width: 1200px; padding-top: 20px; height: 100vh; overflow-y: auto;" id="mainContainer">
+            <div id="topSpacer" style="height: 20px;"></div>
+            
+            <div class="header-actions" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #e3f0fa; padding: 15px; border-radius: 10px; border: 2px solid #3e8ed0;">
+                <h2 style="margin: 0; color: #022b3a; font-size: 20px;">🔍 Search Results</h2>
+                <a href="/view" class="nav-link" style="background: #017bb5; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🔙 Back to Records</a>
+            </div>
+            
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div style="margin-bottom: 20px;">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'error' if category == 'error' else 'success' }}" 
+                                 style="padding: 12px; border-radius: 8px; margin-bottom: 10px; font-weight: bold; 
+                                        {% if category == 'error' %}
+                                            background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;
+                                        {% else %}
+                                            background: #d4edda; color: #155724; border: 1px solid #c3e6cb;
+                                        {% endif %}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <!-- Advanced Search Interface -->
+            <div style="background: white; border: 2px solid #e3f0fa; border-radius: 15px; padding: 20px; margin-bottom: 20px;">
+                <h3 style="margin: 0 0 15px 0; color: #022b3a;">🔍 Advanced Search</h3>
+                
+                <form method="get" action="/search" id="searchForm">
+                    <!-- Main Search Bar -->
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <input type="text" name="q" placeholder="Search by PO number, requestor, job number, or date..." value="{{ search_query }}" 
+                               style="flex: 1; padding: 12px; border: 2px solid #3e8ed0; border-radius: 10px; font-size: 14px;">
+                        <button type="submit" class="nav-link" style="margin: 0;">🔍 Quick Search</button>
+                        <button type="button" onclick="toggleFilters()" class="nav-link" style="margin: 0; background: #6c757d;">⚙️ Advanced Filters</button>
+                    </div>
+                    
+                    <!-- Advanced Filters (Collapsible) -->
+                    <div id="advancedFilters" style="display: none; background: #f8f9fa; padding: 15px; border-radius: 10px; margin-top: 15px;">
+                        <div style="margin-bottom: 15px; padding: 10px; background: #e3f0fa; border-radius: 8px; border-left: 4px solid #017bb5;">
+                            <p style="margin: 0; color: #022b3a; font-size: 14px; font-weight: 500;">
+                                💡 <strong>Tip:</strong> Select multiple filters below, then click "Search with Filters" to apply them all at once.
+                            </p>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                            <!-- Date Range -->
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #022b3a;">Date From:</label>
+                                <input type="date" name="date_from" value="{{ filters.date_from }}" 
+                                       style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #022b3a;">Date To:</label>
+                                <input type="date" name="date_to" value="{{ filters.date_to }}" 
+                                       style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                            </div>
+                            
+                            <!-- Stage Filter -->
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #022b3a;">Stage:</label>
+                                <select name="stage" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                                    <option value="all" {% if filters.stage == 'all' %}selected{% endif %}>All Stages</option>
+                                    <option value="received" {% if filters.stage == 'received' %}selected{% endif %}>📥 Received</option>
+                                    <option value="sent" {% if filters.stage == 'sent' %}selected{% endif %}>📤 Sent</option>
+                                    <option value="filed" {% if filters.stage == 'filed' %}selected{% endif %}>📁 Filed</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Content Type Filter -->
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #022b3a;">Content Type:</label>
+                                <select name="content_type" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                                    <option value="all" {% if filters.content_type == 'all' %}selected{% endif %}>All Types</option>
+                                    <option value="work_iwo" {% if filters.content_type == 'work_iwo' %}selected{% endif %}>🔧 Work IWO</option>
+                                    <option value="supply_and_fit" {% if filters.content_type == 'supply_and_fit' %}selected{% endif %}>🔧 Supply and Fit</option>
+                                    <option value="supply" {% if filters.content_type == 'supply' %}selected{% endif %}>📦 Supply</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Amount Range -->
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #022b3a;">Min Amount (£):</label>
+                                <input type="number" name="min_amount" value="{{ filters.min_amount }}" step="0.01" min="0"
+                                       style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #022b3a;">Max Amount (£):</label>
+                                <input type="number" name="max_amount" value="{{ filters.max_amount }}" step="0.01" min="0"
+                                       style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                            <button type="submit" class="nav-link" style="background: #017bb5;">🔍 Search with Filters</button>
+                            <button type="button" onclick="clearFilters()" class="nav-link" style="background: #6c757d;">🗑️ Clear All</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Enhanced Search Summary -->
+            <div style="background: #e3f0fa; padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 2px solid #3e8ed0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0; color: #022b3a;">
+                        {% if search_type == "date" %}
+                            📅 Search Results for Date: {{ search_query }}
+                        {% else %}
+                            🔍 Search Results for: "{{ search_query }}"
+                        {% endif %}
+                    </h3>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="exportResults()" class="nav-link" style="background: #28a745; font-size: 12px;">📊 Export</button>
+                        <button onclick="toggleView()" class="nav-link" style="background: #6c757d; font-size: 12px;">🔄 Toggle View</button>
+                    </div>
+                </div>
+                
+                <!-- Statistics Grid -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                    <div style="background: white; padding: 10px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #017bb5;">{{ total_results }}</div>
+                        <div style="font-size: 12px; color: #666;">Total Results</div>
+                    </div>
+                    <div style="background: white; padding: 10px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #28a745;">£{{ "%.0f"|format(total_value) }}</div>
+                        <div style="font-size: 12px; color: #666;">Total Value</div>
+                    </div>
+                    <div style="background: white; padding: 10px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: bold; color: #fd7e14;">£{{ "%.0f"|format(avg_value) }}</div>
+                        <div style="font-size: 12px; color: #666;">Average Value</div>
+                    </div>
+
+                </div>
+                
+
+            </div>
+            
+            <!-- Search Results -->
+            <div class="search-results" id="searchResults">
+                <!-- Card View -->
+                <div class="card-view" id="cardView" style="display: flex; flex-direction: column; gap: 15px;">
+                    {% for por in results %}
+                        <div class="result-card" style="background: white; border: 2px solid #e3f0fa; border-radius: 15px; padding: 20px; cursor: pointer; transition: all 0.3s ease; hover:border-color: #017bb5;" 
+                             onclick="window.location.href='{{ url_for('view', id=por.id, from_search=request.query_string.decode('utf-8')|clean_query_string) }}'"
+                             onmouseover="this.style.borderColor='#017bb5'; this.style.transform='translateY(-2px)'" 
+                             onmouseout="this.style.borderColor='#e3f0fa'; this.style.transform='translateY(0)'">
+                            
+                            <!-- Enhanced PO Header -->
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <div style="display: flex; align-items: center; gap: 15px;">
+                                    <h3 style="margin: 0; color: #017bb5; font-size: 20px;">PO: {{ por.po_number }}</h3>
+                                    <span style="background: #017bb5; color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold;">
+                                        {{ por.date_order_raised }}
+                                    </span>
+                                    {% if por.relevance_score and por.relevance_score > 0 %}
+                                        <span style="background: #fd7e14; color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold;">
+                                            ⭐ {{ por.relevance_score }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    {% if por.attachment_icons %}
+                                        <div style="display: flex; align-items: center; gap: 3px;">
+                                            {% for icon_data in por.attachment_icons %}
+                                                {% if icon_data.type == 'more' %}
+                                                    <span style="background: #6c757d; color: white; padding: 3px 6px; border-radius: 12px; font-size: 10px; font-weight: bold; min-width: 20px; text-align: center;" title="{{ icon_data.count }} more files">
+                                                        +{{ icon_data.count }}
+                                                    </span>
+                                                {% else %}
+                                                    <span style="background: #28a745; color: white; padding: 3px 6px; border-radius: 12px; font-size: 12px; min-width: 20px; text-align: center;" title="{{ icon_data.type|title }} ({{ icon_data.count }} file{% if icon_data.count != 1 %}s{% endif %})">
+                                                        {{ icon_data.icon }}
+                                                    </span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    {% elif por.file_count > 0 %}
+                                        <span style="background: #28a745; color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold;">
+                                            📎 {{ por.file_count }} file(s)
+                                        </span>
+                                    {% endif %}
+                                    <span style="background: 
+                                        {% if por.order_type == 'new' %}#28a745
+                                        {% elif por.order_type == 'revised' %}#fd7e14
+                                        {% elif por.order_type == 'cancelled' %}#dc3545
+                                        {% else %}#28a745{% endif %}; 
+                                        color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold;">
+                                        {% if por.order_type == 'new' %}🆕 New
+                                        {% elif por.order_type == 'revised' %}📝 Revised
+                                        {% elif por.order_type == 'cancelled' %}❌ Cancelled
+                                        {% else %}🆕 New{% endif %}
+                                    </span>
+                                    <span style="background: 
+                                        {% if por.content_type == 'work_iwo' %}#dc3545
+                                        {% elif por.content_type == 'supply_and_fit' %}#fd7e14
+                                        {% elif por.content_type == 'supply' %}#6c757d
+                                        {% else %}#6c757d{% endif %}; 
+                                        color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold;">
+                                        {% if por.content_type == 'work_iwo' %}🔧 Work IWO
+                                        {% elif por.content_type == 'supply_and_fit' %}🔧 Supply & Fit
+                                        {% elif por.content_type == 'supply' %}📦 Supply
+                                        {% else %}📦 Supply{% endif %}
+                                    </span>
+                                    <span style="background: 
+                                        {% if por.current_stage == 'received' %}#28a745
+                                        {% elif por.current_stage == 'sent' %}#017bb5
+                                        {% else %}#6c757d{% endif %}; 
+                                        color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold;">
+                                        {{ por.current_stage or 'received' }}
+                                    </span>
+                                    <span style="background: #6c757d; color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold;">
+                                        £{{ "%.0f"|format(por.order_total or 0) }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <!-- PO Details Grid -->
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                                <div style="background: #f8f9fa; padding: 10px; border-radius: 8px;">
+                                    <strong style="color: #017bb5;">Requestor:</strong><br>
+                                    <span>{{ por.requestor_name or 'N/A' }}</span>
+                                </div>
+                                <div style="background: #f8f9fa; padding: 10px; border-radius: 8px;">
+                                    <strong style="color: #017bb5;">Ship/Project:</strong><br>
+                                    <span>{{ por.ship_project_name or 'N/A' }}</span>
+                                </div>
+                                <div style="background: #f8f9fa; padding: 10px; border-radius: 8px;">
+                                    <strong style="color: #017bb5;">Supplier:</strong><br>
+                                    <span>{{ por.supplier or 'N/A' }}</span>
+                                </div>
+                                <div style="background: #f8f9fa; padding: 10px; border-radius: 8px;">
+                                    <strong style="color: #017bb5;">Job No:</strong><br>
+                                    <span>{{ por.job_contract_no or 'N/A' }}</span>
+                                </div>
+                                <div style="background: #f8f9fa; padding: 10px; border-radius: 8px;">
+                                    <strong style="color: #017bb5;">OP No:</strong><br>
+                                    <span>{{ por.op_no or 'N/A' }}</span>
+                                </div>
+                                <div style="background: #f8f9fa; padding: 10px; border-radius: 8px;">
+                                    <strong style="color: #017bb5;">Order Total:</strong><br>
+                                    <span>£{{ '%.2f'|format(por.order_total or 0) }}</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Description -->
+                            {% if por.description %}
+                                <div style="margin-top: 15px; background: #f8f9fa; padding: 10px; border-radius: 8px;">
+                                    <strong style="color: #017bb5;">Description:</strong><br>
+                                    <span>{{ por.description[:100] }}{% if por.description|length > 100 %}...{% endif %}</span>
+                                </div>
+                            {% endif %}
+                            
+                            <!-- Click hint -->
+                            <div style="text-align: center; margin-top: 15px; color: #666; font-size: 12px; font-style: italic;">
+                                👆 Click to view full details
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Table View -->
+                <div class="table-view" id="tableView" style="display: none;">
+                    <div style="background: white; border-radius: 15px; overflow: hidden; border: 2px solid #e3f0fa;">
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; min-width: 800px;">
+                                <thead>
+                                    <tr style="background: #e3f0fa;">
+                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #017bb5; color: #022b3a; font-weight: bold; cursor: pointer;" onclick="sortTable(0)">
+                                            PO No. ↕️
+                                        </th>
+                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #017bb5; color: #022b3a; font-weight: bold; cursor: pointer;" onclick="sortTable(1)">
+                                            Date ↕️
+                                        </th>
+                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #017bb5; color: #022b3a; font-weight: bold; cursor: pointer;" onclick="sortTable(2)">
+                                            Requestor ↕️
+                                        </th>
+                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #017bb5; color: #022b3a; font-weight: bold; cursor: pointer;" onclick="sortTable(3)">
+                                            Supplier ↕️
+                                        </th>
+                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #017bb5; color: #022b3a; font-weight: bold; cursor: pointer;" onclick="sortTable(4)">
+                                            Order Type ↕️
+                                        </th>
+                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #017bb5; color: #022b3a; font-weight: bold; cursor: pointer;" onclick="sortTable(5)">
+                                            Content Type ↕️
+                                        </th>
+                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #017bb5; color: #022b3a; font-weight: bold; cursor: pointer;" onclick="sortTable(6)">
+                                            Status ↕️
+                                        </th>
+                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #017bb5; color: #022b3a; font-weight: bold; cursor: pointer;" onclick="sortTable(7)">
+                                            Amount ↕️
+                                        </th>
+                                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #017bb5; color: #022b3a; font-weight: bold;">
+                                            Actions
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for por in results %}
+                                        <tr style="border-bottom: 1px solid #e3f0fa; transition: background-color 0.2s ease;" 
+                                            onmouseover="this.style.backgroundColor='#f8f9fa'" 
+                                            onmouseout="this.style.backgroundColor='white'"
+                                            data-po-id="{{ por.id }}">
+                                            <td style="padding: 12px; font-weight: bold; color: #017bb5;">
+                                                {{ por.po_number }}
+                                            </td>
+                                            <td style="padding: 12px;">
+                                                {{ por.date_order_raised }}
+                                            </td>
+                                            <td style="padding: 12px;">
+                                                {{ por.requestor_name or 'N/A' }}
+                                            </td>
+                                            <td style="padding: 12px;">
+                                                {{ por.supplier or 'N/A' }}
+                                            </td>
+                                            <td style="padding: 12px;">
+                                                <span style="background: 
+                                                    {% if por.order_type == 'new' %}#28a745
+                                                    {% elif por.order_type == 'revised' %}#fd7e14
+                                                    {% elif por.order_type == 'cancelled' %}#dc3545
+                                                    {% else %}#28a745{% endif %}; 
+                                                    color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">
+                                                    {% if por.order_type == 'new' %}🆕 New
+                                                    {% elif por.order_type == 'revised' %}📝 Revised
+                                                    {% elif por.order_type == 'cancelled' %}❌ Cancelled
+                                                    {% else %}🆕 New{% endif %}
+                                                </span>
+                                            </td>
+                                            <td style="padding: 12px;">
+                                                <span style="background: 
+                                                    {% if por.content_type == 'work_iwo' %}#dc3545
+                                                    {% elif por.content_type == 'supply_and_fit' %}#fd7e14
+                                                    {% elif por.content_type == 'supply' %}#6c757d
+                                                    {% else %}#6c757d{% endif %}; 
+                                                    color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">
+                                                    {% if por.content_type == 'work_iwo' %}🔧 Work IWO
+                                                    {% elif por.content_type == 'supply_and_fit' %}🔧 Supply & Fit
+                                                    {% elif por.content_type == 'supply' %}📦 Supply
+                                                    {% else %}📦 Supply{% endif %}
+                                                </span>
+                                            </td>
+                                            <td style="padding: 12px;">
+                                                <span style="background: 
+                                                    {% if por.current_stage == 'received' %}#28a745
+                                                    {% elif por.current_stage == 'sent' %}#017bb5
+                                                    {% else %}#6c757d{% endif %}; 
+                                                    color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">
+                                                    {{ por.current_stage or 'received' }}
+                                                </span>
+                                            </td>
+                                            <td style="padding: 12px; font-weight: bold;">
+                                                £{{ "%.0f"|format(por.order_total or 0) }}
+                                            </td>
+                                            <td style="padding: 12px;">
+                                                <button onclick="window.location.href='{{ url_for('view', id=por.id, from_search=request.query_string.decode('utf-8')|clean_query_string) }}'" 
+                                                        style="background: #017bb5; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                                                    👁️ View
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- No results message -->
+            {% if results|length == 0 %}
+                <div style="text-align: center; padding: 40px; background: white; border-radius: 15px; border: 2px solid #e3f0fa;">
+                    <h3 style="color: #666; margin-bottom: 10px;">No Results Found</h3>
+                    <p style="color: #888; margin-bottom: 20px;">Try searching with different terms or check your spelling.</p>
+                    <a href="{{ url_for('view') }}" class="nav-link" style="background: #017bb5; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+                        🔙 Back to Records
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <script>
+        // Advanced search functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Smooth scroll to top when clicking "Back to Records"
+            document.querySelector('a[href="/view"]').addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = '/view';
+            });
+            
+            // Remove auto-submit - let users select multiple filters before searching
+            // const filterInputs = document.querySelectorAll('#advancedFilters input, #advancedFilters select');
+            // filterInputs.forEach(input => {
+            //     input.addEventListener('change', function() {
+            //         if (document.getElementById('advancedFilters').style.display !== 'none') {
+            //             document.getElementById('searchForm').submit();
+            //         }
+            //     });
+            // });
+        });
+        
+        // Toggle advanced filters
+        function toggleFilters() {
+            const filters = document.getElementById('advancedFilters');
+            const button = event.target;
+            if (filters.style.display === 'none') {
+                filters.style.display = 'block';
+                button.textContent = '⚙️ Hide Advanced Filters';
+            } else {
+                filters.style.display = 'none';
+                button.textContent = '⚙️ Advanced Filters';
+            }
+        }
+        
+        // Clear all filters
+        function clearFilters() {
+            const form = document.getElementById('searchForm');
+            const inputs = form.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                if (input.name === 'q') {
+                    // Keep search query but clear it
+                    input.value = '';
+                } else if (input.name === 'stage' || input.name === 'content_type') {
+                    // Reset dropdowns to "all"
+                    input.value = 'all';
+                } else {
+                    // Clear other inputs
+                    input.value = '';
+                }
+            });
+            // Don't auto-submit - let user decide when to search
+            // form.submit();
+        }
+        
+        // Export results (placeholder for future functionality)
+        function exportResults() {
+            alert('Export functionality coming soon! This will allow you to download search results as CSV/Excel.');
+        }
+        
+        // Toggle view mode functionality
+        let currentView = localStorage.getItem('searchView') || 'card';
+        
+        function toggleView() {
+            const cardView = document.getElementById('cardView');
+            const tableView = document.getElementById('tableView');
+            const toggleButton = event.target;
+            
+            if (currentView === 'card') {
+                // Switch to table view
+                cardView.style.display = 'none';
+                tableView.style.display = 'block';
+                currentView = 'table';
+                toggleButton.textContent = '🔄 Switch to Cards';
+                localStorage.setItem('searchView', 'table');
+            } else {
+                // Switch to card view
+                cardView.style.display = 'flex';
+                tableView.style.display = 'none';
+                currentView = 'card';
+                toggleButton.textContent = '🔄 Switch to Table';
+                localStorage.setItem('searchView', 'card');
+            }
+        }
+        
+        // Initialize view on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            if (currentView === 'table') {
+                const cardView = document.getElementById('cardView');
+                const tableView = document.getElementById('tableView');
+                const toggleButton = document.querySelector('button[onclick="toggleView()"]');
+                
+                cardView.style.display = 'none';
+                tableView.style.display = 'block';
+                if (toggleButton) {
+                    toggleButton.textContent = '🔄 Switch to Cards';
+                }
+            }
+        });
+        
+        // Table sorting functionality
+        let sortDirection = 1; // 1 for ascending, -1 for descending
+        let lastSortedColumn = -1;
+        
+        function sortTable(columnIndex) {
+            const table = document.querySelector('#tableView table');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Reset sort direction if clicking a different column
+            if (lastSortedColumn !== columnIndex) {
+                sortDirection = 1;
+                lastSortedColumn = columnIndex;
+            } else {
+                sortDirection *= -1; // Toggle direction
+            }
+            
+            // Sort rows
+            rows.sort((a, b) => {
+                const aValue = a.cells[columnIndex].textContent.trim();
+                const bValue = b.cells[columnIndex].textContent.trim();
+                
+                // Handle different data types
+                if (columnIndex === 7) { // Amount column (updated index)
+                    const aNum = parseFloat(aValue.replace('£', '').replace(',', '')) || 0;
+                    const bNum = parseFloat(bValue.replace('£', '').replace(',', '')) || 0;
+                    return (aNum - bNum) * sortDirection;
+                } else if (columnIndex === 1) { // Date column
+                    const aDate = new Date(aValue.split('/').reverse().join('-'));
+                    const bDate = new Date(bValue.split('/').reverse().join('-'));
+                    return (aDate - bDate) * sortDirection;
+                } else {
+                    // String comparison
+                    return aValue.localeCompare(bValue) * sortDirection;
+                }
+            });
+            
+            // Reorder rows in the table
+            rows.forEach(row => tbody.appendChild(row));
+            
+            // Update sort indicators
+            updateSortIndicators(columnIndex, sortDirection);
+        }
+        
+        function updateSortIndicators(columnIndex, direction) {
+            const headers = document.querySelectorAll('#tableView th');
+            headers.forEach((header, index) => {
+                if (index === columnIndex) {
+                    header.textContent = header.textContent.replace(/[↑↓]/, '') + (direction === 1 ? ' ↑' : ' ↓');
+                } else {
+                    header.textContent = header.textContent.replace(/[↑↓]/, '') + ' ↕️';
+                }
+            });
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl/Cmd + F to focus search
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                document.querySelector('input[name="q"]').focus();
+            }
+            
+            // Escape to clear search
+            if (e.key === 'Escape') {
+                document.querySelector('input[name="q"]').value = '';
+            }
+        });
+    </script>
+</body>
+</html> 

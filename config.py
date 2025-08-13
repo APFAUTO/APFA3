@@ -10,13 +10,44 @@ APP_NAME = "POR Upload System"
 APP_VERSION = "2.0.0"
 DEBUG = os.environ.get('FLASK_DEBUG', 'True').lower() == 'true'
 
+# Database configurations
+DATABASES = {
+    'a&p': {
+        'name': 'a&p_por.db',
+        'path': 'a&p_por.db',
+        'display_name': 'A&P Database'
+    },
+    'fdec': {
+        'name': 'fdec_por.db',
+        'path': 'fdec_por.db',
+        'display_name': 'FDEC Database'
+    }
+}
+
+# Current active database
+CURRENT_DATABASE = 'a&p'
+
+# Company configurations
+COMPANIES = {
+    'a&p': {
+        'name': 'A&P',
+        'color': 'blue',
+        'description': 'A&P Company PORs'
+    },
+    'fdec': {
+        'name': 'FDEC',
+        'color': 'green',
+        'description': 'FDEC Company PORs'
+    }
+}
+
 # File Upload Settings
 UPLOAD_FOLDER = "static/uploads"
 ALLOWED_EXTENSIONS: Set[str] = {'xlsx', 'xls'}
 MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
 
 # Database Settings
-DATABASE_URL = os.environ.get('DATABASE_URL', "sqlite:///por.db")
+DATABASE_URL = os.environ.get('DATABASE_URL', "sqlite:///a&p_por.db")
 
 # Pagination Settings
 RECORDS_PER_PAGE = 10

@@ -1,115 +1,94 @@
 """
-PO Counter Management
-Handles incrementing and persisting Purchase Order numbers.
+PO Counter Module for A&P POR Automator
+
+This module manages the Purchase Order counter functionality,
+providing functions to increment, retrieve, and set PO numbers.
 """
 
 import os
-import threading
+import json
 from typing import Optional
-from models import get_session, BatchCounter, get_or_create_batch_counter
 
-# Configuration
-STARTING_PO = 1000
-PO_COUNTER_PATH = "po_counter.txt"
+# Default counter file path
+DEFAULT_COUNTER_PATH = "po_counter.txt"
 
-# Thread lock for safe concurrent access
-_counter_lock = threading.Lock()
-
-
-class POCounter:
-    """Thread-safe PO counter with file persistence."""
+def po_counter_path() -> str:
+    """
+    Get the path to the PO counter file.
     
-    def __init__(self, file_path: str = PO_COUNTER_PATH, starting_value: int = STARTING_PO):
-        self.file_path = file_path
-        self.current_value = starting_value
-        self._load_from_file()
-    
-    def _load_from_file(self) -> None:
-        """Load current PO value from file."""
-        if os.path.exists(self.file_path):
-            try:
-                with open(self.file_path, 'r') as f:
-                    value = f.read().strip()
-                    if value.isdigit():
-                        self.current_value = int(value)
-            except (IOError, ValueError) as e:
-                print(f"Warning: Could not load PO counter from {self.file_path}: {e}")
-                print(f"Using default value: {self.current_value}")
-    
-    def _save_to_file(self) -> None:
-        """Save current PO value to file."""
-        try:
-            with open(self.file_path, 'w') as f:
-                f.write(str(self.current_value))
-        except IOError as e:
-            print(f"Error saving PO counter to {self.file_path}: {e}")
-    
-    def get_current(self) -> int:
-        """Get current PO number."""
-        with _counter_lock:
-            return self.current_value
-    
-    def increment(self) -> int:
-        """Increment and return next PO number."""
-        with _counter_lock:
-            self.current_value += 1
-            self._save_to_file()
-            return self.current_value
-    
-    def set_value(self, value: int) -> bool:
-        """Set PO counter to specific value."""
-        if value < 1:
-            return False
-        
-        with _counter_lock:
-            self.current_value = value
-            self._save_to_file()
-            return True
+    Returns:
+        str: Path to the counter file
+    """
+    return DEFAULT_COUNTER_PATH
 
-
-# Global PO counter instance
-_po_counter = POCounter()
-
-
-def get_current_po() -> int:
-    """Get current PO number."""
-    return _po_counter.get_current()
-
+def current_po() -> int:
+    """
+    Get the current PO number.
+    
+    Returns:
+        int: Current PO number, defaults to 1000 if file doesn't exist
+    """
+    counter_file = po_counter_path()
+    
+    if not os.path.exists(counter_file):
+        # Create default counter file
+        set_po_value(1000)
+        return 1000
+    
+    try:
+        with open(counter_file, 'r') as f:
+            content = f.read().strip()
+            return int(content) if content else 1000
+    except (ValueError, IOError):
+        # If file is corrupted or can't be read, reset to default
+        set_po_value(1000)
+        return 1000
 
 def increment_po() -> int:
-    """Increment and return next PO number."""
-    session = get_session()
-    counter = get_or_create_batch_counter(session)
-    counter.value += 1
-    session.commit()
-    po_number = counter.value
-    session.close()
-    return po_number
+    """
+    Increment the PO counter and return the new value.
+    
+    Returns:
+        int: New PO number after increment
+    """
+    current_value = current_po()
+    new_value = current_value + 1
+    set_po_value(new_value)
+    return new_value
 
+def set_po_value(value: int) -> None:
+    """
+    Set the PO counter to a specific value.
+    
+    Args:
+        value (int): New PO number value
+    """
+    counter_file = po_counter_path()
+    
+    try:
+        with open(counter_file, 'w') as f:
+            f.write(str(value))
+    except IOError as e:
+        print(f"Warning: Could not write to counter file: {e}")
 
-def set_po_value(value: int) -> bool:
-    """Set PO counter to specific value in the database."""
-    if value < 1:
-        return False
-    session = get_session()
-    counter = session.query(BatchCounter).first()
-    if not counter:
-        counter = BatchCounter(value=value)
-        session.add(counter)
-    else:
-        counter.value = value
-    session.commit()
-    session.close()
-    return True
+def reset_po_counter(value: int = 1000) -> None:
+    """
+    Reset the PO counter to a specific value (default: 1000).
+    
+    Args:
+        value (int): Value to reset counter to
+    """
+    set_po_value(value)
 
+def get_next_po() -> int:
+    """
+    Get the next PO number without incrementing the counter.
+    
+    Returns:
+        int: Next PO number that would be assigned
+    """
+    return current_po() + 1
 
-# Backward compatibility
-current_po = get_current_po()
-po_counter_path = PO_COUNTER_PATH
-
-
-if __name__ == '__main__':
-    # Test the counter
-    print(f"Current PO: {get_current_po()}")
-    print(f"Next PO: {increment_po()}")
-    print(f"Current PO: {get_current_po()}") 
+# Initialize counter file if it doesn't exist
+if not os.path.exists(po_counter_path()):
+    set_po_value(1000)

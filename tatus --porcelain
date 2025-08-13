@@ -1,0 +1,25 @@
+warning: in the working copy of 'app.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'templates/view.html', LF will be replaced by CRLF the next time Git touches it
+.gitignore
+AP POR PARSING MAP.docx
+DEPLOYMENT.md
+Dockerfile
+OPTIMIZATION_SUMMARY.md
+README.md
+app.py
+check_db.py
+config.py
+migrate_db.py
+models.py
+po_counter.py
+po_counter.txt
+railway.json
+read_doc.py
+requirements.txt
+static/style.css
+templates/attach_files.html
+templates/change_batch.html
+templates/upload.html
+templates/view.html
+test_db.py
+utils.py
