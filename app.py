@@ -11,6 +11,7 @@ from typing import Optional, Tuple, List
 
 from models import BatchCounter
 from models import Base, engine
+from po_counter import increment_po
 
 # Initialize database tables
 try:
@@ -58,6 +59,96 @@ app.config.update(
 )
 
 # Database session management
+def create_database_models(database_name):
+    """Create database-aware models for the specified database."""
+    from sqlalchemy.ext.declarative import declarative_base
+    from sqlalchemy import Column, Integer, String, Float, Text, DateTime, Index, ForeignKey
+    from sqlalchemy.orm import relationship
+    from datetime import datetime, timezone
+    
+    LocalBase = declarative_base()
+    
+    class LocalPOR(LocalBase):
+        __tablename__ = "por"
+        id = Column(Integer, primary_key=True, autoincrement=True)
+        po_number = Column(Integer, unique=True, nullable=False, index=True)
+        requestor_name = Column(String(255), nullable=False, index=True)
+        date_order_raised = Column(String(50), nullable=False)
+        date_required_by = Column(String(50))
+        ship_project_name = Column(String(255), index=True)
+        supplier = Column(String(255), index=True)
+        filename = Column(String(255), nullable=False)
+        company = Column(String(10), nullable=True, default='a&p')
+        job_contract_no = Column(String(100), index=True)
+        op_no = Column(String(50), index=True)
+        description = Column(Text)
+        quantity = Column(Integer)
+        price_each = Column(Float)
+        line_total = Column(Float)
+        order_total = Column(Float)
+        specification_standards = Column(Text)
+        supplier_contact_name = Column(String(255))
+        supplier_contact_email = Column(String(255))
+        quote_ref = Column(String(255))
+        quote_date = Column(String(50))
+        show_price = Column(String(10))
+        data_summary = Column(Text)
+        created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+        current_stage = Column(String(20), default='received', nullable=False)
+        status_color = Column(String(20), default='normal', nullable=False)
+        order_type = Column(String(20), default='new', nullable=False)
+        content_type = Column(String(20), default='supply', nullable=False)
+        received_comments = Column(Text)
+        sent_comments = Column(Text)
+        filed_comments = Column(Text)
+        amazon_comment = Column(Text)
+        work_date_comment = Column(Text)
+        fdec_warning = Column(Text)
+        stage_updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+        change_history = Column(Text)
+        current_change_index = Column(Integer, default=-1)
+        
+        # Relationship to attached files
+        attached_files = relationship("LocalPORFile", back_populates="por", cascade="all, delete-orphan")
+        
+        # Composite index for common searches
+        __table_args__ = (
+            Index('idx_po_requestor', 'po_number', 'requestor_name'),
+            Index('idx_job_op', 'job_contract_no', 'op_no'),
+        )
+    
+    class LocalLineItem(LocalBase):
+        __tablename__ = "line_items"
+        id = Column(Integer, primary_key=True, autoincrement=True)
+        por_id = Column(Integer, ForeignKey('por.id'), nullable=False, index=True)
+        job_contract_no = Column(String(100), index=True)
+        op_no = Column(String(50), index=True)
+        description = Column(Text)
+        specifications = Column(Text)
+        quantity = Column(Integer)
+        price_each = Column(Float)
+        line_total = Column(Float)
+    
+    class LocalPORFile(LocalBase):
+        __tablename__ = "por_files"
+        id = Column(Integer, primary_key=True, autoincrement=True)
+        por_id = Column(Integer, ForeignKey('por.id'), nullable=False, index=True)
+        original_filename = Column(String(255), nullable=False)
+        stored_filename = Column(String(255), nullable=False)
+        file_type = Column(String(50), nullable=False)
+        file_size = Column(Integer)
+        mime_type = Column(String(100))
+        uploaded_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+        description = Column(String(500))
+        por = relationship("LocalPOR", back_populates="attached_files")
+    
+    class LocalBatchCounter(LocalBase):
+        __tablename__ = "batch_counter"
+        id = Column(Integer, primary_key=True)
+        value = Column(Integer, nullable=False)
+    
+    return LocalBase, LocalPOR, LocalLineItem, LocalPORFile, LocalBatchCounter
+
 def get_current_database():
     """Get the current active database from session or default."""
     current_db = session.get('current_database', CURRENT_DATABASE)
@@ -97,7 +188,17 @@ def get_or_create_batch_counter(database_name=None):
     """Get or create batch counter for specified database."""
     db_session = get_database_session(database_name)
     try:
-        counter = db_session.query(BatchCounter).first()
+        # Ensure the BatchCounter table exists in this database
+        engine = get_database_engine(database_name)
+        
+        # Get database-aware models for this database
+        LocalBase, LocalPOR, LocalLineItem, LocalPORFile, LocalBatchCounter = create_database_models(database_name)
+        
+        # Create the table in this database
+        LocalBase.metadata.create_all(engine)
+        
+        # Query using the local model
+        counter = db_session.query(LocalBatchCounter).first()
         if not counter:
             # Create new counter with starting value based on company
             current_db = database_name or get_current_database()
@@ -107,7 +208,7 @@ def get_or_create_batch_counter(database_name=None):
             elif current_db == 'a&p':
                 start_value = 1000  # A&P starting value
             
-            counter = BatchCounter(value=start_value)
+            counter = LocalBatchCounter(value=start_value)
             db_session.add(counter)
             db_session.commit()
         return counter
@@ -470,8 +571,18 @@ def process_excel_file(file) -> Tuple[bool, str, Optional[dict], Optional[list]]
         # Get order total using the parsing map
         order_total = get_order_total_by_map(ws)
         
-        # Generate PO number and filename
-        po_number = increment_po()
+        # Generate PO number and filename using database-aware counter
+        current_db = get_current_database()
+        counter = get_or_create_batch_counter(current_db)
+        po_number = counter.value
+        # Increment the counter for next use
+        counter.value += 1
+        # Save the updated counter
+        counter_session = get_database_session(current_db)
+        counter_session.add(counter)
+        counter_session.commit()
+        counter_session.close()
+        
         date_order = por_data.get('date_order_raised', datetime.now().strftime('%d/%m/%Y'))
         requestor = por_data.get('requestor_name', 'Unknown')
         
@@ -496,6 +607,10 @@ def process_excel_file(file) -> Tuple[bool, str, Optional[dict], Optional[list]]
         
         first_item = items[0] if items else {}
         
+        # Check for FDEC job number warning
+        current_db = get_current_database()
+        fdec_warning = check_fdec_job_warning(first_item.get('job'), current_db)
+        
         # Prepare data dictionary
         data = {
             'po_number': po_number,
@@ -506,7 +621,7 @@ def process_excel_file(file) -> Tuple[bool, str, Optional[dict], Optional[list]]
             'ship_project_name': por_data.get('ship_project_name', ''),
             'supplier': por_data.get('supplier', ''),
             'filename': safe_filename,
-            'company': 'a&p',  # Set company field for database compatibility
+            'company': current_db,  # Use current database instead of hardcoded 'a&p'
             'job_contract_no': first_item.get('job'),
             'op_no': first_item.get('op'),
             'description': first_item.get('desc'),
@@ -520,7 +635,8 @@ def process_excel_file(file) -> Tuple[bool, str, Optional[dict], Optional[list]]
             'quote_ref': por_data.get('quote_ref', ''),
             'quote_date': por_data.get('quote_date', ''),
             'data_summary': "\n".join(str(r) for r in rows[:10]),
-            'created_at': datetime.now(timezone.utc)
+            'created_at': datetime.now(timezone.utc),
+            'fdec_warning': fdec_warning  # Include warning in data
         }
         
         logger.info(f"✅ Successfully processed PO #{po_number} with {len(items)} line items")
@@ -651,19 +767,45 @@ def process_email_file(file) -> Tuple[bool, str, Optional[dict], Optional[list]]
 def save_por_to_database(data: dict, line_items: list = None) -> Tuple[bool, str]:
     """Save POR data and its line items to database."""
     try:
-        from models import get_session, LineItem
         import re
         
+        logger.info(f"🔍 Starting database save for PO #{data.get('po_number')} in database: {get_current_database()}")
+        
+        # Check for batch number conflicts between companies
+        current_db = get_current_database()
+        logger.info(f"🔍 Checking batch number conflicts for PO #{data.get('po_number')}")
+        batch_conflict = check_batch_number_conflict(data.get('po_number'), current_db)
+        if batch_conflict:
+            logger.warning(f"❌ Batch number conflict detected: {batch_conflict}")
+            return False, batch_conflict
+        
+        logger.info(f"✅ No batch number conflicts found")
+        
         # Get database session
-        db_session = get_session()
-        por = POR(**data)
+        logger.info(f"🔍 Getting database session for {current_db}")
+        db_session = get_database_session(current_db)
+        
+        # Get database-aware models for this database
+        logger.info(f"🔍 Creating database-aware models for {current_db}")
+        LocalBase, LocalPOR, LocalLineItem, LocalPORFile, LocalBatchCounter = create_database_models(current_db)
+        
+        # Create tables in this database
+        logger.info(f"🔍 Creating tables in {current_db} database")
+        engine = get_database_engine(current_db)
+        LocalBase.metadata.create_all(engine)
+        
+        logger.info(f"🔍 Creating POR object with data: {data}")
+        por = LocalPOR(**data)
         db_session.add(por)
+        logger.info(f"🔍 Flushing to get POR ID")
         db_session.flush()  # Get POR id
+        logger.info(f"✅ POR created with ID: {por.id}")
         
         # Save line items if provided
         if line_items:
-            for item in line_items:
-                line_item = LineItem(
+            logger.info(f"🔍 Saving {len(line_items)} line items")
+            for i, item in enumerate(line_items):
+                line_item = LocalLineItem(
                     por_id=por.id,
                     job_contract_no=item.get('job'),
                     op_no=item.get('op'),
@@ -673,6 +815,7 @@ def save_por_to_database(data: dict, line_items: list = None) -> Tuple[bool, str
                     line_total=to_float(item.get('ltot'))
                 )
                 db_session.add(line_item)
+                logger.info(f"✅ Line item {i+1} added: {item.get('desc', 'No description')}")
         
         # Auto-detect content type based on line items
         if line_items:
@@ -713,11 +856,21 @@ def save_por_to_database(data: dict, line_items: list = None) -> Tuple[bool, str
             
             logger.info(f"Added work date comment for PO {por.po_number}: {work_date_comment}")
         
+        logger.info(f"🔍 Committing transaction to database")
         db_session.commit()
+        logger.info(f"✅ Transaction committed successfully")
+        
+        # Get the PO number before closing the session
+        po_number = por.po_number
+        logger.info(f"✅ Database save completed successfully for PO #{po_number}")
+        
         db_session.close()
         return True, ""
     except Exception as e:
-        logger.error(f"Database error: {str(e)}")
+        logger.error(f"❌ Database error during save: {str(e)}")
+        logger.error(f"❌ Error type: {type(e).__name__}")
+        import traceback
+        logger.error(f"❌ Full traceback: {traceback.format_exc()}")
         try:
             db_session.rollback()
             db_session.close()
@@ -948,10 +1101,11 @@ def dashboard():
     """Display the main dashboard."""
     try:
         # Use database-aware session
-        db_session = get_database_session()
+        current_db = get_current_database()
+        db_session = get_database_session(current_db)
         
         # Get current PO from database
-        counter = get_or_create_batch_counter()
+        counter = get_or_create_batch_counter(current_db)
         current_po_value = counter.value if counter else 1000
         
         # Get some basic stats
@@ -969,6 +1123,8 @@ def dashboard():
         # Get current database info for template
         current_db = get_current_database()
         company_info = COMPANIES.get(current_db, COMPANIES['a&p'])
+        
+
         
         return render_template("modern_dashboard.html", 
                              current_po=current_po_value,
@@ -1013,7 +1169,8 @@ def upload():
                 flash("❌ No file selected", 'error')
                 # Get current PO from database for template
                 try:
-                    counter = get_or_create_batch_counter()
+                    current_db = get_current_database()
+                    counter = get_or_create_batch_counter(current_db)
                     current_po_value = counter.value if counter else 1000
                 except Exception as e:
                     logger.error(f"Error getting current PO: {str(e)}")
@@ -1047,7 +1204,8 @@ def upload():
                 flash("❌ Only Excel files (.xlsx, .xls) are allowed for POR uploads", 'error')
                 # Get current PO from database for template
                 try:
-                    counter = get_or_create_batch_counter()
+                    current_db = get_current_database()
+                    counter = get_or_create_batch_counter(current_db)
                     current_po_value = counter.value if counter else 1000
                 except Exception as e:
                     logger.error(f"Error getting current PO: {str(e)}")
@@ -1061,6 +1219,10 @@ def upload():
             
             success, message, data, line_items = process_uploaded_file(file)
             if success and data:
+                # Display FDEC warning if applicable
+                if data.get('fdec_warning'):
+                    flash(data['fdec_warning'], 'warning')
+                
                 # Save to database
                 save_success, save_message = save_por_to_database(data, line_items)
                 if save_success:
@@ -1070,7 +1232,8 @@ def upload():
                         batch_end = session.get('batch_end', 0)
                         if batch_end > 0:
                             # Get current PO to check if we've reached the end
-                            counter = get_or_create_batch_counter()
+                            current_db = get_current_database()
+                            counter = get_or_create_batch_counter(current_db)
                             current_po = counter.value if counter else 1000
                             
                             if current_po > batch_end:
@@ -1087,8 +1250,13 @@ def upload():
                     # Redirect to view the newly created POR
                     try:
                         # Get the latest POR ID to redirect to
-                        db_session = get_database_session()
-                        latest_por = db_session.query(POR).order_by(POR.id.desc()).first()
+                        current_db = get_current_database()
+                        db_session = get_database_session(current_db)
+                        
+                        # Get database-aware models for this database
+                        LocalBase, LocalPOR, LocalLineItem, LocalPORFile, LocalBatchCounter = create_database_models(current_db)
+                        
+                        latest_por = db_session.query(LocalPOR).order_by(LocalPOR.id.desc()).first()
                         db_session.close()
                         
                         if latest_por:
@@ -1110,7 +1278,8 @@ def upload():
     
     # Get current PO from database for template
     try:
-        counter = get_or_create_batch_counter()
+        current_db = get_current_database()
+        counter = get_or_create_batch_counter(current_db)
         current_po_value = counter.value if counter else 1000
     except Exception as e:
         logger.error(f"Error getting current PO: {str(e)}")
@@ -1131,7 +1300,8 @@ def check_updates():
         from flask import jsonify
         
         # Use database-aware session
-        db_session = get_database_session()
+        current_db = get_current_database()
+        db_session = get_database_session(current_db)
         
         # Get the latest POR ID and count
         latest_por = db_session.query(POR).order_by(POR.id.desc()).first()
@@ -1174,14 +1344,14 @@ def view():
         por_id = request.args.get('id', type=int)
         search_query = request.args.get('q', '').strip()
         
-        # Use database-aware session
-        db_session = get_database_session()
-        
         # If no specific ID provided, show list of all PORs (modern view)
         if not por_id:
             # Get all PORs for the list view
             current_db = get_current_database()
             logger.info(f"[DEBUG] View route - Querying PORs from database: {current_db}")
+            
+            # Use database-aware session for the current database
+            db_session = get_database_session(current_db)
             
             # Get database path for verification
             db_config = DATABASES.get(current_db, DATABASES['a&p'])
@@ -1213,7 +1383,7 @@ def view():
                     'requestor': por.requestor_name or 'Unknown',
                     'date': por.created_at.strftime('%d/%m/%Y') if por.created_at else 'Unknown',
                     'status': por.current_stage or 'received',
-                    'company': por.company or 'a&p',
+                    'company': por.company or current_db,
                     'line_items_count': line_items_count,
                     'file_count': file_count,
                     'order_total': float(por.order_total) if por.order_total else 0.0
@@ -1223,7 +1393,7 @@ def view():
             
             # Get current PO from database for template
             try:
-                counter = get_or_create_batch_counter()
+                counter = get_or_create_batch_counter(current_db)
                 current_po_value = counter.value if counter else 1000
             except Exception as e:
                 logger.error(f"Error getting current PO: {str(e)}")
@@ -1246,6 +1416,9 @@ def view():
                                  company_info=company_info)
         
         # Get the specific POR record
+        current_db = get_current_database()
+        db_session = get_database_session(current_db)
+        
         por = db_session.query(POR).filter_by(id=por_id).first()
         if not por:
             flash("❌ PO record not found", 'error')
@@ -1270,28 +1443,24 @@ def view():
         import time
         timestamp = int(time.time())
         
-        # Force database refresh by closing and reopening session
-        db_session.close()
-        db_session = get_database_session()
-        
-        # Re-query to ensure we have the latest data
-        por = db_session.query(POR).filter_by(id=por_id).first()
-        if por:
-            por.line_items = db_session.query(LineItem).filter_by(por_id=por.id).all()
-            por.file_count = len(por.attached_files)
-            por.files = por.attached_files
-        
-        db_session.close()
-        
         # Get current PO from database for template
         try:
-            counter = get_or_create_batch_counter()
+            counter = get_or_create_batch_counter(current_db)
             current_po_value = counter.value if counter else 1000
         except Exception as e:
             logger.error(f"Error getting current PO: {str(e)}")
             current_po_value = 1000
         
         db_session.close()
+        
+        # Get current PO from database for template
+        try:
+            current_db = get_current_database()
+            counter = get_or_create_batch_counter(current_db)
+            current_po_value = counter.value if counter else 1000
+        except Exception as e:
+            logger.error(f"Error getting current PO: {str(e)}")
+            current_po_value = 1000
         
         # Get current database info for template
         current_db = get_current_database()
@@ -1313,18 +1482,18 @@ def view():
         flash(f"❌ Error loading record: {str(e)}", 'error')
         # Get current PO from database for template
         try:
-            counter = get_or_create_batch_counter()
+            current_db = get_current_database()
+            counter = get_or_create_batch_counter(current_db)
             current_po_value = counter.value if counter else 1000
         except Exception as e:
             logger.error(f"Error getting current PO: {str(e)}")
             current_po_value = 1000
         
-        db_session.close()
-        
         # Get current database info for template
         current_db = get_current_database()
         company_info = COMPANIES.get(current_db, COMPANIES['a&p'])
         
+        # For error case, always use modern_view.html since we're not showing a specific POR
         return render_template("modern_view.html", por=None, current_po=current_po_value, 
                              total_records=0, current_position=0, timestamp=int(time.time()), 
                              company=current_db, company_info=company_info)
@@ -1622,12 +1791,32 @@ def change_batch():
                         current_db = get_current_database()
                         logger.info(f"[DEBUG] Setting batch range for {current_db}: {start_po}-{end_po}")
                         
-                        # Update the batch counter for the current database
-                        db_session = get_database_session()
-                        counter = get_or_create_batch_counter(current_db)
-                        counter.value = start_po
-                        db_session.commit()
-                        db_session.close()
+                        try:
+                            # Update the batch counter for the current database
+                            db_session = get_database_session(current_db)
+                            logger.info(f"[DEBUG] Database session created for {current_db}")
+                            
+                            counter = get_or_create_batch_counter(current_db)
+                            logger.info(f"[DEBUG] Batch counter retrieved: {counter.value if counter else 'None'}")
+                            
+                            if counter:
+                                counter.value = start_po
+                                db_session.commit()
+                                logger.info(f"[DEBUG] Batch counter updated to {start_po}")
+                            else:
+                                logger.error(f"[DEBUG] Failed to get or create batch counter for {current_db}")
+                                
+                            db_session.close()
+                        except Exception as db_error:
+                            logger.error(f"[DEBUG] Database error in change-batch: {str(db_error)}")
+                            if request.is_json:
+                                return jsonify({'success': False, 'error': f'Database error: {str(db_error)}'})
+                            else:
+                                flash(f"❌ Database error: {str(db_error)}", 'error')
+                            return render_template("change_batch.html", 
+                                                 current_highest_po=0,
+                                                 company=current_db,
+                                                 company_info=COMPANIES.get(current_db, COMPANIES['a&p']))
                         
                         # Store batch information in session for tracking
                         session['batch_start'] = start_po
@@ -1647,6 +1836,8 @@ def change_batch():
                         
         except Exception as e:
             logger.error(f"Batch change error: {str(e)}")
+            logger.error(f"Error type: {type(e)}")
+            logger.error(f"Error details: {e.__dict__ if hasattr(e, '__dict__') else 'No details'}")
             if request.is_json:
                 return jsonify({'success': False, 'error': f'Error updating batch: {str(e)}'})
             else:
@@ -1654,13 +1845,26 @@ def change_batch():
     
     # Get current highest PO for warning display from the active database
     try:
-        db_session = get_database_session()
-        highest_po = db_session.query(POR).order_by(POR.po_number.desc()).first()
-        # If no POR records exist, set to 0 to avoid false warnings
-        current_highest_po = highest_po.po_number if highest_po else 0
+        current_db = get_current_database()
+        logger.info(f"[DEBUG] Getting highest PO for database: {current_db}")
+        
+        db_session = get_database_session(current_db)
+        logger.info(f"[DEBUG] Database session created for highest PO query")
+        
+        # Test POR model access
+        try:
+            highest_po = db_session.query(POR).order_by(POR.po_number.desc()).first()
+            logger.info(f"[DEBUG] POR query successful, highest PO: {highest_po.po_number if highest_po else 'None'}")
+            current_highest_po = highest_po.po_number if highest_po else 0
+        except Exception as por_error:
+            logger.error(f"[DEBUG] Error querying POR table: {str(por_error)}")
+            logger.error(f"[DEBUG] POR error type: {type(por_error)}")
+            current_highest_po = 0
+            
         db_session.close()
     except Exception as e:
         logger.error(f"Error getting highest PO: {str(e)}")
+        logger.error(f"Error type: {type(e)}")
         current_highest_po = 0
     
     # Get current database info for template
@@ -1679,7 +1883,7 @@ def check_batch_status():
     try:
         # Get current PO from the active database
         current_db = get_current_database()
-        db_session = get_database_session()
+        db_session = get_database_session(current_db)
         counter = get_or_create_batch_counter(current_db)
         current_po = counter.value if counter else 1000
         db_session.close()
@@ -1716,7 +1920,7 @@ def check_batch_completion():
     try:
         # Get current PO from the active database
         current_db = get_current_database()
-        db_session = get_database_session()
+        db_session = get_database_session(current_db)
         counter = get_or_create_batch_counter(current_db)
         current_po = counter.value if counter else 1000
         db_session.close()
@@ -3122,7 +3326,8 @@ def analytics():
         from datetime import datetime, timedelta
         
         # Use database-aware session
-        db_session = get_database_session()
+        current_db = get_current_database()
+        db_session = get_database_session(current_db)
         
         # Get total counts and values
         total_pors = db_session.query(POR).count()
@@ -3272,11 +3477,16 @@ def switch_database():
         
         # Initialize the new database if it doesn't exist
         engine = get_database_engine(new_database)
-        Base.metadata.create_all(engine)
+        
+        # Get database-aware models for this database
+        LocalBase, LocalPOR, LocalLineItem, LocalPORFile, LocalBatchCounter = create_database_models(new_database)
+        
+        # Create all tables in this database
+        LocalBase.metadata.create_all(engine)
         
         # Test the database connection
         test_session = get_database_session(new_database)
-        por_count = test_session.query(POR).count()
+        por_count = test_session.query(LocalPOR).count()
         test_session.close()
         
         logger.info(f"Successfully switched to {new_database} database. Found {por_count} PORs.")
@@ -3402,7 +3612,7 @@ def test_database():
         logger.info(f"[DEBUG] Test route - Current database: {current_db}")
         
         # Get database session
-        db_session = get_database_session()
+        db_session = get_database_session(current_db)
         
         # Count PORs
         por_count = db_session.query(POR).count()
@@ -3439,6 +3649,93 @@ def test_database():
     except Exception as e:
         logger.error(f"Test database error: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+def check_fdec_job_warning(job_contract_no, current_database: str) -> Optional[str]:
+    """
+    Check if a job number starting with 6 is being uploaded to A&P database.
+    Returns warning message if applicable, None otherwise.
+    """
+    if not job_contract_no:
+        return None
+    
+    # Convert to string if it's not already
+    job_str = str(job_contract_no)
+    
+    # Check if job number starts with 6 and is being uploaded to A&P
+    if job_str.startswith('6') and current_database == 'a&p':
+        return "⚠️ WARNING: This POR contains job numbers starting with '6' which indicates it is for FDEC. Please ensure you are uploading to the correct database."
+    
+    return None
+
+
+def check_batch_number_conflict(po_number: int, current_database: str) -> Optional[str]:
+    """
+    Check if a batch number is being used across different company databases.
+    Returns error message if there's a conflict, None otherwise.
+    """
+    try:
+        # Check if this PO number exists in the other database
+        other_database = 'fdec' if current_database == 'a&p' else 'a&p'
+        
+        # Get database session for the other database
+        other_db_session = get_database_session(other_database)
+        
+        # Get database-aware models for the other database
+        LocalBase, LocalPOR, LocalLineItem, LocalPORFile, LocalBatchCounter = create_database_models(other_database)
+        
+        # Check if PO number exists in other database using the correct model
+        existing_por = other_db_session.query(LocalPOR).filter_by(po_number=po_number).first()
+        other_db_session.close()
+        
+        if existing_por:
+            company_name = "FDEC" if other_database == 'fdec' else "A&P"
+            return f"❌ ERROR: PO number {po_number} is already in use in the {company_name} database. Batch numbers cannot be shared between companies."
+        
+        return None
+        
+    except Exception as e:
+        logger.error(f"Error checking batch number conflict: {str(e)}")
+        return None
+
+
+@app.route('/company-management')
+def company_management():
+    """Company and supplier management interface."""
+    try:
+        current_db = get_current_database()
+        company_info = COMPANIES.get(current_db, COMPANIES['a&p'])
+        
+        # Get statistics for both databases
+        a_and_p_session = get_database_session('a&p')
+        fdec_session = get_database_session('fdec')
+        
+        # Get POR counts for each company
+        a_and_p_count = a_and_p_session.query(POR).count()
+        fdec_count = fdec_session.query(POR).count()
+        
+        # Get supplier statistics
+        a_and_p_suppliers = a_and_p_session.query(POR.supplier, func.count(POR.id)).group_by(POR.supplier).all()
+        fdec_suppliers = fdec_session.query(POR.supplier, func.count(POR.id)).group_by(POR.supplier).all()
+        
+        a_and_p_session.close()
+        fdec_session.close()
+        
+        return render_template("company_management.html", 
+                             company=current_db,
+                             company_info=company_info,
+                             a_and_p_count=a_and_p_count,
+                             fdec_count=fdec_count,
+                             a_and_p_suppliers=a_and_p_suppliers,
+                             fdec_suppliers=fdec_suppliers)
+                             
+    except Exception as e:
+        logger.error(f"Company management error: {str(e)}")
+        flash(f"❌ Error loading company management: {str(e)}", 'error')
+        return redirect(url_for('dashboard'))
+
+
+
 
 
 if __name__ == '__main__':

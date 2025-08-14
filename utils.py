@@ -236,12 +236,15 @@ def extract_por_data_by_map(ws: Worksheet) -> Dict[str, Any]:
                 requestor_name = ws.cell(row=requestor_pos[0] + 1, column=requestor_pos[1]).value
         data['requestor_name'] = capitalize_text(requestor_name) if requestor_name else ''
         
-
+        # Add debug logging
+        print(f"DEBUG: Extracted POR data: {data}")
         
         return data
         
     except Exception as e:
         print(f"Error extracting POR data: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return data
 
 
