@@ -881,11 +881,11 @@ def save_por_to_database(data: dict, line_items: list = None) -> Tuple[bool, str
         error_msg = str(e)
         if "UNIQUE constraint failed: por.po_number" in error_msg:
             po_number = data.get('po_number', 'unknown')
-            return False, f"❌ PO number {po_number} already exists in the database. Please set a higher starting PO number or delete existing POs first."
+            return False, f"🚫 UPLOAD BLOCKED: PO number {po_number} already exists in this database! Duplicate PO numbers are not allowed. Please use a different PO number or contact your administrator."
         elif "UNIQUE constraint failed" in error_msg:
-            return False, "❌ Database constraint violation. The data conflicts with existing records."
+            return False, "🚫 UPLOAD BLOCKED: Database constraint violation. The data conflicts with existing records."
         else:
-            return False, f"❌ Database error: {error_msg}"
+            return False, f"🚫 UPLOAD BLOCKED: Database error: {error_msg}"
 
 
 def get_paginated_records(page: int, search_query: str = '') -> Tuple[List[POR], dict]:
@@ -3690,7 +3690,8 @@ def check_batch_number_conflict(po_number: int, current_database: str) -> Option
         
         if existing_por:
             company_name = "FDEC" if other_database == 'fdec' else "A&P"
-            return f"🚫 UPLOAD BLOCKED: PO number {po_number} is already in use in the {company_name} database! Batch numbers cannot be shared between companies. Please use a different PO number or contact your administrator."
+            current_company = "FDEC" if current_database == 'fdec' else "A&P"
+            return f"🚫 UPLOAD BLOCKED: PO number {po_number} is already in use in the {company_name} database! You cannot use the same PO number in both {current_company} and {company_name} databases. Please use a different PO number or contact your administrator."
         
         return None
         

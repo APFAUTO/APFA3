@@ -351,7 +351,7 @@
             const errorMessages = document.querySelectorAll('.bg-red-100');
             errorMessages.forEach(function(errorDiv) {
                 const message = errorDiv.querySelector('p:last-child').textContent;
-                if (message.includes('UPLOAD BLOCKED') || message.includes('Batch numbers cannot be shared')) {
+                if (message.includes('UPLOAD BLOCKED')) {
                     showCriticalErrorModal(message);
                 }
             });
