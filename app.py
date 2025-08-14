@@ -776,7 +776,7 @@ def save_por_to_database(data: dict, line_items: list = None) -> Tuple[bool, str
         logger.info(f"🔍 Checking batch number conflicts for PO #{data.get('po_number')}")
         batch_conflict = check_batch_number_conflict(data.get('po_number'), current_db)
         if batch_conflict:
-            logger.warning(f"❌ Batch number conflict detected: {batch_conflict}")
+            logger.warning(f"🚫 BATCH NUMBER CONFLICT BLOCKS UPLOAD: {batch_conflict}")
             return False, batch_conflict
         
         logger.info(f"✅ No batch number conflicts found")
@@ -3690,7 +3690,7 @@ def check_batch_number_conflict(po_number: int, current_database: str) -> Option
         
         if existing_por:
             company_name = "FDEC" if other_database == 'fdec' else "A&P"
-            return f"❌ ERROR: PO number {po_number} is already in use in the {company_name} database. Batch numbers cannot be shared between companies."
+            return f"🚫 UPLOAD BLOCKED: PO number {po_number} is already in use in the {company_name} database! Batch numbers cannot be shared between companies. Please use a different PO number or contact your administrator."
         
         return None
         

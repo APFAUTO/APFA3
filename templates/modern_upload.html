@@ -11,13 +11,16 @@
     <script>
         // Load theme preference based on database on page load
         document.addEventListener('DOMContentLoaded', function() {
-            const activeDB = localStorage.getItem('activeDatabase');
-            if (activeDB === 'FDEC') {
+            // Check current database from backend and apply theme automatically
+            const currentCompany = '{{ company }}';
+            if (currentCompany === 'fdec') {
                 document.body.classList.add('dark-mode');
                 localStorage.setItem('darkMode', 'enabled');
+                localStorage.setItem('activeDatabase', 'FDEC');
             } else {
                 document.body.classList.remove('dark-mode');
                 localStorage.setItem('darkMode', 'disabled');
+                localStorage.setItem('activeDatabase', 'A&P');
             }
         });
     </script>
@@ -83,6 +86,64 @@
         .dark-mode .text-yellow-600 {
             color: #fbbf24 !important;
         }
+        
+        /* Additional dark mode overrides for FDEC */
+        .dark-mode .bg-white\/80 {
+            background-color: rgba(30, 41, 59, 0.9) !important;
+        }
+        
+        .dark-mode .bg-white {
+            background-color: #1e293b !important;
+        }
+        
+        .dark-mode .bg-gray-50 {
+            background-color: #1e293b !important;
+        }
+        
+        .dark-mode .bg-gray-100 {
+            background-color: #334155 !important;
+        }
+        
+        .dark-mode .bg-gray-200 {
+            background-color: #475569 !important;
+        }
+        
+        .dark-mode .border-gray-200 {
+            border-color: #475569 !important;
+        }
+        
+        .dark-mode .border-gray-300 {
+            border-color: #64748b !important;
+        }
+        
+        .dark-mode .text-gray-500 {
+            color: #94a3b8 !important;
+        }
+        
+        .dark-mode .text-gray-400 {
+            color: #cbd5e1 !important;
+        }
+        
+        .dark-mode .hover\:bg-gray-100:hover {
+            background-color: #475569 !important;
+        }
+        
+        .dark-mode .hover\:bg-gray-50:hover {
+            background-color: #334155 !important;
+        }
+        
+        /* Dark mode modal styles */
+        .dark-mode #criticalErrorModal .bg-white {
+            background-color: #1e293b !important;
+        }
+        
+        .dark-mode #criticalErrorModal .text-gray-900 {
+            color: #f1f5f9 !important;
+        }
+        
+        .dark-mode #criticalErrorModal .text-gray-600 {
+            color: #cbd5e1 !important;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 min-h-screen font-inter">
@@ -117,14 +178,7 @@
                         </span>
                     </a>
                     
-                    <a href="/search" class="group relative">
-                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
-                            <i class="fas fa-search text-lg"></i>
-                        </div>
-                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-                            Search
-                        </span>
-                    </a>
+
                     
                     <a href="/analytics" class="group relative">
                         <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-orange-500 hover:to-orange-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
@@ -141,6 +195,15 @@
                         </div>
                         <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
                             Batch Change
+                        </span>
+                    </a>
+                    
+                    <a href="/company-management" class="group relative">
+                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-indigo-500 hover:to-indigo-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
+                            <i class="fas fa-building text-lg"></i>
+                        </div>
+                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                            Company Mgmt
                         </span>
                     </a>
                 </nav>
@@ -178,6 +241,57 @@
                 </div>
             </div>
 
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="max-w-4xl mx-auto mb-6">
+                        {% for category, message in messages %}
+                            {% if category == 'error' %}
+                                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg shadow-lg">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-exclamation-triangle text-xl mr-3"></i>
+                                        <div>
+                                            <p class="font-bold text-lg">Upload Blocked!</p>
+                                            <p class="text-sm">{{ message }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% elif category == 'warning' %}
+                                <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg shadow-lg">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-exclamation-triangle text-xl mr-3"></i>
+                                        <div>
+                                            <p class="font-bold text-lg">Warning</p>
+                                            <p class="text-sm">{{ message }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% elif category == 'success' %}
+                                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-lg shadow-lg">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-check-circle text-xl mr-3"></i>
+                                        <div>
+                                            <p class="font-bold text-lg">Success!</p>
+                                            <p class="text-sm">{{ message }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded-lg shadow-lg">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-info-circle text-xl mr-3"></i>
+                                        <div>
+                                            <p class="font-bold text-lg">Information</p>
+                                            <p class="text-sm">{{ message }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
             <!-- Upload Form -->
             <div class="max-w-4xl mx-auto">
                 <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-8 shadow-xl border border-gray-200/50">
@@ -214,5 +328,50 @@
             </div>
         </main>
     </div>
+
+    <!-- Critical Error Modal -->
+    <div id="criticalErrorModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white dark-mode:bg-gray-800 rounded-2xl p-8 max-w-2xl mx-4 shadow-2xl">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 dark-mode:bg-red-900 mb-4">
+                    <i class="fas fa-exclamation-triangle text-3xl text-red-600 dark-mode:text-red-400"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 dark-mode:text-white mb-4">Upload Blocked!</h3>
+                <div id="criticalErrorMessage" class="text-gray-600 dark-mode:text-gray-300 mb-6"></div>
+                <button onclick="closeCriticalErrorModal()" class="px-6 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-colors duration-300">
+                    I Understand
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check for critical errors and show modal
+        document.addEventListener('DOMContentLoaded', function() {
+            const errorMessages = document.querySelectorAll('.bg-red-100');
+            errorMessages.forEach(function(errorDiv) {
+                const message = errorDiv.querySelector('p:last-child').textContent;
+                if (message.includes('UPLOAD BLOCKED') || message.includes('Batch numbers cannot be shared')) {
+                    showCriticalErrorModal(message);
+                }
+            });
+        });
+
+        function showCriticalErrorModal(message) {
+            document.getElementById('criticalErrorMessage').textContent = message;
+            document.getElementById('criticalErrorModal').classList.remove('hidden');
+        }
+
+        function closeCriticalErrorModal() {
+            document.getElementById('criticalErrorModal').classList.add('hidden');
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('criticalErrorModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCriticalErrorModal();
+            }
+        });
+    </script>
 </body>
 </html>
