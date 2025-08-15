@@ -578,3 +578,129 @@ body {
 .shadow { box-shadow: var(--shadow-md); }
 .shadow-lg { box-shadow: var(--shadow-lg); }
 .shadow-xl { box-shadow: var(--shadow-xl); }
+
+/* 1. Navigation buttons for FDEC */
+button {
+    align-items: center;
+    background: linear-gradient(146deg, #4fd4fd, #1542b5 60%, #00d4b9);
+    border-radius: 8px;
+    border: none;
+    box-shadow: rgba(151, 65, 252, 0.2) 0 15px 40px -5px;
+    box-sizing: border-box;
+    color: #fff;
+    display: flex;
+    font-weight: 600;
+    justify-content: center;
+    line-height: 1.1em;
+    min-width: 140px;
+    padding: 16px 30px;
+    text-align: center;
+    text-decoration: none;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+button:active,
+button:hover {
+    outline: 0;
+}
+button span {
+    background-color: rgba(5, 65, 65, 0.45);
+    border-radius: 4px;
+    padding: 14px 24px;
+    width: 100%;
+    transition: 300ms;
+}
+button:hover span {
+    background: none;
+}
+button:active {
+    transform: scale(0.98);
+}
+
+/* 2. FDEC Dashboard Background */
+.fdec-dashboard-bg {
+    --c1: #4fd4fd;
+    --c2: #1542b5;
+    --c3: #00d4b9;
+    background: repeating-conic-gradient(
+        from 310deg,
+        var(--c1) 0 30deg,
+        var(--c2) 0 90deg,
+        var(--c3) 0 180deg
+    );
+    background-size: 50% 50%;
+}
+
+/* 3. FDEC Section Tabs */
+.fdec-tabs {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 150px;
+}
+
+input {
+    font-family: 'Montserrat', sans-serif;
+    height: 40px;
+    padding-left: 2rem;
+    box-shadow: 0 1px 2px #1542b5, 0 1px 1px #00d4b9;
+    border-radius: 12px;
+    border: none;
+    color: #1542b5;
+    background: rgba(0,213,185,0.25) cubic-bezier(0.19, 1, 0.22, 1);
+    outline: 0;
+}
+input::placeholder {
+    color: #bluebe1;
+}
+input:focus {
+    box-shadow: 0 0 1px 2px #1542b5, 0 0 1px 2px #00d4b9;
+}
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    width: 2rem;
+    height: 2rem;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* 4. Submit buttons on HPC */
+.button-hpc {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 24px;
+    border-radius: 8px;
+    background: linear-gradient(146deg, #4fd4fd, #1542b5 60%, #00d4b9);
+    color: #fff;
+    font-weight: 600;
+    box-shadow: rgba(151, 65, 252, 0.2) 0 15px 40px -5px;
+    transition: all 0.2s;
+}
+.button-hpc:active {
+    transform: scale(0.98);
+}
+
+/* 5. FDEC attach files button */
+.button-attach {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 24px;
+    border-radius: 8px;
+    background: linear-gradient(146deg, #4fd4fd, #1542b5 60%, #00d4b9);
+    color: #fff;
+    font-weight: 600;
+    box-shadow: rgba(151, 65, 252, 0.2) 0 15px 40px -5px;
+    transition: all 0.2s;
+}
+.button-attach svg {
+    margin-right: 8px;
+}
+.button-attach:active {
+    transform: scale(0.98);
+}
