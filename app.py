@@ -1628,43 +1628,24 @@ def change_batch():
             else:
                 flash(f"❌ Error updating batch: {str(e)}", 'error')
     
-    # Get current highest PO using the new database manager system
-    current_highest_po = 0
-    db_session = None
-    
+    # Get current PO from database for template (for both GET and non-JSON POST)
+    current_po_value = 0
     try:
         current_db = get_current_database()
-        logger.info(f"[DEBUG] Getting highest PO for database: {current_db}")
-        
         db_manager = get_database_manager(current_db)
         db_session = db_manager.get_session()
-        
-        try:
-            highest_po = db_session.query(db_manager.POR).order_by(db_manager.POR.po_number.desc()).first()
-            logger.info(f"[DEBUG] POR query successful, highest PO: {highest_po.po_number if highest_po else 'None'}")
-            current_highest_po = highest_po.po_number if highest_po else 0
-        except Exception as por_error:
-            logger.error(f"[DEBUG] Error querying POR table: {str(por_error)}")
-            logger.error(f"[DEBUG] POR error type: {type(por_error)}")
-            current_highest_po = 0
-            
+        counter = db_manager.get_or_create_batch_counter(db_session)
+        current_po_value = counter.value if counter else 1000 # Use the batch counter value
+        db_session.close()
     except Exception as e:
-        logger.error(f"Error getting highest PO: {str(e)}")
-        logger.error(f"Error type: {type(e)}")
-        current_highest_po = 0
-    finally:
-        # Always try to close the session if it was created
-        if db_session is not None:
-            try:
-                db_session.close()
-            except Exception as close_error:
-                logger.error(f"Error closing session: {str(close_error)}")
+        logger.error(f"Error getting current PO for change_batch template: {str(e)}")
+        current_po_value = 1000 # Fallback
     
     # Get current database info for template
     company_info = get_company_config(current_db)
     
     return render_template("change_batch.html", 
-                         current_highest_po=current_highest_po,
+                         current_po=current_po_value, # Pass current_po_value
                          company=current_db,
                          company_info=company_info)
 

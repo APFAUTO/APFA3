@@ -219,21 +219,17 @@ class BatchNumberManager:
         ).first()
         highest_used = highest_por.po_number if highest_por else 0
         
-        # Determine correct calibrated value
-        calibrated_value = max(
-            current_value,           # Current counter value
-            highest_used,           # Highest PO actually used
-            self.config.batch_start, # Configured starting value
-            1                       # Minimum positive value
-        )
+        # Determine the next available PO number
+        # It should be at least highest_used + 1, and also at least self.config.batch_start, and at least 1
+        next_available_po = max(highest_used + 1, self.config.batch_start, 1)
         
-        # Update counter if calibration changed the value
-        if calibrated_value != current_value or current_value < highest_used: # Added condition
-            counter.value = calibrated_value
+        # Update counter if it's not already at the next_available_po
+        if counter.value < next_available_po:
+            counter.value = next_available_po
             session.commit()
-            logger.info(f"🔧 {self.company_name.upper()}: Calibrated counter from {current_value} to {calibrated_value} (highest used: {highest_used})")
+            logger.info(f"🔧 {self.company_name.upper()}: Calibrated counter from {current_value} to {next_available_po} (highest used: {highest_used})")
         
-        return calibrated_value
+        return counter.value # Return the updated value from the counter object
 
 
 # Global instances for each company (lazy initialization)

@@ -246,7 +246,7 @@
                         <h3 class="text-lg font-semibold text-blue-900 mb-2">📊 Current Status - {{ company.upper() }} Database</h3>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div class="text-center">
-                                <div class="text-2xl font-bold text-blue-600">{{ current_highest_po|default(0) }}</div>
+                                <div class="text-2xl font-bold text-blue-600">{{ current_po|default(0) }}</div>
                                 <div class="text-sm text-blue-700">Highest PO Number</div>
                             </div>
                             <div class="text-center">
