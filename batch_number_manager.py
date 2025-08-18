@@ -228,7 +228,7 @@ class BatchNumberManager:
         )
         
         # Update counter if calibration changed the value
-        if calibrated_value != current_value:
+        if calibrated_value != current_value or current_value < highest_used: # Added condition
             counter.value = calibrated_value
             session.commit()
             logger.info(f"🔧 {self.company_name.upper()}: Calibrated counter from {current_value} to {calibrated_value} (highest used: {highest_used})")

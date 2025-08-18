@@ -58,29 +58,18 @@ def to_float(value: Any) -> float:
     return 0.0
 
 
-def read_ws(stream) -> Tuple[List[List[Any]], Worksheet]:
-    """
-    Read Excel worksheet from stream.
-    
-    Args:
-        stream: File stream or BytesIO object
-        
-    Returns:
-        Tuple of (rows, worksheet)
-        
-    Raises:
-        ValueError: If file cannot be read
-    """
-    try:
-        stream.seek(0)
-        return read_xlsx_file(stream)
-    except Exception as e:
-        raise ValueError(f"Error reading Excel file: {str(e)}")
 
 
 
 
 
+
+import re
+import os
+from datetime import datetime, date
+from typing import List, Dict, Any, Tuple, Optional
+from openpyxl import load_workbook
+from openpyxl.worksheet.worksheet import Worksheet
 import xlrd # Added import for xlrd
 
 
