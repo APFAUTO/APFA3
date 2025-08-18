@@ -1,76 +1,3 @@
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
-        self, distilled_params, execution_options
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py", line 1640, in _execute_clauseelement
-    ret = self._execute_context(
-        dialect,
-    ...<8 lines>...
-        cache_hit=cache_hit,
-    )
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
-    return self._exec_single_context(
-           ~~~~~~~~~~~~~~~~~~~~~~~~~^
-        dialect, context, statement, parameters
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
-    self._handle_dbapi_exception(
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
-        e, str_statement, effective_parameters, cursor, context
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py", line 2355, in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
-    self.dialect.do_execute(
-    ~~~~~~~~~~~~~~~~~~~~~~~^
-        cursor, str_statement, effective_parameters, context
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\default.py", line 941, in do_execute
-    cursor.execute(statement, parameters)
-    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
-sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) UNIQUE constraint failed: por.po_number
-[SQL: INSERT INTO por (po_number, requestor_name, date_order_raised, date_required_by, ship_project_name, supplier, filename, company, job_contract_no, op_no, description, quantity, price_each, line_total, order_total, specification_standards, supplier_contact_name, supplier_contact_email, quote_ref, quote_date, show_price, data_summary, created_at, current_stage, status_color, order_type, content_type, received_comments, sent_comments, filed_comments, amazon_comment, work_date_comment, fdec_warning, stage_updated_at, change_history, current_change_index) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
-[parameters: (5000, 'Mr Biggy Bollocks', '15/06/2025', '15/06/2025', 'Hms Proxy', 'Testing Parts', 'PO_5000_15_06_2025_Mr_Biggy_Bollocks.xlsx', 'a&p', 67, 999, 'FIX BOILER UNIT', 100, 1.39, 139.0, 0.0, '', 'Siggy', 'JOHNDOE@GMAIL.COM', 'E055545', '05/06/2025', 'Yes', "['DATE ORDER RAISED', 'SHIP / PROJECT NAME', None, 'SUPPLIER (if known) ', None, None, None, 'DATE REQUIRED BY ', None]\n[datetime.datetime(2025, 6,  ... (630 characters truncated) ... e, None, None, None, None, 0]\n[None, None, '1ml flexseal', None, None, None, 559, 0.99, 553.41]\n[None, None, None, None, None, None, None, None, 0]", '2025-08-18 19:01:23.598835', 'received', 'normal', 'new', 'supply', None, None, None, None, None, None, '2025-08-18 19:01:23.601658', None, -1)]
-(Background on this error at: https://sqlalche.me/e/20/gkpj)
-
-INFO:__main__:[DEBUG] get_current_database() - Session value: a&p, Default: a&p, Returning: a&p
-ERROR:__main__:Error getting current PO: (sqlite3.IntegrityError) NOT NULL constraint failed: batch_counter.company      
-[SQL: INSERT INTO batch_counter (value) VALUES (?)]
-[parameters: (5000,)]
-(Background on this error at: https://sqlalche.me/e/20/gkpj)
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:01:23] "POST /upload HTTP/1.1" 200 -
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:01:23] "GET /static/favicon.ico HTTP/1.1" 200 -
-INFO:__main__:Upload request received. Files in request: ['file']
-INFO:__main__:File object: <FileStorage: 'titanic3.xls' ('application/vnd.ms-excel')>
-INFO:__main__:File filename: titanic3.xls
-INFO:__main__:File content type: application/vnd.ms-excel
-INFO:__main__:File content length: 0
-INFO:__main__:File headers: {'Host': '127.0.0.1:5000', 'Connection': 'keep-alive', 'Content-Length': '284360', 'Cache-Control': 'max-age=0', 'Sec-Ch-Ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'Sec-Ch-Ua-Mobile': '?0', 'Sec-Ch-Ua-Platform': '"Windows"', 'Origin': 'http://127.0.0.1:5000', 'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundaryTqDDeaJrQlG2oN9p', 'Upgrade-Insecure-Requests': '1', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7', 'Sec-Fetch-Site': 'same-origin', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-User': '?1', 'Sec-Fetch-Dest': 'document', 'Referer': 'http://127.0.0.1:5000/upload', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept-Language': 'en-GB,en-US;q=0.9,en;q=0.8', 'Cookie': 'session=eyJjdXJyZW50X2RhdGFiYXNlIjoiYSZwIn0.aKN4gw.qjZbI1tAwco5pVOy9qQQWlZtg8s'}
-INFO:__main__:First 100 bytes: b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00>\x00\x03\x00\xfe\xff\t\x00\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x05\x00\x00\x00)\x02\x00\x00\x00\x00\x00\x00\x00\x10\x00\x00\xfe\xff\xff\xff\x00\x00\x00\x00\xfe\xff\xff\xff\x00\x00\x00\x00$\x02\x00\x00%\x02\x00\x00&\x02\x00\x00'\x02\x00\x00(\x02\x00\x00\xff\xff\xff\xff"
-INFO:__main__:File size: 100 bytes
-INFO:__main__:Processing file: titanic3.xls
-INFO:__main__:File content type: application/vnd.ms-excel
-INFO:__main__:File size: 0
-INFO:__main__:File extension detected: xls
-INFO:__main__:Processing as Excel file
-ERROR:__main__:Error processing Excel file: Error reading Excel file: Error reading Excel file: File is not a zip file   
-INFO:__main__:[DEBUG] get_current_database() - Session value: a&p, Default: a&p, Returning: a&p
-ERROR:__main__:Error getting current PO: (sqlite3.IntegrityError) NOT NULL constraint failed: batch_counter.company      
-[SQL: INSERT INTO batch_counter (value) VALUES (?)]
-[parameters: (5000,)]
-(Background on this error at: https://sqlalche.me/e/20/gkpj)
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:01:30] "POST /upload HTTP/1.1" 200 -
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:01:30] "GET /static/favicon.ico HTTP/1.1" 200 -
-
- *  History restored 
-
 PS C:\Users\wesle\APFA3> python app.py
 Initialized a&p database manager: a&p_por.db
 Initialized fdec database manager: fdec_por.db
@@ -90,42 +17,84 @@ a&p database tables created successfully
 fdec database tables created successfully
 WARNING:werkzeug: * Debugger is active!
 INFO:werkzeug: * Debugger PIN: 566-239-341
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:04:14] "GET / HTTP/1.1" 302 -
-INFO:__main__:[DEBUG] get_current_database() - Session value: a&p, Default: a&p, Returning: a&p
-ERROR:__main__:Dashboard error: (sqlite3.IntegrityError) NOT NULL constraint failed: batch_counter.company
-[SQL: INSERT INTO batch_counter (value) VALUES (?)]
-[parameters: (5000,)]
-(Background on this error at: https://sqlalche.me/e/20/gkpj)
-INFO:__main__:[DEBUG] get_current_database() - Session value: a&p, Default: a&p, Returning: a&p
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:04:14] "GET /dashboard HTTP/1.1" 200 -
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:04:14] "GET /get_database_info HTTP/1.1" 404 -
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:04:14] "GET /static/favicon.ico HTTP/1.1" 200 -
-INFO:__main__:Database switched to: fdec
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:04:21] "POST /switch_database HTTP/1.1" 200 -
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:04:22] "GET /test_database HTTP/1.1" 404 -
+INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 21:27:44] "GET / HTTP/1.1" 302 -
 INFO:__main__:[DEBUG] get_current_database() - Session value: fdec, Default: a&p, Returning: fdec
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:04:25] "GET /dashboard HTTP/1.1" 200 -
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:04:25] "GET /get_database_info HTTP/1.1" 404 -
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:04:25] "GET /static/favicon.ico HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 21:27:44] "GET /dashboard HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 21:27:44] "GET /get_database_info HTTP/1.1" 404 -
+INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 21:27:44] "GET /static/favicon.ico HTTP/1.1" 200 -
 INFO:__main__:[DEBUG] get_current_database() - Session value: fdec, Default: a&p, Returning: fdec
 INFO:__main__:[DEBUG] View route - Querying PORs from database: fdec
-INFO:__main__:[DEBUG] View route - Found 4 PORs in database
-INFO:__main__:[DEBUG] POR 1: ID=4, PO=6004, Company=fdec, Project=Hms Proxy
-INFO:__main__:[DEBUG] POR 2: ID=3, PO=6003, Company=fdec, Project=Hms Proxy
-INFO:__main__:[DEBUG] POR 3: ID=2, PO=6002, Company=fdec, Project=Hms Proxy
-INFO:__main__:[DEBUG] View route - Prepared 4 PORs for display
+INFO:__main__:[DEBUG] View route - Found 15 PORs in database
+INFO:__main__:[DEBUG] POR 1: ID=15, PO=20027, Company=fdec, Project=Hms Proxy
+INFO:__main__:[DEBUG] POR 2: ID=14, PO=20025, Company=fdec, Project=Hms Proxy
+INFO:__main__:[DEBUG] POR 3: ID=13, PO=20023, Company=fdec, Project=Hms Proxy
+INFO:__main__:[DEBUG] View route - Prepared 15 PORs for display
 INFO:__main__:[DEBUG] View route - Company info: FDEC Database
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:04:26] "GET /view HTTP/1.1" 200 -
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:04:26] "GET /static/favicon.ico HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 21:27:46] "GET /view HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 21:27:47] "GET /static/favicon.ico HTTP/1.1" 200 -
 INFO:__main__:[DEBUG] get_current_database() - Session value: fdec, Default: a&p, Returning: fdec
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:04:27] "GET /upload HTTP/1.1" 200 -
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:04:28] "GET /static/favicon.ico HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 21:27:48] "GET /upload HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 21:27:48] "GET /static/favicon.ico HTTP/1.1" 200 -
+INFO:__main__:Upload request received. Files in request: ['file']
+INFO:__main__:File object: <FileStorage: 'Test POR.xls (1) (1) (1) (4).xlsx' ('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')>
+INFO:__main__:File filename: Test POR.xls (1) (1) (1) (4).xlsx
+INFO:__main__:File content type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+INFO:__main__:File content length: 0
+INFO:__main__:File headers: {'Host': '127.0.0.1:5000', 'Connection': 'keep-alive', 'Content-Length': '20893', 'Cache-Control': 'max-age=0', 'Sec-Ch-Ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'Sec-Ch-Ua-Mobile': '?0', 'Sec-Ch-Ua-Platform': '"Windows"', 'Origin': 'http://127.0.0.1:5000', 'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundaryyaAoCAoTZ9GvLtoJ', 'Upgrade-Insecure-Requests': '1', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7', 'Sec-Fetch-Site': 'same-origin', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-User': '?1', 'Sec-Fetch-Dest': 'document', 'Referer': 'http://127.0.0.1:5000/upload', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept-Language': 'en-GB,en-US;q=0.9,en;q=0.8', 'Cookie': 'session=.eJyrVkpKLEnOiE_NS1GyMjI0MDDQgYoUlyQWlQDFDMBiyaVFRal5JfEQuYJ8DImUxJLEpMTiVCUrpbSU1GSlWgApxB2C.aKOMxA.ixLAvszUwVuqf5FuAfi6D_o6B4E'}
+INFO:__main__:First 100 bytes: b'PK\x03\x04\x14\x00\x06\x00\x08\x00\x00\x00!\x00\x16tv\x10\xae\x01\x00\x009\x08\x00\x00\x13\x00\x08\x02[Content_Types].xml \xa2\x04\x02(\xa0\x00\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+INFO:__main__:File size: 100 bytes
+INFO:__main__:Processing file: Test POR.xls (1) (1) (1) (4).xlsx
+INFO:__main__:File content type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+INFO:__main__:File size: 0
+INFO:__main__:File extension detected: xlsx
+INFO:__main__:Processing as Excel file
+DEBUG: Extracted POR data: {'show_price': 'Yes', 'date_order_raised': '15/06/2025', 'date_required_by': '15/06/2025', 'ship_project_name': 'Hms Proxy', 'supplier': 'Testing Parts', 'specification_standards': '', 'supplier_contact_name': 'Siggy', 'supplier_contact_email': 'JOHNDOE@GMAIL.COM', 'quote_ref': 'E055545', 'quote_date': '05/06/2025', 'requestor_name': 'Mr Biggy Bollocks'}
+INFO:__main__:[DEBUG] get_current_database() - Session value: fdec, Default: a&p, Returning: fdec
+INFO:batch_number_manager:🔢 Initialized BatchNumberManager for FDEC
+INFO:batch_number_manager:🔢 FDEC: increment_and_get - Before calibration, counter.value: 20027
+INFO:batch_number_manager:🔧 FDEC: Calibrating counter from 20027 to 20028 (highest used: 20027)
+INFO:batch_number_manager:🔧 FDEC: Calibration calculated value: 20028
+INFO:batch_number_manager:🔢 FDEC: increment_and_get - After calibration, current_value: 20028, counter.value: 20027     
+INFO:batch_number_manager:🔢 FDEC: increment_and_get - Before commit, setting counter.value to: 20029
+INFO:batch_number_manager:🔢 FDEC: increment_and_get - After commit, new_value: 20029
+INFO:__main__:✅ Successfully processed PO #20029 with 1 line items
+INFO:__main__:📊 Extracted data: Requestor=Mr Biggy Bollocks, Project=Hms Proxy, Supplier=Testing Parts
+INFO:__main__:[DEBUG] get_current_database() - Session value: fdec, Default: a&p, Returning: fdec
+INFO:__main__:🔍 Starting database save for PO #20029 in database: fdec
+INFO:__main__:✅ POR created with ID: 16
+INFO:__main__:🔍 Saving 1 line items
+INFO:__main__:✅ Line item 1 added: PROVIDE 2 X ENGINEERS TO VIEW DOCK 2 PORTSIDE WINDOW
+INFO:__main__:🔍 Detecting content type for PO 20029 using Rule-based patterns
+INFO:__main__:📝 Using rule-based pattern matching for content type detection
+INFO:__main__:✅ Auto-detected content type for PO 20029: supply
+INFO:__main__:🔍 Committing transaction to database
+INFO:__main__:✅ Transaction committed successfully
+INFO:__main__:✅ Database save completed successfully for PO #20029
+INFO:__main__:[DEBUG] get_current_database() - Session value: fdec, Default: a&p, Returning: fdec
+INFO:__main__:[DEBUG] get_current_database() - Session value: fdec, Default: a&p, Returning: fdec
+INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 21:27:52] "POST /upload HTTP/1.1" 302 -
+INFO:__main__:[DEBUG] get_current_database() - Session value: fdec, Default: a&p, Returning: fdec
+INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 21:27:52] "GET /view?id=16 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 21:27:52] "GET /static/favicon.ico HTTP/1.1" 200 -
+INFO:__main__:[DEBUG] get_current_database() - Session value: fdec, Default: a&p, Returning: fdec
+INFO:__main__:[DEBUG] View route - Querying PORs from database: fdec
+INFO:__main__:[DEBUG] View route - Found 16 PORs in database
+INFO:__main__:[DEBUG] POR 1: ID=16, PO=20029, Company=fdec, Project=Hms Proxy
+INFO:__main__:[DEBUG] POR 2: ID=15, PO=20027, Company=fdec, Project=Hms Proxy
+INFO:__main__:[DEBUG] POR 3: ID=14, PO=20025, Company=fdec, Project=Hms Proxy
+INFO:__main__:[DEBUG] View route - Prepared 16 PORs for display
+INFO:__main__:[DEBUG] View route - Company info: FDEC Database
+INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 21:27:53] "GET /view HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 21:27:53] "GET /static/favicon.ico HTTP/1.1" 200 -
+INFO:__main__:[DEBUG] get_current_database() - Session value: fdec, Default: a&p, Returning: fdec
+INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 21:27:56] "GET /upload HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 21:27:56] "GET /static/favicon.ico HTTP/1.1" 200 -
 INFO:__main__:Upload request received. Files in request: ['file']
 INFO:__main__:File object: <FileStorage: 'Test POR.xls (1) (1) (1) (3).xlsx' ('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')>
 INFO:__main__:File filename: Test POR.xls (1) (1) (1) (3).xlsx
 INFO:__main__:File content type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
 INFO:__main__:File content length: 0
-INFO:__main__:File headers: {'Host': '127.0.0.1:5000', 'Connection': 'keep-alive', 'Content-Length': '20892', 'Cache-Control': 'max-age=0', 'Sec-Ch-Ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'Sec-Ch-Ua-Mobile': '?0', 'Sec-Ch-Ua-Platform': '"Windows"', 'Origin': 'http://127.0.0.1:5000', 'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundaryzfPBa7JyBKkAB3u8', 'Upgrade-Insecure-Requests': '1', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7', 'Sec-Fetch-Site': 'same-origin', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-User': '?1', 'Sec-Fetch-Dest': 'document', 'Referer': 'http://127.0.0.1:5000/upload', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept-Language': 'en-GB,en-US;q=0.9,en;q=0.8', 'Cookie': 'session=eyJjdXJyZW50X2RhdGFiYXNlIjoiZmRlYyJ9.aKN5NQ.K2FL72Oas8bRM9LILUL2SDXCDFo'}
+INFO:__main__:File headers: {'Host': '127.0.0.1:5000', 'Connection': 'keep-alive', 'Content-Length': '20892', 'Cache-Control': 'max-age=0', 'Sec-Ch-Ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'Sec-Ch-Ua-Mobile': '?0', 'Sec-Ch-Ua-Platform': '"Windows"', 'Origin': 'http://127.0.0.1:5000', 'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundaryQ55GZvDxID7tuYbJ', 'Upgrade-Insecure-Requests': '1', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7', 'Sec-Fetch-Site': 'same-origin', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-User': '?1', 'Sec-Fetch-Dest': 'document', 'Referer': 'http://127.0.0.1:5000/upload', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept-Language': 'en-GB,en-US;q=0.9,en;q=0.8', 'Cookie': 'session=.eJyrVkpKLEnOiE_NS1GyMjI0MDDQgYoUlyQWlQDFDMBiyaVFRal5JfEQuYJ8DImUxJLEpMTiVCUrpbSU1GSlWgApxB2C.aKOMzA.jbbbTOt6JkzzhSHWaNdyvdjnnZ4'}
 INFO:__main__:First 100 bytes: b'PK\x03\x04\x14\x00\x06\x00\x08\x00\x00\x00!\x00\x16tv\x10\xae\x01\x00\x009\x08\x00\x00\x13\x00\x08\x02[Content_Types].xml \xa2\x04\x02(\xa0\x00\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 INFO:__main__:File size: 100 bytes
 INFO:__main__:Processing file: Test POR.xls (1) (1) (1) (3).xlsx
@@ -135,219 +104,40 @@ INFO:__main__:File extension detected: xlsx
 INFO:__main__:Processing as Excel file
 DEBUG: Extracted POR data: {'show_price': 'Yes', 'date_order_raised': '15/06/2025', 'date_required_by': '15/06/2025', 'ship_project_name': 'Hms Proxy', 'supplier': 'Testing Parts', 'specification_standards': '', 'supplier_contact_name': 'Siggy', 'supplier_contact_email': 'JOHNDOE@GMAIL.COM', 'quote_ref': 'E055545', 'quote_date': '05/06/2025', 'requestor_name': 'Mr Biggy Bollocks'}
 INFO:__main__:[DEBUG] get_current_database() - Session value: fdec, Default: a&p, Returning: fdec
-INFO:batch_number_manager:🔢 Initialized BatchNumberManager for FDEC
-INFO:batch_number_manager:🔢 FDEC: Incremented batch number to 6005
-INFO:__main__:✅ Successfully processed PO #6005 with 3 line items
+INFO:batch_number_manager:🔢 FDEC: increment_and_get - Before calibration, counter.value: 20029
+INFO:batch_number_manager:🔧 FDEC: Calibrating counter from 20029 to 20030 (highest used: 20029)
+INFO:batch_number_manager:🔧 FDEC: Calibration calculated value: 20030
+INFO:batch_number_manager:🔢 FDEC: increment_and_get - After calibration, current_value: 20030, counter.value: 20029     
+INFO:batch_number_manager:🔢 FDEC: increment_and_get - Before commit, setting counter.value to: 20031
+INFO:batch_number_manager:🔢 FDEC: increment_and_get - After commit, new_value: 20031
+INFO:__main__:✅ Successfully processed PO #20031 with 3 line items
 INFO:__main__:📊 Extracted data: Requestor=Mr Biggy Bollocks, Project=Hms Proxy, Supplier=Testing Parts
 INFO:__main__:[DEBUG] get_current_database() - Session value: fdec, Default: a&p, Returning: fdec
-INFO:__main__:🔍 Starting database save for PO #6005 in database: fdec
-INFO:__main__:✅ POR created with ID: 5
+INFO:__main__:🔍 Starting database save for PO #20031 in database: fdec
+INFO:__main__:✅ POR created with ID: 17
 INFO:__main__:🔍 Saving 3 line items
 INFO:__main__:✅ Line item 1 added: FIX BOILER UNIT
 INFO:__main__:✅ Line item 2 added: CUT HOLE AND REPLACE WINDOW
 INFO:__main__:✅ Line item 3 added: 1ML FLEXSEAL
-INFO:__main__:🔍 Detecting content type for PO 6005 using Rule-based patterns
+INFO:__main__:🔍 Detecting content type for PO 20031 using Rule-based patterns
 INFO:__main__:📝 Using rule-based pattern matching for content type detection
-INFO:__main__:✅ Auto-detected content type for PO 6005: supply
+INFO:__main__:✅ Auto-detected content type for PO 20031: supply
 INFO:__main__:🔍 Committing transaction to database
 INFO:__main__:✅ Transaction committed successfully
-INFO:__main__:✅ Database save completed successfully for PO #6005
+INFO:__main__:✅ Database save completed successfully for PO #20031
 INFO:__main__:[DEBUG] get_current_database() - Session value: fdec, Default: a&p, Returning: fdec
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:04:32] "POST /upload HTTP/1.1" 302 -
 INFO:__main__:[DEBUG] get_current_database() - Session value: fdec, Default: a&p, Returning: fdec
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:04:32] "GET /view?id=5 HTTP/1.1" 200 -
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:04:32] "GET /static/favicon.ico HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 21:28:01] "POST /upload HTTP/1.1" 302 -
+INFO:__main__:[DEBUG] get_current_database() - Session value: fdec, Default: a&p, Returning: fdec
+INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 21:28:01] "GET /view?id=17 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 21:28:01] "GET /static/favicon.ico HTTP/1.1" 200 -
 INFO:__main__:[DEBUG] get_current_database() - Session value: fdec, Default: a&p, Returning: fdec
 INFO:__main__:[DEBUG] View route - Querying PORs from database: fdec
-INFO:__main__:[DEBUG] View route - Found 5 PORs in database
-INFO:__main__:[DEBUG] POR 1: ID=5, PO=6005, Company=fdec, Project=Hms Proxy
-INFO:__main__:[DEBUG] POR 2: ID=4, PO=6004, Company=fdec, Project=Hms Proxy
-INFO:__main__:[DEBUG] POR 3: ID=3, PO=6003, Company=fdec, Project=Hms Proxy
-INFO:__main__:[DEBUG] View route - Prepared 5 PORs for display
+INFO:__main__:[DEBUG] View route - Found 17 PORs in database
+INFO:__main__:[DEBUG] POR 1: ID=17, PO=20031, Company=fdec, Project=Hms Proxy
+INFO:__main__:[DEBUG] POR 2: ID=16, PO=20029, Company=fdec, Project=Hms Proxy
+INFO:__main__:[DEBUG] POR 3: ID=15, PO=20027, Company=fdec, Project=Hms Proxy
+INFO:__main__:[DEBUG] View route - Prepared 17 PORs for display
 INFO:__main__:[DEBUG] View route - Company info: FDEC Database
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:04:36] "GET /view HTTP/1.1" 200 -
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:04:36] "GET /static/favicon.ico HTTP/1.1" 200 -
-INFO:__main__:[DEBUG] get_current_database() - Session value: fdec, Default: a&p, Returning: fdec
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:05:48] "GET /dashboard HTTP/1.1" 200 -
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:05:48] "GET /get_database_info HTTP/1.1" 404 -
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:05:48] "GET /static/favicon.ico HTTP/1.1" 200 -
-INFO:__main__:Database switched to: a&p
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:05:50] "POST /switch_database HTTP/1.1" 200 -
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:05:51] "GET /test_database HTTP/1.1" 404 -
-INFO:__main__:[DEBUG] get_current_database() - Session value: a&p, Default: a&p, Returning: a&p
-INFO:__main__:[DEBUG] View route - Querying PORs from database: a&p
-INFO:__main__:[DEBUG] View route - Found 1 PORs in database
-INFO:__main__:[DEBUG] POR 1: ID=1, PO=5000, Company=a&p, Project=Hms Proxy
-INFO:__main__:[DEBUG] View route - Prepared 1 PORs for display
-ERROR:__main__:Error getting current PO: (sqlite3.IntegrityError) NOT NULL constraint failed: batch_counter.company      
-[SQL: INSERT INTO batch_counter (value) VALUES (?)]
-[parameters: (5000,)]
-(Background on this error at: https://sqlalche.me/e/20/gkpj)
-INFO:__main__:[DEBUG] View route - Company info: A&P Database
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:05:53] "GET /view HTTP/1.1" 200 -
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:05:53] "GET /static/favicon.ico HTTP/1.1" 200 -
-INFO:__main__:[DEBUG] get_current_database() - Session value: a&p, Default: a&p, Returning: a&p
-INFO:__main__:[DEBUG] View route - Querying PORs from database: a&p
-INFO:__main__:[DEBUG] View route - Found 1 PORs in database
-INFO:__main__:[DEBUG] POR 1: ID=1, PO=5000, Company=a&p, Project=Hms Proxy
-INFO:__main__:[DEBUG] View route - Prepared 1 PORs for display
-ERROR:__main__:Error getting current PO: (sqlite3.IntegrityError) NOT NULL constraint failed: batch_counter.company      
-[SQL: INSERT INTO batch_counter (value) VALUES (?)]
-[parameters: (5000,)]
-(Background on this error at: https://sqlalche.me/e/20/gkpj)
-INFO:__main__:[DEBUG] View route - Company info: A&P Database
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:05:54] "GET /view HTTP/1.1" 200 -
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:05:54] "GET /static/favicon.ico HTTP/1.1" 200 -
-INFO:__main__:[DEBUG] get_current_database() - Session value: a&p, Default: a&p, Returning: a&p
-ERROR:__main__:Error getting current PO: (sqlite3.IntegrityError) NOT NULL constraint failed: batch_counter.company
-[SQL: INSERT INTO batch_counter (value) VALUES (?)]
-[parameters: (5000,)]
-(Background on this error at: https://sqlalche.me/e/20/gkpj)
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:05:55] "GET /upload HTTP/1.1" 200 -
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:05:55] "GET /static/favicon.ico HTTP/1.1" 200 -
-INFO:__main__:Upload request received. Files in request: ['file']
-INFO:__main__:File object: <FileStorage: 'Test POR.xls (1) (1) (1) (4).xlsx' ('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')>
-INFO:__main__:File filename: Test POR.xls (1) (1) (1) (4).xlsx
-INFO:__main__:File content type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
-INFO:__main__:File content length: 0
-INFO:__main__:File headers: {'Host': '127.0.0.1:5000', 'Connection': 'keep-alive', 'Content-Length': '20893', 'Cache-Control': 'max-age=0', 'Sec-Ch-Ua': '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"', 'Sec-Ch-Ua-Mobile': '?0', 'Sec-Ch-Ua-Platform': '"Windows"', 'Origin': 'http://127.0.0.1:5000', 'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundaryQZOUbDZTDLbxA8yt', 'Upgrade-Insecure-Requests': '1', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7', 'Sec-Fetch-Site': 'same-origin', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-User': '?1', 'Sec-Fetch-Dest': 'document', 'Referer': 'http://127.0.0.1:5000/upload', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept-Language': 'en-GB,en-US;q=0.9,en;q=0.8', 'Cookie': 'session=eyJjdXJyZW50X2RhdGFiYXNlIjoiYSZwIn0.aKN5kw.QYA4EG9-qMqJdiyY0NeDBWWuvMk'}
-INFO:__main__:First 100 bytes: b'PK\x03\x04\x14\x00\x06\x00\x08\x00\x00\x00!\x00\x16tv\x10\xae\x01\x00\x009\x08\x00\x00\x13\x00\x08\x02[Content_Types].xml \xa2\x04\x02(\xa0\x00\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-INFO:__main__:File size: 100 bytes
-INFO:__main__:Processing file: Test POR.xls (1) (1) (1) (4).xlsx
-INFO:__main__:File content type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
-INFO:__main__:File size: 0
-INFO:__main__:File extension detected: xlsx
-INFO:__main__:Processing as Excel file
-DEBUG: Extracted POR data: {'show_price': 'Yes', 'date_order_raised': '15/06/2025', 'date_required_by': '15/06/2025', 'ship_project_name': 'Hms Proxy', 'supplier': 'Testing Parts', 'specification_standards': '', 'supplier_contact_name': 'Siggy', 'supplier_contact_email': 'JOHNDOE@GMAIL.COM', 'quote_ref': 'E055545', 'quote_date': '05/06/2025', 'requestor_name': 'Mr Biggy Bollocks'}
-INFO:__main__:[DEBUG] get_current_database() - Session value: a&p, Default: a&p, Returning: a&p
-INFO:batch_number_manager:🔢 Initialized BatchNumberManager for A&P
-ERROR:batch_number_manager:❌ Error incrementing batch number for a&p: (sqlite3.IntegrityError) NOT NULL constraint failed: batch_counter.company
-[SQL: INSERT INTO batch_counter (value) VALUES (?)]
-[parameters: (5000,)]
-(Background on this error at: https://sqlalche.me/e/20/gkpj)
-INFO:__main__:✅ Successfully processed PO #5000 with 1 line items
-INFO:__main__:📊 Extracted data: Requestor=Mr Biggy Bollocks, Project=Hms Proxy, Supplier=Testing Parts
-INFO:__main__:[DEBUG] get_current_database() - Session value: a&p, Default: a&p, Returning: a&p
-INFO:__main__:🔍 Starting database save for PO #5000 in database: a&p
-ERROR:__main__:❌ Database error during save: (sqlite3.IntegrityError) UNIQUE constraint failed: por.po_number
-[SQL: INSERT INTO por (po_number, requestor_name, date_order_raised, date_required_by, ship_project_name, supplier, filename, company, job_contract_no, op_no, description, quantity, price_each, line_total, order_total, specification_standards, supplier_contact_name, supplier_contact_email, quote_ref, quote_date, show_price, data_summary, created_at, current_stage, status_color, order_type, content_type, received_comments, sent_comments, filed_comments, amazon_comment, work_date_comment, fdec_warning, stage_updated_at, change_history, current_change_index) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
-[parameters: (5000, 'Mr Biggy Bollocks', '15/06/2025', '15/06/2025', 'Hms Proxy', 'Testing Parts', 'PO_5000_15_06_2025_Mr_Biggy_Bollocks.xlsx', 'a&p', 67, 999, 'PROVIDE 2 X ENGINEERS TO VIEW DOCK 2 PORTSIDE WINDOW', 100, 1.39, 139.0, 0.0, '', 'Siggy', 'JOHNDOE@GMAIL.COM', 'E055545', '05/06/2025', 'Yes', "['DATE ORDER RAISED', 'SHIP / PROJECT NAME', None, 'SUPPLIER (if known) ', None, None, None, 'DATE REQUIRED BY ', None]\n[datetime.datetime(2025, 6,  ... (632 characters truncated) ...  None, None, None, None, None, None, 0]\n[None, None, None, None, None, None, 559, 0.99, 553.41]\n[None, None, None, None, None, None, None, None, 0]", '2025-08-18 19:05:59.268316', 'received', 'normal', 'new', 'supply', None, None, None, None, None, None, '2025-08-18 19:05:59.270993', None, -1)]
-(Background on this error at: https://sqlalche.me/e/20/gkpj)
-ERROR:__main__:❌ Error type: IntegrityError
-ERROR:__main__:❌ Full traceback: Traceback (most recent call last):
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
-    self.dialect.do_execute(
-    ~~~~~~~~~~~~~~~~~~~~~~~^
-        cursor, str_statement, effective_parameters, context
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\default.py", line 941, in do_execute
-    cursor.execute(statement, parameters)
-    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
-sqlite3.IntegrityError: UNIQUE constraint failed: por.po_number
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "C:\Users\wesle\APFA3\app.py", line 607, in save_por_to_database
-    db_session.flush()  # Get POR id
-    ~~~~~~~~~~~~~~~~^^
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\session.py", line 4352, in flush    
-    self._flush(objects)
-    ~~~~~~~~~~~^^^^^^^^^
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\session.py", line 4487, in _flush   
-    with util.safe_reraise():
-         ~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\util\langhelpers.py", line 146, in __exit__
-    raise exc_value.with_traceback(exc_tb)
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\session.py", line 4448, in _flush   
-    flush_context.execute()
-    ~~~~~~~~~~~~~~~~~~~~~^^
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
-    rec.execute(self)
-    ~~~~~~~~~~~^^^^^^
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
-    util.preloaded.orm_persistence.save_obj(
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
-        self.mapper,
-        ^^^^^^^^^^^^
-        uow.states_for_mapper_hierarchy(self.mapper, False, False),
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        uow,
-        ^^^^
-    )
-    ^
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\persistence.py", line 93, in save_obj
-    _emit_insert_statements(
-    ~~~~~~~~~~~~~~~~~~~~~~~^
-        base_mapper,
-        ^^^^^^^^^^^^
-    ...<3 lines>...
-        insert,
-        ^^^^^^^
-    )
-    ^
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\persistence.py", line 1233, in _emit_insert_statements
-    result = connection.execute(
-        statement,
-        params,
-        execution_options=execution_options,
-    )
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py", line 1418, in execute  
-    return meth(
-        self,
-        distilled_parameters,
-        execution_options or NO_OPTIONS,
-    )
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\sql\elements.py", line 515, in _execute_on_connection
-    return connection._execute_clauseelement(
-           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
-        self, distilled_params, execution_options
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py", line 1640, in _execute_clauseelement
-    ret = self._execute_context(
-        dialect,
-    ...<8 lines>...
-        cache_hit=cache_hit,
-    )
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
-    return self._exec_single_context(
-           ~~~~~~~~~~~~~~~~~~~~~~~~~^
-        dialect, context, statement, parameters
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
-    self._handle_dbapi_exception(
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
-        e, str_statement, effective_parameters, cursor, context
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py", line 2355, in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
-    self.dialect.do_execute(
-    ~~~~~~~~~~~~~~~~~~~~~~~^
-        cursor, str_statement, effective_parameters, context
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "C:\Users\wesle\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\default.py", line 941, in do_execute
-    cursor.execute(statement, parameters)
-    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
-sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) UNIQUE constraint failed: por.po_number
-[SQL: INSERT INTO por (po_number, requestor_name, date_order_raised, date_required_by, ship_project_name, supplier, filename, company, job_contract_no, op_no, description, quantity, price_each, line_total, order_total, specification_standards, supplier_contact_name, supplier_contact_email, quote_ref, quote_date, show_price, data_summary, created_at, current_stage, status_color, order_type, content_type, received_comments, sent_comments, filed_comments, amazon_comment, work_date_comment, fdec_warning, stage_updated_at, change_history, current_change_index) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
-[parameters: (5000, 'Mr Biggy Bollocks', '15/06/2025', '15/06/2025', 'Hms Proxy', 'Testing Parts', 'PO_5000_15_06_2025_Mr_Biggy_Bollocks.xlsx', 'a&p', 67, 999, 'PROVIDE 2 X ENGINEERS TO VIEW DOCK 2 PORTSIDE WINDOW', 100, 1.39, 139.0, 0.0, '', 'Siggy', 'JOHNDOE@GMAIL.COM', 'E055545', '05/06/2025', 'Yes', "['DATE ORDER RAISED', 'SHIP / PROJECT NAME', None, 'SUPPLIER (if known) ', None, None, None, 'DATE REQUIRED BY ', None]\n[datetime.datetime(2025, 6,  ... (632 characters truncated) ...  None, None, None, None, None, None, 0]\n[None, None, None, None, None, None, 559, 0.99, 553.41]\n[None, None, None, None, None, None, None, None, 0]", '2025-08-18 19:05:59.268316', 'received', 'normal', 'new', 'supply', None, None, None, None, None, None, '2025-08-18 19:05:59.270993', None, -1)]
-(Background on this error at: https://sqlalche.me/e/20/gkpj)
-
-INFO:__main__:[DEBUG] get_current_database() - Session value: a&p, Default: a&p, Returning: a&p
-ERROR:__main__:Error getting current PO: (sqlite3.IntegrityError) NOT NULL constraint failed: batch_counter.company
-[SQL: INSERT INTO batch_counter (value) VALUES (?)]
-[parameters: (5000,)]
-(Background on this error at: https://sqlalche.me/e/20/gkpj)
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:05:59] "POST /upload HTTP/1.1" 200 -
-INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 20:05:59] "GET /static/favicon.ico HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 21:28:02] "GET /view HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [18/Aug/2025 21:28:02] "GET /static/favicon.ico HTTP/1.1" 200 -

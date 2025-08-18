@@ -35,18 +35,23 @@ class BatchNumberManager:
         """
         session = self.db_manager.get_session()
         try:
-            # Get or create batch counter
             counter = self._get_or_create_counter(session)
             
-            # Validate and calibrate if necessary
+            # Perform calibration and update the counter in the database
             calibrated_value = self._calibrate_counter(session, counter)
+            
+            # If calibration changed the value, commit it
+            if counter.value != calibrated_value:
+                counter.value = calibrated_value
+                session.commit() # Commit the calibration change
+                logger.info(f"🔧 {self.company_name.upper()}: Committed calibration change to {calibrated_value}")
             
             logger.info(f"📊 {self.company_name.upper()}: Current batch number = {calibrated_value}")
             return calibrated_value
             
         except Exception as e:
+            session.rollback()
             logger.error(f"❌ Error getting batch number for {self.company_name}: {e}")
-            # Return safe fallback value
             return self.config.batch_start
         finally:
             session.close()
@@ -66,21 +71,16 @@ class BatchNumberManager:
         """
         session = self.db_manager.get_session()
         try:
-            # Get or create counter
             counter = self._get_or_create_counter(session)
             
-            # Calibrate first to ensure accuracy
-            current_value = self._calibrate_counter(session, counter)
+            # Simply increment the current value
+            new_value = counter.value + 1
             
-            # Increment to next value
-            new_value = current_value + 1
-            
-            # Validate the new value
+            # Validate the new value (keep existing validation)
             if new_value <= 0:
                 logger.warning(f"⚠️ Invalid new batch number {new_value}, resetting to safe value")
                 new_value = max(self.config.batch_start, 1)
             
-            # Update counter in database
             counter.value = new_value
             session.commit()
             
@@ -90,7 +90,6 @@ class BatchNumberManager:
         except Exception as e:
             session.rollback()
             logger.error(f"❌ Error incrementing batch number for {self.company_name}: {e}")
-            # Return safe fallback
             return self.config.batch_start
         finally:
             session.close()
@@ -209,27 +208,30 @@ class BatchNumberManager:
     def _calibrate_counter(self, session: Session, counter) -> int:
         """
         Calibrate counter to ensure it's accurate and never negative.
+        It sets the counter to the highest_used PO number + 1, or batch_start, whichever is greater.
+        It does NOT increment for the *next* PO number, only ensures a valid starting point.
         Returns the calibrated value.
         """
         current_value = counter.value
-        
+
         # Get highest PO number actually used
         highest_por = session.query(self.models['POR']).order_by(
             self.models['POR'].po_number.desc()
         ).first()
         highest_used = highest_por.po_number if highest_por else 0
+
+        # The counter should be at least the highest PO number used + 1
+        # and also at least the configured batch_start, and at least 1.
+        # This is the minimum valid value the counter should be.
+        minimum_valid_value = max(highest_used + 1, self.config.batch_start, 1)
+
+        # Only return the calculated value, do not modify counter.value here
+        if current_value < minimum_valid_value:
+            logger.info(f"🔧 {self.company_name.upper()}: Calibration calculated: {minimum_valid_value} (current: {current_value}, highest used: {highest_used})")
+            return minimum_valid_value
         
-        # Determine the next available PO number
-        # It should be at least highest_used + 1, and also at least self.config.batch_start, and at least 1
-        next_available_po = max(highest_used + 1, self.config.batch_start, 1)
-        
-        # Update counter if it's not already at the next_available_po
-        if counter.value < next_available_po:
-            counter.value = next_available_po
-            session.commit()
-            logger.info(f"🔧 {self.company_name.upper()}: Calibrated counter from {current_value} to {next_available_po} (highest used: {highest_used})")
-        
-        return counter.value # Return the updated value from the counter object
+        logger.info(f"🔧 {self.company_name.upper()}: Counter already calibrated at {current_value}.")
+        return current_value
 
 
 # Global instances for each company (lazy initialization)

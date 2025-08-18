@@ -231,6 +231,7 @@
                         <thead class="bg-gray-50 border-b border-gray-200">
                             <tr>
         
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PO Number</th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Name</th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requestor</th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Created</th>
@@ -395,6 +396,9 @@
             const tableBody = document.getElementById('porsTableBody');
             tableBody.innerHTML = pagePORs.map(por => `
                 <tr class="hover:bg-gray-50 transition-colors duration-200">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${por.po_number}</div>
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="text-sm text-gray-900">${por.project}</div>
                     </td>

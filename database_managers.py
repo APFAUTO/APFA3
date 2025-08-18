@@ -178,7 +178,7 @@ class DatabaseManager:
             # Create with company name
             counter = self.BatchCounter(company=self.company_name, value=self.batch_start)
             session.add(counter)
-            session.commit()
+            # session.commit() # <--- REMOVE THIS COMMIT
         return counter
 
 
