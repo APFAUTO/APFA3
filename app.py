@@ -9,27 +9,17 @@ import json
 from datetime import datetime, timezone
 from typing import Optional, Tuple, List
 
-from models import BatchCounter
-from models import Base, engine
-from po_counter import increment_po
-
-# Initialize database tables
-try:
-    Base.metadata.create_all(engine)
-    print("✅ Database tables initialized successfully")
-except Exception as e:
-    print(f"❌ Error initializing database: {e}")
-    # Continue anyway - tables might already exist
+from batch_number_manager import get_batch_manager, increment_batch_number
+from database_managers import get_database_manager
+from company_config import get_company_config
 
 from flask import Flask, request, render_template, flash, redirect, url_for, send_file, session, jsonify
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
-from sqlalchemy import create_engine, func
+from sqlalchemy import func
 from sqlalchemy.orm import sessionmaker
-
-from models import POR, PORFile, LineItem, get_session
 from utils import read_ws, find_vertical, get_order_total_by_map, extract_line_items_by_map, to_float, stringify
-from config import COMPANIES, DATABASES, CURRENT_DATABASE
+from config import DATABASES, CURRENT_DATABASE
 import re
 
 # NLP classifier removed - using rule-based pattern matching only
@@ -55,165 +45,15 @@ app = Flask(__name__)
 app.config.update(
     UPLOAD_FOLDER=UPLOAD_FOLDER,
     MAX_CONTENT_LENGTH=MAX_FILE_SIZE,
-    SECRET_KEY=os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+    # SECRET_KEY should be set as an environment variable in a production environment
+    SECRET_KEY=os.environ.get('SECRET_KEY', 'a-very-secret-key')
 )
-
-# Database session management
-def create_database_models(database_name):
-    """Create database-aware models for the specified database."""
-    from sqlalchemy.ext.declarative import declarative_base
-    from sqlalchemy import Column, Integer, String, Float, Text, DateTime, Index, ForeignKey
-    from sqlalchemy.orm import relationship
-    from datetime import datetime, timezone
-    
-    LocalBase = declarative_base()
-    
-    class LocalPOR(LocalBase):
-        __tablename__ = "por"
-        id = Column(Integer, primary_key=True, autoincrement=True)
-        po_number = Column(Integer, unique=True, nullable=False, index=True)
-        requestor_name = Column(String(255), nullable=False, index=True)
-        date_order_raised = Column(String(50), nullable=False)
-        date_required_by = Column(String(50))
-        ship_project_name = Column(String(255), index=True)
-        supplier = Column(String(255), index=True)
-        filename = Column(String(255), nullable=False)
-        company = Column(String(10), nullable=True, default='a&p')
-        job_contract_no = Column(String(100), index=True)
-        op_no = Column(String(50), index=True)
-        description = Column(Text)
-        quantity = Column(Integer)
-        price_each = Column(Float)
-        line_total = Column(Float)
-        order_total = Column(Float)
-        specification_standards = Column(Text)
-        supplier_contact_name = Column(String(255))
-        supplier_contact_email = Column(String(255))
-        quote_ref = Column(String(255))
-        quote_date = Column(String(50))
-        show_price = Column(String(10))
-        data_summary = Column(Text)
-        created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
-        current_stage = Column(String(20), default='received', nullable=False)
-        status_color = Column(String(20), default='normal', nullable=False)
-        order_type = Column(String(20), default='new', nullable=False)
-        content_type = Column(String(20), default='supply', nullable=False)
-        received_comments = Column(Text)
-        sent_comments = Column(Text)
-        filed_comments = Column(Text)
-        amazon_comment = Column(Text)
-        work_date_comment = Column(Text)
-        fdec_warning = Column(Text)
-        stage_updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
-        change_history = Column(Text)
-        current_change_index = Column(Integer, default=-1)
-        
-        # Relationship to attached files
-        attached_files = relationship("LocalPORFile", back_populates="por", cascade="all, delete-orphan")
-        
-        # Composite index for common searches
-        __table_args__ = (
-            Index('idx_po_requestor', 'po_number', 'requestor_name'),
-            Index('idx_job_op', 'job_contract_no', 'op_no'),
-        )
-    
-    class LocalLineItem(LocalBase):
-        __tablename__ = "line_items"
-        id = Column(Integer, primary_key=True, autoincrement=True)
-        por_id = Column(Integer, ForeignKey('por.id'), nullable=False, index=True)
-        job_contract_no = Column(String(100), index=True)
-        op_no = Column(String(50), index=True)
-        description = Column(Text)
-        specifications = Column(Text)
-        quantity = Column(Integer)
-        price_each = Column(Float)
-        line_total = Column(Float)
-    
-    class LocalPORFile(LocalBase):
-        __tablename__ = "por_files"
-        id = Column(Integer, primary_key=True, autoincrement=True)
-        por_id = Column(Integer, ForeignKey('por.id'), nullable=False, index=True)
-        original_filename = Column(String(255), nullable=False)
-        stored_filename = Column(String(255), nullable=False)
-        file_type = Column(String(50), nullable=False)
-        file_size = Column(Integer)
-        mime_type = Column(String(100))
-        uploaded_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
-        description = Column(String(500))
-        por = relationship("LocalPOR", back_populates="attached_files")
-    
-    class LocalBatchCounter(LocalBase):
-        __tablename__ = "batch_counter"
-        id = Column(Integer, primary_key=True)
-        value = Column(Integer, nullable=False)
-    
-    return LocalBase, LocalPOR, LocalLineItem, LocalPORFile, LocalBatchCounter
 
 def get_current_database():
     """Get the current active database from session or default."""
     current_db = session.get('current_database', CURRENT_DATABASE)
     logger.info(f"[DEBUG] get_current_database() - Session value: {session.get('current_database')}, Default: {CURRENT_DATABASE}, Returning: {current_db}")
     return current_db
-
-def get_database_engine(database_name=None):
-    """Get database engine for specified database."""
-    if database_name is None:
-        database_name = get_current_database()
-    
-    db_config = DATABASES.get(database_name, DATABASES['a&p'])
-    db_path = db_config['path']
-    
-    # Get absolute path
-    import os
-    abs_path = os.path.abspath(db_path)
-    
-    logger.info(f"[DEBUG] get_database_engine() - Database: {database_name}, Path: {db_path}, Abs Path: {abs_path}")
-    
-    # Create SQLite engine for the specified database
-    engine = create_engine(f'sqlite:///{abs_path}')
-    return engine
-
-def get_database_session(database_name=None):
-    """Get database session for specified database."""
-    if database_name is None:
-        database_name = get_current_database()
-    
-    logger.info(f"[DEBUG] get_database_session() - Creating session for database: {database_name}")
-    
-    engine = get_database_engine(database_name)
-    Session = sessionmaker(bind=engine)
-    return Session()
-
-def get_or_create_batch_counter(database_name=None):
-    """Get or create batch counter for specified database."""
-    db_session = get_database_session(database_name)
-    try:
-        # Ensure the BatchCounter table exists in this database
-        engine = get_database_engine(database_name)
-        
-        # Get database-aware models for this database
-        LocalBase, LocalPOR, LocalLineItem, LocalPORFile, LocalBatchCounter = create_database_models(database_name)
-        
-        # Create the table in this database
-        LocalBase.metadata.create_all(engine)
-        
-        # Query using the local model
-        counter = db_session.query(LocalBatchCounter).first()
-        if not counter:
-            # Create new counter with starting value based on company
-            current_db = database_name or get_current_database()
-            start_value = 1000  # Default starting value
-            if current_db == 'fdec':
-                start_value = 1000  # FDEC starting value
-            elif current_db == 'a&p':
-                start_value = 1000  # A&P starting value
-            
-            counter = LocalBatchCounter(value=start_value)
-            db_session.add(counter)
-            db_session.commit()
-        return counter
-    finally:
-        db_session.close()
 
 # Enable development mode for auto-reloading
 
@@ -277,17 +117,9 @@ def clean_query_string(query_string):
     return urlencode(params, doseq=True)
 
 
-def detect_company_from_project(job_contract_no: str) -> str:
-    """Detect company based on project number."""
-    if not job_contract_no:
-        return 'a&p'  # Default to A&P if no project number
-    
-    return 'a&p'  # Default to A&P
-
-
 def get_company_info(company: str) -> dict:
     """Get company configuration information."""
-    return COMPANIES['a&p']
+    return get_company_config(company)
 
 
 def add_change_to_history(por, field, old_value, new_value):
@@ -369,7 +201,6 @@ def redo_last_change(por):
     except Exception as e:
         logger.error(f"Error redoing change: {str(e)}")
         return False, str(e)
-
 
 def detect_content_type_from_line_items(line_items: list, por_description: str = "") -> str:
     """Detect content type based on line item descriptions using rule-based pattern matching."""
@@ -571,21 +402,17 @@ def process_excel_file(file) -> Tuple[bool, str, Optional[dict], Optional[list]]
         # Get order total using the parsing map
         order_total = get_order_total_by_map(ws)
         
-        # Generate PO number and filename using database-aware counter
+        # Generate PO number using new robust batch number manager
         current_db = get_current_database()
-        counter = get_or_create_batch_counter(current_db)
-        po_number = counter.value
-        # Increment the counter for next use
-        counter.value += 1
-        # Save the updated counter
-        counter_session = get_database_session(current_db)
-        counter_session.add(counter)
-        counter_session.commit()
-        counter_session.close()
+        po_number = increment_batch_number(current_db)
         
         date_order = por_data.get('date_order_raised', datetime.now().strftime('%d/%m/%Y'))
         requestor = por_data.get('requestor_name', 'Unknown')
         
+        company_config = get_company_config(current_db)
+        upload_folder = company_config.upload_folder
+        os.makedirs(upload_folder, exist_ok=True)
+
         # Preserve original file extension
         original_extension = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else 'xlsx'
         safe_filename = secure_filename(f'PO_{po_number}_{date_order}_{requestor.replace(" ", "_")}.{original_extension}')
@@ -593,7 +420,7 @@ def process_excel_file(file) -> Tuple[bool, str, Optional[dict], Optional[list]]
         # Save file locally
         try:
             file.seek(0)
-            file_path = os.path.join(UPLOAD_FOLDER, safe_filename)
+            file_path = os.path.join(upload_folder, safe_filename)
             file.save(file_path)
         except Exception as e:
             logger.error(f"Error saving file: {str(e)}")
@@ -608,8 +435,7 @@ def process_excel_file(file) -> Tuple[bool, str, Optional[dict], Optional[list]]
         first_item = items[0] if items else {}
         
         # Check for FDEC job number warning
-        current_db = get_current_database()
-        fdec_warning = check_fdec_job_warning(first_item.get('job'), current_db)
+        fdec_warning = company_config.check_fdec_warning(first_item.get('job'))
         
         # Prepare data dictionary
         data = {
@@ -662,7 +488,8 @@ def process_email_file(file) -> Tuple[bool, str, Optional[dict], Optional[list]]
         from email import policy
         
         # Generate PO number and filename
-        po_number = increment_po()
+        current_db = get_current_database()
+        po_number = increment_batch_number(current_db)
         date_order = datetime.now().strftime('%d/%m/%Y')
         
         # Save file locally
@@ -769,35 +596,14 @@ def save_por_to_database(data: dict, line_items: list = None) -> Tuple[bool, str
     try:
         import re
         
-        logger.info(f"🔍 Starting database save for PO #{data.get('po_number')} in database: {get_current_database()}")
-        
-        # Check for batch number conflicts between companies
         current_db = get_current_database()
-        logger.info(f"🔍 Checking batch number conflicts for PO #{data.get('po_number')}")
-        batch_conflict = check_batch_number_conflict(data.get('po_number'), current_db)
-        if batch_conflict:
-            logger.warning(f"🚫 BATCH NUMBER CONFLICT BLOCKS UPLOAD: {batch_conflict}")
-            return False, batch_conflict
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
         
-        logger.info(f"✅ No batch number conflicts found")
+        logger.info(f"🔍 Starting database save for PO #{data.get('po_number')} in database: {current_db}")
         
-        # Get database session
-        logger.info(f"🔍 Getting database session for {current_db}")
-        db_session = get_database_session(current_db)
-        
-        # Get database-aware models for this database
-        logger.info(f"🔍 Creating database-aware models for {current_db}")
-        LocalBase, LocalPOR, LocalLineItem, LocalPORFile, LocalBatchCounter = create_database_models(current_db)
-        
-        # Create tables in this database
-        logger.info(f"🔍 Creating tables in {current_db} database")
-        engine = get_database_engine(current_db)
-        LocalBase.metadata.create_all(engine)
-        
-        logger.info(f"🔍 Creating POR object with data: {data}")
-        por = LocalPOR(**data)
+        por = db_manager.POR(**data)
         db_session.add(por)
-        logger.info(f"🔍 Flushing to get POR ID")
         db_session.flush()  # Get POR id
         logger.info(f"✅ POR created with ID: {por.id}")
         
@@ -805,7 +611,7 @@ def save_por_to_database(data: dict, line_items: list = None) -> Tuple[bool, str
         if line_items:
             logger.info(f"🔍 Saving {len(line_items)} line items")
             for i, item in enumerate(line_items):
-                line_item = LocalLineItem(
+                line_item = db_manager.LineItem(
                     por_id=por.id,
                     job_contract_no=item.get('job'),
                     op_no=item.get('op'),
@@ -877,34 +683,29 @@ def save_por_to_database(data: dict, line_items: list = None) -> Tuple[bool, str
         except:
             pass
         
-        # Provide specific error messages
-        error_msg = str(e)
-        if "UNIQUE constraint failed: por.po_number" in error_msg:
-            po_number = data.get('po_number', 'unknown')
-            return False, f"🚫 UPLOAD BLOCKED: PO number {po_number} already exists in this database! Duplicate PO numbers are not allowed. Please use a different PO number or contact your administrator."
-        elif "UNIQUE constraint failed" in error_msg:
-            return False, "🚫 UPLOAD BLOCKED: Database constraint violation. The data conflicts with existing records."
-        else:
-            return False, f"🚫 UPLOAD BLOCKED: Database error: {error_msg}"
+        # Return generic error message
+        return False, f"Database error: {str(e)}"
 
 
-def get_paginated_records(page: int, search_query: str = '') -> Tuple[List[POR], dict]:
+def get_paginated_records(page: int, search_query: str = '') -> Tuple[List, dict]:
     """
     Get paginated POR records with optional search.
     Also attaches all line items to each POR record.
     """
     try:
-        from models import get_session, LineItem
-        db_session = get_session()
-        query = db_session.query(POR).order_by(POR.id.desc())
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+
+        query = db_session.query(db_manager.POR).order_by(db_manager.POR.id.desc())
         if search_query:
             search_term = f"%{search_query}%"
             query = query.filter(
-                POR.po_number.like(search_term) |
-                POR.requestor_name.like(search_term) |
-                POR.job_contract_no.like(search_term) |
-                POR.op_no.like(search_term) |
-                POR.description.like(search_term)
+                db_manager.POR.po_number.like(search_term) |
+                db_manager.POR.requestor_name.like(search_term) |
+                db_manager.POR.job_contract_no.like(search_term) |
+                db_manager.POR.op_no.like(search_term) |
+                db_manager.POR.description.like(search_term)
             )
         total_records = query.count()
         total_pages = (total_records + RECORDS_PER_PAGE - 1) // RECORDS_PER_PAGE
@@ -945,7 +746,7 @@ def get_paginated_records(page: int, search_query: str = '') -> Tuple[List[POR],
             record.attachment_icons = attachment_icons
             
             # Attach all line items
-            record.line_items = db_session.query(LineItem).filter_by(por_id=record.id).all()
+            record.line_items = db_session.query(db_manager.LineItem).filter_by(por_id=record.id).all()
         pagination_info = {
             'current_page': page,
             'total_pages': total_pages,
@@ -969,17 +770,18 @@ def get_paginated_records(page: int, search_query: str = '') -> Tuple[List[POR],
 def test():
     """Test route for debugging database and system status."""
     try:
-        from models import get_session, POR, BatchCounter
-        db_session = get_session()
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
         
         # Check database status
-        total_records = db_session.query(POR).count()
-        counter = db_session.query(BatchCounter).first()
+        total_records = db_session.query(db_manager.POR).count()
+        counter = db_manager.get_or_create_batch_counter(db_session)
         current_po = counter.value if counter else 'No counter found'
         
         # Check if tables exist
         from sqlalchemy import inspect
-        inspector = inspect(engine)
+        inspector = inspect(db_manager.engine)
         tables = inspector.get_table_names()
         
         db_session.close()
@@ -1002,7 +804,7 @@ def test():
             
             <div class="status success">
                 <h3>✅ Database Connection</h3>
-                <p>Database URL: {os.environ.get('DATABASE_URL', 'sqlite:///a&p_por.db')}</p>
+                <p>Database URL: {db_manager.database_url}</p>
                 <p>Tables found: {', '.join(tables) if tables else 'None'}</p>
             </div>
             
@@ -1102,27 +904,27 @@ def dashboard():
     try:
         # Use database-aware session
         current_db = get_current_database()
-        db_session = get_database_session(current_db)
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
         
         # Get current PO from database
-        counter = get_or_create_batch_counter(current_db)
+        counter = db_manager.get_or_create_batch_counter(db_session)
         current_po_value = counter.value if counter else 1000
         
         # Get some basic stats
-        total_por_count = db_session.query(POR).count()
+        total_por_count = db_session.query(db_manager.POR).count()
         
         # Get company distribution stats
-        a_and_p_count = db_session.query(POR).filter(POR.supplier == 'a&p').count()
-        fdec_count = db_session.query(POR).filter(POR.supplier == 'FDEC').count()
+        a_and_p_count = db_session.query(db_manager.POR).filter(db_manager.POR.supplier == 'a&p').count()
+        fdec_count = db_session.query(db_manager.POR).filter(db_manager.POR.supplier == 'FDEC').count()
         
         # Get recent activity (last 5 PORs)
-        recent_activity = db_session.query(POR).order_by(POR.created_at.desc()).limit(5).all()
+        recent_activity = db_session.query(db_manager.POR).order_by(db_manager.POR.created_at.desc()).limit(5).all()
         
         db_session.close()
         
         # Get current database info for template
-        current_db = get_current_database()
-        company_info = COMPANIES.get(current_db, COMPANIES['a&p'])
+        company_info = get_company_config(current_db)
         
 
         
@@ -1138,7 +940,7 @@ def dashboard():
         logger.error(f"Dashboard error: {str(e)}")
         # Get current database info for template
         current_db = get_current_database()
-        company_info = COMPANIES.get(current_db, COMPANIES['a&p'])
+        company_info = get_company_config(current_db)
         
         return render_template("modern_dashboard.html", 
                              current_po=1000,
@@ -1170,15 +972,17 @@ def upload():
                 # Get current PO from database for template
                 try:
                     current_db = get_current_database()
-                    counter = get_or_create_batch_counter(current_db)
+                    db_manager = get_database_manager(current_db)
+                    db_session = db_manager.get_session()
+                    counter = db_manager.get_or_create_batch_counter(db_session)
                     current_po_value = counter.value if counter else 1000
+                    db_session.close()
                 except Exception as e:
                     logger.error(f"Error getting current PO: {str(e)}")
                     current_po_value = 1000
                 
                 # Get current database info for template
-                current_db = get_current_database()
-                company_info = COMPANIES.get(current_db, COMPANIES['a&p'])
+                company_info = get_company_config(current_db)
                 
                 return render_template("modern_upload.html", current_po=current_po_value, company=current_db, company_info=company_info)
             
@@ -1205,15 +1009,17 @@ def upload():
                 # Get current PO from database for template
                 try:
                     current_db = get_current_database()
-                    counter = get_or_create_batch_counter(current_db)
+                    db_manager = get_database_manager(current_db)
+                    db_session = db_manager.get_session()
+                    counter = db_manager.get_or_create_batch_counter(db_session)
                     current_po_value = counter.value if counter else 1000
+                    db_session.close()
                 except Exception as e:
                     logger.error(f"Error getting current PO: {str(e)}")
                     current_po_value = 1000
                 
                 # Get current database info for template
-                current_db = get_current_database()
-                company_info = COMPANIES.get(current_db, COMPANIES['a&p'])
+                company_info = get_company_config(current_db)
                 
                 return render_template("modern_upload.html", current_po=current_po_value, company=current_db, company_info=company_info)
             
@@ -1233,8 +1039,11 @@ def upload():
                         if batch_end > 0:
                             # Get current PO to check if we've reached the end
                             current_db = get_current_database()
-                            counter = get_or_create_batch_counter(current_db)
+                            db_manager = get_database_manager(current_db)
+                            db_session = db_manager.get_session()
+                            counter = db_manager.get_or_create_batch_counter(db_session)
                             current_po = counter.value if counter else 1000
+                            db_session.close()
                             
                             if current_po > batch_end:
                                 batch_message = f"⚠️ BATCH COMPLETE: Reached end of batch range. Please update with more batch numbers."
@@ -1251,12 +1060,10 @@ def upload():
                     try:
                         # Get the latest POR ID to redirect to
                         current_db = get_current_database()
-                        db_session = get_database_session(current_db)
+                        db_manager = get_database_manager(current_db)
+                        db_session = db_manager.get_session()
                         
-                        # Get database-aware models for this database
-                        LocalBase, LocalPOR, LocalLineItem, LocalPORFile, LocalBatchCounter = create_database_models(current_db)
-                        
-                        latest_por = db_session.query(LocalPOR).order_by(LocalPOR.id.desc()).first()
+                        latest_por = db_session.query(db_manager.POR).order_by(db_manager.POR.id.desc()).first()
                         db_session.close()
                         
                         if latest_por:
@@ -1279,15 +1086,17 @@ def upload():
     # Get current PO from database for template
     try:
         current_db = get_current_database()
-        counter = get_or_create_batch_counter(current_db)
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+        counter = db_manager.get_or_create_batch_counter(db_session)
         current_po_value = counter.value if counter else 1000
+        db_session.close()
     except Exception as e:
         logger.error(f"Error getting current PO: {str(e)}")
         current_po_value = 1000
     
     # Get current database info for template
-    current_db = get_current_database()
-    company_info = COMPANIES.get(current_db, COMPANIES['a&p'])
+    company_info = get_company_config(current_db)
     
     return render_template("modern_upload.html", current_po=current_po_value, company=current_db, company_info=company_info)
 
@@ -1301,11 +1110,12 @@ def check_updates():
         
         # Use database-aware session
         current_db = get_current_database()
-        db_session = get_database_session(current_db)
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
         
         # Get the latest POR ID and count
-        latest_por = db_session.query(POR).order_by(POR.id.desc()).first()
-        total_count = db_session.query(POR).count()
+        latest_por = db_session.query(db_manager.POR).order_by(db_manager.POR.id.desc()).first()
+        total_count = db_session.query(db_manager.POR).count()
         
         # Get the last check time from request
         last_check = request.args.get('last_check', 0, type=float)
@@ -1344,23 +1154,15 @@ def view():
         por_id = request.args.get('id', type=int)
         search_query = request.args.get('q', '').strip()
         
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+
         # If no specific ID provided, show list of all PORs (modern view)
         if not por_id:
-            # Get all PORs for the list view
-            current_db = get_current_database()
             logger.info(f"[DEBUG] View route - Querying PORs from database: {current_db}")
             
-            # Use database-aware session for the current database
-            db_session = get_database_session(current_db)
-            
-            # Get database path for verification
-            db_config = DATABASES.get(current_db, DATABASES['a&p'])
-            db_path = db_config['path']
-            import os
-            abs_path = os.path.abspath(db_path)
-            logger.info(f"[DEBUG] View route - Database path: {abs_path}, File exists: {os.path.exists(abs_path)}")
-            
-            all_pors = db_session.query(POR).order_by(POR.id.desc()).all()
+            all_pors = db_session.query(db_manager.POR).order_by(db_manager.POR.id.desc()).all()
             logger.info(f"[DEBUG] View route - Found {len(all_pors)} PORs in database")
             
             # Log first few PORs for debugging
@@ -1371,7 +1173,7 @@ def view():
             por_data = []
             for por in all_pors:
                 # Get line items count
-                line_items_count = db_session.query(LineItem).filter_by(por_id=por.id).count()
+                line_items_count = db_session.query(db_manager.LineItem).filter_by(por_id=por.id).count()
                 
                 # Get file count
                 file_count = len(por.attached_files) if hasattr(por, 'attached_files') else 0
@@ -1393,7 +1195,7 @@ def view():
             
             # Get current PO from database for template
             try:
-                counter = get_or_create_batch_counter(current_db)
+                counter = db_manager.get_or_create_batch_counter(db_session)
                 current_po_value = counter.value if counter else 1000
             except Exception as e:
                 logger.error(f"Error getting current PO: {str(e)}")
@@ -1402,10 +1204,8 @@ def view():
             db_session.close()
             
             # Get current database info for template
-            current_db = get_current_database()
-            logger.info(f"[DEBUG] View route - Current database: {current_db}")
-            company_info = COMPANIES.get(current_db, COMPANIES['a&p'])
-            logger.info(f"[DEBUG] View route - Company info: {company_info['name']}")
+            company_info = get_company_config(current_db)
+            logger.info(f"[DEBUG] View route - Company info: {company_info.display_name}")
             
             return render_template("modern_view.html", 
                                  all_pors=por_data,
@@ -1416,26 +1216,23 @@ def view():
                                  company_info=company_info)
         
         # Get the specific POR record
-        current_db = get_current_database()
-        db_session = get_database_session(current_db)
-        
-        por = db_session.query(POR).filter_by(id=por_id).first()
+        por = db_session.query(db_manager.POR).filter_by(id=por_id).first()
         if not por:
             flash("❌ PO record not found", 'error')
             return redirect(url_for('view'))
         
         # Get navigation info
-        total_records = db_session.query(POR).count()
+        total_records = db_session.query(db_manager.POR).count()
         
         # Get current position (1-based)
-        current_position = db_session.query(POR).filter(POR.id <= por_id).count()
+        current_position = db_session.query(db_manager.POR).filter(db_manager.POR.id <= por_id).count()
         
         # Get previous and next IDs
-        prev_por = db_session.query(POR).filter(POR.id < por_id).order_by(POR.id.desc()).first()
-        next_por = db_session.query(POR).filter(POR.id > por_id).order_by(POR.id.asc()).first()
+        prev_por = db_session.query(db_manager.POR).filter(db_manager.POR.id < por_id).order_by(db_manager.POR.id.desc()).first()
+        next_por = db_session.query(db_manager.POR).filter(db_manager.POR.id > por_id).order_by(db_manager.POR.id.asc()).first()
         
         # Attach line items and file count
-        por.line_items = db_session.query(LineItem).filter_by(por_id=por.id).all()
+        por.line_items = db_session.query(db_manager.LineItem).filter_by(por_id=por.id).all()
         por.file_count = len(por.attached_files)
         por.files = por.attached_files
         
@@ -1445,7 +1242,7 @@ def view():
         
         # Get current PO from database for template
         try:
-            counter = get_or_create_batch_counter(current_db)
+            counter = db_manager.get_or_create_batch_counter(db_session)
             current_po_value = counter.value if counter else 1000
         except Exception as e:
             logger.error(f"Error getting current PO: {str(e)}")
@@ -1453,18 +1250,8 @@ def view():
         
         db_session.close()
         
-        # Get current PO from database for template
-        try:
-            current_db = get_current_database()
-            counter = get_or_create_batch_counter(current_db)
-            current_po_value = counter.value if counter else 1000
-        except Exception as e:
-            logger.error(f"Error getting current PO: {str(e)}")
-            current_po_value = 1000
-        
         # Get current database info for template
-        current_db = get_current_database()
-        company_info = COMPANIES.get(current_db, COMPANIES['a&p'])
+        company_info = get_company_config(current_db)
         
         return render_template("modern_por_detail.html", 
                              por=por,
@@ -1483,21 +1270,22 @@ def view():
         # Get current PO from database for template
         try:
             current_db = get_current_database()
-            counter = get_or_create_batch_counter(current_db)
+            db_manager = get_database_manager(current_db)
+            db_session = db_manager.get_session()
+            counter = db_manager.get_or_create_batch_counter(db_session)
             current_po_value = counter.value if counter else 1000
+            db_session.close()
         except Exception as e:
             logger.error(f"Error getting current PO: {str(e)}")
             current_po_value = 1000
         
         # Get current database info for template
-        current_db = get_current_database()
-        company_info = COMPANIES.get(current_db, COMPANIES['a&p'])
+        company_info = get_company_config(current_db)
         
         # For error case, always use modern_view.html since we're not showing a specific POR
         return render_template("modern_view.html", por=None, current_po=current_po_value, 
                              total_records=0, current_position=0, timestamp=int(time.time()), 
                              company=current_db, company_info=company_info)
-
 
 
 
@@ -1518,14 +1306,15 @@ def search():
         if not search_query and not date_from and not date_to and stage_filter == 'all' and content_type_filter == 'all' and not min_amount and not max_amount:
             return redirect(url_for('view'))
         
-        from models import get_session
         from datetime import datetime, timedelta
         from sqlalchemy import or_, and_, func, case, desc
         
-        db_session = get_session()
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
         
         # Start with base query
-        query = db_session.query(POR)
+        query = db_session.query(db_manager.POR)
         
         # Apply filters
         filters = []
@@ -1534,37 +1323,37 @@ def search():
         if date_from:
             try:
                 from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
-                filters.append(func.date(POR.created_at) >= from_date)
+                filters.append(func.date(db_manager.POR.created_at) >= from_date)
             except ValueError:
                 pass
         
         if date_to:
             try:
                 to_date = datetime.strptime(date_to, '%Y-%m-%d').date()
-                filters.append(func.date(POR.created_at) <= to_date)
+                filters.append(func.date(db_manager.POR.created_at) <= to_date)
             except ValueError:
                 pass
         
         # Stage filter
         if stage_filter != 'all':
-            filters.append(POR.current_stage == stage_filter)
+            filters.append(db_manager.POR.current_stage == stage_filter)
         
         # Content type filter
         if content_type_filter != 'all':
-            filters.append(POR.content_type == content_type_filter)
+            filters.append(db_manager.POR.content_type == content_type_filter)
         
         # Amount range filter
         if min_amount:
             try:
                 min_val = float(min_amount)
-                filters.append(POR.order_total >= min_val)
+                filters.append(db_manager.POR.order_total >= min_val)
             except ValueError:
                 pass
         
         if max_amount:
             try:
                 max_val = float(max_amount)
-                filters.append(POR.order_total <= max_val)
+                filters.append(db_manager.POR.order_total <= max_val)
             except ValueError:
                 pass
         
@@ -1584,7 +1373,7 @@ def search():
             
             if search_date:
                 # Date search
-                filters.append(func.date(POR.created_at) == search_date)
+                filters.append(func.date(db_manager.POR.created_at) == search_date)
                 search_type = 'date'
             else:
                 # Text search with relevance scoring
@@ -1595,18 +1384,18 @@ def search():
                     term_pattern = f"%{term}%"
                     search_conditions.append(
                         or_(
-                            POR.po_number.like(term_pattern),
-                            POR.requestor_name.like(term_pattern),
-                            POR.ship_project_name.like(term_pattern),
-                            POR.supplier.like(term_pattern),
-                            POR.job_contract_no.like(term_pattern),
-                            POR.op_no.like(term_pattern),
-                            POR.description.like(term_pattern),
-                            POR.quote_ref.like(term_pattern),
-                            POR.specification_standards.like(term_pattern),
-                            POR.supplier_contact_name.like(term_pattern),
-                            POR.supplier_contact_email.like(term_pattern),
-                            POR.content_type.like(term_pattern)
+                            db_manager.POR.po_number.like(term_pattern),
+                            db_manager.POR.requestor_name.like(term_pattern),
+                            db_manager.POR.ship_project_name.like(term_pattern),
+                            db_manager.POR.supplier.like(term_pattern),
+                            db_manager.POR.job_contract_no.like(term_pattern),
+                            db_manager.POR.op_no.like(term_pattern),
+                            db_manager.POR.description.like(term_pattern),
+                            db_manager.POR.quote_ref.like(term_pattern),
+                            db_manager.POR.specification_standards.like(term_pattern),
+                            db_manager.POR.supplier_contact_name.like(term_pattern),
+                            db_manager.POR.supplier_contact_email.like(term_pattern),
+                            db_manager.POR.content_type.like(term_pattern)
                         )
                     )
                 
@@ -1622,19 +1411,19 @@ def search():
         if search_query and not search_date:
             # Create relevance score based on field importance and match quality
             relevance_score = case(
-                (POR.po_number.like(f"%{search_query}%"), 100),  # Exact PO number match
-                (POR.po_number.like(f"{search_query}%"), 90),    # PO number starts with
-                (POR.requestor_name.like(f"%{search_query}%"), 80),
-                (POR.ship_project_name.like(f"%{search_query}%"), 75),
-                (POR.supplier.like(f"%{search_query}%"), 70),
-                (POR.job_contract_no.like(f"%{search_query}%"), 65),
-                (POR.op_no.like(f"%{search_query}%"), 60),
-                (POR.description.like(f"%{search_query}%"), 50),
-                (POR.quote_ref.like(f"%{search_query}%"), 45),
-                (POR.specification_standards.like(f"%{search_query}%"), 40),
-                (POR.supplier_contact_name.like(f"%{search_query}%"), 35),
-                (POR.supplier_contact_email.like(f"%{search_query}%"), 30),
-                (POR.content_type.like(f"%{search_query}%"), 25),
+                (db_manager.POR.po_number.like(f"%{search_query}%"), 100),  # Exact PO number match
+                (db_manager.POR.po_number.like(f"{search_query}%"), 90),    # PO number starts with
+                (db_manager.POR.requestor_name.like(f"%{search_query}%"), 80),
+                (db_manager.POR.ship_project_name.like(f"%{search_query}%"), 75),
+                (db_manager.POR.supplier.like(f"%{search_query}%"), 70),
+                (db_manager.POR.job_contract_no.like(f"%{search_query}%"), 65),
+                (db_manager.POR.op_no.like(f"%{search_query}%"), 60),
+                (db_manager.POR.description.like(f"%{search_query}%"), 50),
+                (db_manager.POR.quote_ref.like(f"%{search_query}%"), 45),
+                (db_manager.POR.specification_standards.like(f"%{search_query}%"), 40),
+                (db_manager.POR.supplier_contact_name.like(f"%{search_query}%"), 35),
+                (db_manager.POR.supplier_contact_email.like(f"%{search_query}%"), 30),
+                (db_manager.POR.content_type.like(f"%{search_query}%"), 25),
                 else_=0
             )
             
@@ -1642,10 +1431,10 @@ def search():
             query = query.add_columns(relevance_score.label('relevance_score'))
             
             # Order by relevance score (descending) then by date (newest first)
-            query = query.order_by(desc('relevance_score'), desc(POR.id))
+            query = query.order_by(desc('relevance_score'), desc(db_manager.POR.id))
         else:
             # For date searches or filtered searches, order by date
-            query = query.order_by(desc(POR.id))
+            query = query.order_by(desc(db_manager.POR.id))
         
         # Execute query
         results = query.all()
@@ -1792,31 +1581,27 @@ def change_batch():
                         logger.info(f"[DEBUG] Setting batch range for {current_db}: {start_po}-{end_po}")
                         
                         try:
-                            # Update the batch counter for the current database
-                            db_session = get_database_session(current_db)
-                            logger.info(f"[DEBUG] Database session created for {current_db}")
+                            # Use the new BatchNumberManager system
+                            from batch_number_manager import get_batch_manager
                             
-                            counter = get_or_create_batch_counter(current_db)
-                            logger.info(f"[DEBUG] Batch counter retrieved: {counter.value if counter else 'None'}")
+                            batch_manager = get_batch_manager(current_db)
+                            logger.info(f"[DEBUG] Got batch manager for {current_db}")
                             
-                            if counter:
-                                counter.value = start_po
-                                db_session.commit()
-                                logger.info(f"[DEBUG] Batch counter updated to {start_po}")
-                            else:
-                                logger.error(f"[DEBUG] Failed to get or create batch counter for {current_db}")
-                                
-                            db_session.close()
+                            # Set the batch number to the start of the range
+                            batch_manager.set_batch_number(start_po)
+                            logger.info(f"[DEBUG] Batch number set to {start_po} using BatchNumberManager")
+                            
                         except Exception as db_error:
-                            logger.error(f"[DEBUG] Database error in change-batch: {str(db_error)}")
+                            logger.error(f"[DEBUG] BatchNumberManager error in change-batch: {str(db_error)}")
                             if request.is_json:
-                                return jsonify({'success': False, 'error': f'Database error: {str(db_error)}'})
+                                return jsonify({'success': False, 'error': f'Batch manager error: {str(db_error)}'})
                             else:
-                                flash(f"❌ Database error: {str(db_error)}", 'error')
+                                flash(f"❌ Batch manager error: {str(db_error)}", 'error')
+                            company_info = get_company_config(current_db)
                             return render_template("change_batch.html", 
                                                  current_highest_po=0,
                                                  company=current_db,
-                                                 company_info=COMPANIES.get(current_db, COMPANIES['a&p']))
+                                                 company_info=company_info)
                         
                         # Store batch information in session for tracking
                         session['batch_start'] = start_po
@@ -1843,17 +1628,19 @@ def change_batch():
             else:
                 flash(f"❌ Error updating batch: {str(e)}", 'error')
     
-    # Get current highest PO for warning display from the active database
+    # Get current highest PO using the new database manager system
+    current_highest_po = 0
+    db_session = None
+    
     try:
         current_db = get_current_database()
         logger.info(f"[DEBUG] Getting highest PO for database: {current_db}")
         
-        db_session = get_database_session(current_db)
-        logger.info(f"[DEBUG] Database session created for highest PO query")
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
         
-        # Test POR model access
         try:
-            highest_po = db_session.query(POR).order_by(POR.po_number.desc()).first()
+            highest_po = db_session.query(db_manager.POR).order_by(db_manager.POR.po_number.desc()).first()
             logger.info(f"[DEBUG] POR query successful, highest PO: {highest_po.po_number if highest_po else 'None'}")
             current_highest_po = highest_po.po_number if highest_po else 0
         except Exception as por_error:
@@ -1861,15 +1648,20 @@ def change_batch():
             logger.error(f"[DEBUG] POR error type: {type(por_error)}")
             current_highest_po = 0
             
-        db_session.close()
     except Exception as e:
         logger.error(f"Error getting highest PO: {str(e)}")
         logger.error(f"Error type: {type(e)}")
         current_highest_po = 0
+    finally:
+        # Always try to close the session if it was created
+        if db_session is not None:
+            try:
+                db_session.close()
+            except Exception as close_error:
+                logger.error(f"Error closing session: {str(close_error)}")
     
     # Get current database info for template
-    current_db = get_current_database()
-    company_info = COMPANIES.get(current_db, COMPANIES['a&p'])
+    company_info = get_company_config(current_db)
     
     return render_template("change_batch.html", 
                          current_highest_po=current_highest_po,
@@ -1883,8 +1675,9 @@ def check_batch_status():
     try:
         # Get current PO from the active database
         current_db = get_current_database()
-        db_session = get_database_session(current_db)
-        counter = get_or_create_batch_counter(current_db)
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+        counter = db_manager.get_or_create_batch_counter(db_session)
         current_po = counter.value if counter else 1000
         db_session.close()
         
@@ -1920,8 +1713,9 @@ def check_batch_completion():
     try:
         # Get current PO from the active database
         current_db = get_current_database()
-        db_session = get_database_session(current_db)
-        counter = get_or_create_batch_counter(current_db)
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+        counter = db_manager.get_or_create_batch_counter(db_session)
         current_po = counter.value if counter else 1000
         db_session.close()
         
@@ -1953,15 +1747,15 @@ def check_batch_completion():
 
 
 
-
 @app.route('/attach-files/<int:por_id>', methods=['GET', 'POST'])
 def attach_files(por_id):
     """Handle file attachments for POR records."""
     try:
-        # Get the POR record
-        from models import get_session
-        db_session = get_session()
-        por = db_session.query(POR).filter_by(id=por_id).first()
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+
+        por = db_session.query(db_manager.POR).filter_by(id=por_id).first()
         
         if not por:
             flash("❌ POR record not found", 'error')
@@ -2003,14 +1797,17 @@ def attach_files(por_id):
                         safe_filename = f"POR_{por.po_number}_{file_type}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}{file_extension}"
                         
                         # Save file
-                        file_path = os.path.join(UPLOAD_FOLDER, safe_filename)
+                        company_config = get_company_config(current_db)
+                        upload_folder = company_config.upload_folder
+                        os.makedirs(upload_folder, exist_ok=True)
+                        file_path = os.path.join(upload_folder, safe_filename)
                         file.save(file_path)
                         logger.info(f"File saved to: {file_path}")
                         file_size = os.path.getsize(file_path)
                         logger.info(f"File size: {file_size} bytes")
                         
                         # Create PORFile record
-                        por_file = PORFile(
+                        por_file = db_manager.PORFile(
                             por_id=por_id,
                             original_filename=original_filename,
                             stored_filename=safe_filename,
@@ -2045,8 +1842,8 @@ def attach_files(por_id):
                 db_session.close()
         
         # Get existing attachments
-        db_session = get_session()
-        por = db_session.query(POR).filter_by(id=por_id).first()
+        db_session = db_manager.get_session()
+        por = db_session.query(db_manager.POR).filter_by(id=por_id).first()
         attached_files = por.attached_files if por else []
         
         # Prepare attachment icons for display (max 4, one of each type)
@@ -2090,15 +1887,18 @@ def attach_files(por_id):
 def view_file(file_id):
     """View an attached file in the browser."""
     try:
-        from models import get_session
-        db_session = get_session()
-        por_file = db_session.query(PORFile).filter_by(id=file_id).first()
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+        por_file = db_session.query(db_manager.PORFile).filter_by(id=file_id).first()
         
         if not por_file:
             flash("❌ File not found", 'error')
             return redirect(url_for('view'))
         
-        file_path = os.path.join(UPLOAD_FOLDER, por_file.stored_filename)
+        company_config = get_company_config(current_db)
+        upload_folder = company_config.upload_folder
+        file_path = os.path.join(upload_folder, por_file.stored_filename)
         
         if not os.path.exists(file_path):
             flash("❌ File not found on server", 'error')
@@ -2150,15 +1950,18 @@ def view_file(file_id):
 def open_file(file_id):
     """Open a file with proper handling for different file types."""
     try:
-        from models import get_session
-        db_session = get_session()
-        por_file = db_session.query(PORFile).filter_by(id=file_id).first()
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+        por_file = db_session.query(db_manager.PORFile).filter_by(id=file_id).first()
         
         if not por_file:
             flash("❌ File not found", 'error')
             return redirect(url_for('view'))
         
-        file_path = os.path.join(UPLOAD_FOLDER, por_file.stored_filename)
+        company_config = get_company_config(current_db)
+        upload_folder = company_config.upload_folder
+        file_path = os.path.join(upload_folder, por_file.stored_filename)
         
         if not os.path.exists(file_path):
             flash("❌ File not found on server", 'error')
@@ -2239,15 +2042,18 @@ def open_file(file_id):
 def download_file(file_id):
     """Download an attached file."""
     try:
-        from models import get_session
-        db_session = get_session()
-        por_file = db_session.query(PORFile).filter_by(id=file_id).first()
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+        por_file = db_session.query(db_manager.PORFile).filter_by(id=file_id).first()
         
         if not por_file:
             flash("❌ File not found", 'error')
             return redirect(url_for('view'))
         
-        file_path = os.path.join(UPLOAD_FOLDER, por_file.stored_filename)
+        company_config = get_company_config(current_db)
+        upload_folder = company_config.upload_folder
+        file_path = os.path.join(upload_folder, por_file.stored_filename)
         
         if not os.path.exists(file_path):
             flash("❌ File not found on server", 'error')
@@ -2267,16 +2073,19 @@ def download_file(file_id):
 def delete_file(file_id):
     """Delete an attached file."""
     try:
-        from models import get_session
-        db_session = get_session()
-        por_file = db_session.query(PORFile).filter_by(id=file_id).first()
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+        por_file = db_session.query(db_manager.PORFile).filter_by(id=file_id).first()
         
         if not por_file:
             flash("❌ File not found", 'error')
             return redirect(url_for('view'))
         
         # Delete physical file
-        file_path = os.path.join(UPLOAD_FOLDER, por_file.stored_filename)
+        company_config = get_company_config(current_db)
+        upload_folder = company_config.upload_folder
+        file_path = os.path.join(upload_folder, por_file.stored_filename)
         if os.path.exists(file_path):
             os.remove(file_path)
         
@@ -2299,7 +2108,6 @@ def delete_por():
     """Delete a POR record and manage PO numbering."""
     try:
         from flask import jsonify
-        from models import get_session, LineItem
         
         data = request.get_json()
         por_id = data.get('por_id')
@@ -2308,1437 +2116,236 @@ def delete_por():
         if not por_id or not po_number:
             return jsonify({'success': False, 'error': 'Missing required fields'})
         
-        db_session = get_session()
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
         
         # Get the POR record
-        por = db_session.query(POR).filter_by(id=por_id).first()
+        por = db_session.query(db_manager.POR).filter_by(id=por_id).first()
         if not por:
             return jsonify({'success': False, 'error': 'POR not found'})
         
         # Check if this is the latest PO number
-        latest_po = db_session.query(POR).order_by(POR.po_number.desc()).first()
-        is_latest = latest_po and latest_po.po_number == int(po_number)
+        latest_por = db_session.query(db_manager.POR).order_by(db_manager.POR.po_number.desc()).first()
         
-        # Delete all attached files first
-        for por_file in por.attached_files:
-            file_path = os.path.join(UPLOAD_FOLDER, por_file.stored_filename)
-            if os.path.exists(file_path):
-                os.remove(file_path)
-        
-        # Delete all line items
-        db_session.query(LineItem).filter_by(por_id=por_id).delete()
-        
-        # Delete the POR record
-        db_session.delete(por)
-        db_session.commit()
+        if por.po_number == latest_por.po_number:
+            # If it is the latest, decrement the batch counter
+            batch_manager = get_batch_manager(current_db)
+            batch_manager.set_batch_number(por.po_number - 1)
+            
+            # Delete the POR
+            db_session.delete(por)
+            db_session.commit()
+            db_session.close()
+            
+            return jsonify({'success': True, 'message': f'POR #{por.po_number} deleted and PO number reclaimed.'})
+        else:
+            # If not the latest, just delete the POR
+            db_session.delete(por)
+            db_session.commit()
+            db_session.close()
+            
+            return jsonify({'success': True, 'message': f'POR #{por.po_number} deleted.'})
+            
+    except Exception as e:
+        logger.error(f"Delete POR error: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
 
-        # After deletion, set counter to the next number after the highest existing PO
+
+@app.route('/get_line_items/<int:por_id>')
+def get_line_items(por_id):
+    """Get line items for a given POR ID."""
+    try:
         current_db = get_current_database()
-        highest_po = db_session.query(POR).order_by(POR.po_number.desc()).first()
-        if highest_po:
-            next_po_number = highest_po.po_number
-            # Update the batch counter for the current database
-            counter = get_or_create_batch_counter(current_db)
-            counter.value = next_po_number
-            db_session.commit()
-            logger.info(f"PO {po_number} deleted, counter reset to {next_po_number} (next upload will be {next_po_number + 1}) for {current_db}")
-        else:
-            # If no POs left, reset to starting value for the current database
-            counter = get_or_create_batch_counter(current_db)
-            counter.value = 1000
-            db_session.commit()
-            logger.info(f"All POs deleted, counter reset to starting value (1000) for {current_db}")
-        db_session.close()
-        
-        return jsonify({
-            'success': True, 
-            'message': f'PO {po_number} deleted successfully',
-            'was_latest': is_latest
-        })
-        
-    except Exception as e:
-        logger.error(f"Error deleting POR: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-    finally:
-        if 'db_session' in locals():
-            db_session.close()
-
-
-@app.route('/update_por_field', methods=['POST'])
-def update_por_field():
-    """Update a field in a POR record."""
-    try:
-        from flask import jsonify
-        from models import get_session
-        
-        data = request.get_json()
-        por_id = data.get('por_id')
-        field = data.get('field')
-        value = data.get('value')
-        
-        if not all([por_id, field, value is not None]):
-            return jsonify({'success': False, 'error': 'Missing required fields'})
-        
-        # Validate field name to prevent SQL injection
-        allowed_fields = {
-            'requestor_name', 'ship_project_name', 'supplier', 'job_contract_no', 
-            'op_no', 'order_total', 'quote_ref', 'quote_date', 'date_order_raised', 'date_required_by', 'show_price',
-            'amazon_comment', 'work_date_comment'
-        }
-        
-        if field not in allowed_fields:
-            return jsonify({'success': False, 'error': 'Invalid field name'})
-        
-        # Convert value types
-        if field == 'order_total':
-            try:
-                value = float(value) if value else 0.0
-            except ValueError:
-                return jsonify({'success': False, 'error': 'Invalid number format'})
-        
-        db_session = get_session()
-        por = db_session.query(POR).filter(POR.id == por_id).first()
-        
-        if not por:
-            return jsonify({'success': False, 'error': 'POR not found'})
-        
-        # Get old value before updating
-        old_value = getattr(por, field)
-        
-        # Update the field
-        setattr(por, field, value)
-        
-        # Add to change history
-        add_change_to_history(por, field, old_value, value)
-        
-        db_session.commit()
-        
-        return jsonify({'success': True})
-        
-    except Exception as e:
-        logger.error(f"Error updating POR field: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-    finally:
-        if 'db_session' in locals():
-            db_session.close()
-
-
-@app.route('/undo_change', methods=['POST'])
-def undo_change():
-    """Undo the last change for a POR."""
-    try:
-        from flask import jsonify
-        from models import get_session
-        
-        data = request.get_json()
-        por_id = data.get('por_id')
-        
-        if not por_id:
-            return jsonify({'success': False, 'error': 'Missing POR ID'})
-        
-        db_session = get_session()
-        por = db_session.query(POR).filter(POR.id == por_id).first()
-        
-        if not por:
-            return jsonify({'success': False, 'error': 'POR not found'})
-        
-        # Undo the change
-        success, message = undo_last_change(por)
-        
-        if success:
-            db_session.commit()
-            return jsonify({'success': True, 'message': message})
-        else:
-            return jsonify({'success': False, 'error': message})
-        
-    except Exception as e:
-        logger.error(f"Error undoing change: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-    finally:
-        if 'db_session' in locals():
-            db_session.close()
-
-
-@app.route('/redo_change', methods=['POST'])
-def redo_change():
-    """Redo the last undone change for a POR."""
-    try:
-        from flask import jsonify
-        from models import get_session
-        
-        data = request.get_json()
-        por_id = data.get('por_id')
-        
-        if not por_id:
-            return jsonify({'success': False, 'error': 'Missing POR ID'})
-        
-        db_session = get_session()
-        por = db_session.query(POR).filter(POR.id == por_id).first()
-        
-        if not por:
-            return jsonify({'success': False, 'error': 'POR not found'})
-        
-        # Redo the change
-        success, message = redo_last_change(por)
-        
-        if success:
-            db_session.commit()
-            return jsonify({'success': True, 'message': message})
-        else:
-            return jsonify({'success': False, 'error': message})
-        
-    except Exception as e:
-        logger.error(f"Error redoing change: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-    finally:
-        if 'db_session' in locals():
-            db_session.close()
-
-
-@app.route('/update_line_item_field', methods=['POST'])
-def update_line_item_field():
-    """Update a field in a line item record."""
-    try:
-        from flask import jsonify
-        from models import get_session, LineItem
-        
-        data = request.get_json()
-        line_item_id = data.get('line_item_id')
-        field = data.get('field')
-        value = data.get('value')
-        
-        if not all([line_item_id, field, value is not None]):
-            return jsonify({'success': False, 'error': 'Missing required fields'})
-        
-        # Validate field name to prevent SQL injection
-        allowed_fields = {
-            'job_contract_no', 'op_no', 'description', 'quantity', 'price_each', 'line_total'
-        }
-        
-        if field not in allowed_fields:
-            return jsonify({'success': False, 'error': 'Invalid field name'})
-        
-        # Convert value types
-        if field in ['quantity']:
-            try:
-                value = int(value) if value else 0
-            except ValueError:
-                return jsonify({'success': False, 'error': 'Invalid number format'})
-        elif field in ['price_each', 'line_total']:
-            try:
-                value = float(value) if value else 0.0
-            except ValueError:
-                return jsonify({'success': False, 'error': 'Invalid number format'})
-        
-        db_session = get_session()
-        line_item = db_session.query(LineItem).filter(LineItem.id == line_item_id).first()
-        
-        if not line_item:
-            return jsonify({'success': False, 'error': 'Line item not found'})
-        
-        # Update the field
-        setattr(line_item, field, value)
-        
-        # Recalculate order total if price-related fields are changed
-        if field in ['quantity', 'price_each', 'line_total']:
-            por = db_session.query(POR).filter(POR.id == line_item.por_id).first()
-            if por:
-                # Calculate new total from all line items
-                total = 0.0
-                for item in por.line_items:
-                    if item.line_total:
-                        total += float(item.line_total)
-                por.order_total = total
-        
-        db_session.commit()
-        
-        return jsonify({'success': True})
-        
-    except Exception as e:
-        logger.error(f"Error updating line item field: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-    finally:
-        if 'db_session' in locals():
-            db_session.close()
-
-
-@app.route('/update_timeline_stage', methods=['POST'])
-def update_timeline_stage():
-    """Update the timeline stage for a POR record."""
-    try:
-        from flask import jsonify
-        from models import get_session
-        from datetime import datetime, timezone
-        
-        data = request.get_json()
-        por_id = data.get('por_id')
-        new_stage = data.get('stage')
-        
-        if not all([por_id, new_stage]):
-            return jsonify({'success': False, 'error': 'Missing required fields'})
-        
-        # Validate stage
-        allowed_stages = ['received', 'sent', 'filed']
-        if new_stage not in allowed_stages:
-            return jsonify({'success': False, 'error': 'Invalid stage'})
-        
-        db_session = get_session()
-        por = db_session.query(POR).filter(POR.id == por_id).first()
-        
-        if not por:
-            return jsonify({'success': False, 'error': 'POR not found'})
-        
-        # Update stage and status color
-        por.current_stage = new_stage
-        por.stage_updated_at = datetime.now(timezone.utc)
-        
-        # Set status color based on stage
-        if new_stage == 'filed':
-            por.status_color = 'green'
-        elif por.status_color in ['orange', 'red']:
-            # Keep existing color if it's orange or red
-            pass
-        else:
-            por.status_color = 'normal'
-        
-        db_session.commit()
-        
-        return jsonify({
-            'success': True, 
-            'stage': new_stage,
-            'status_color': por.status_color
-        })
-        
-    except Exception as e:
-        logger.error(f"Error updating timeline stage: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-    finally:
-        if 'db_session' in locals():
-            db_session.close()
-
-
-@app.route('/add_timeline_comment', methods=['POST'])
-def add_timeline_comment():
-    """Add a comment to a specific timeline stage."""
-    try:
-        from flask import jsonify
-        from models import get_session
-        from datetime import datetime, timezone
-        
-        data = request.get_json()
-        por_id = data.get('por_id')
-        stage = data.get('stage')
-        comment = data.get('comment')
-        status_color = data.get('status_color', 'normal')
-        
-        if not all([por_id, stage, comment]):
-            return jsonify({'success': False, 'error': 'Missing required fields'})
-        
-        # Validate stage
-        allowed_stages = ['received', 'sent', 'filed']
-        if stage not in allowed_stages:
-            return jsonify({'success': False, 'error': 'Invalid stage'})
-        
-        # Validate status color
-        allowed_colors = ['normal', 'orange', 'red']
-        if status_color not in allowed_colors:
-            return jsonify({'success': False, 'error': 'Invalid status color'})
-        
-        db_session = get_session()
-        por = db_session.query(POR).filter(POR.id == por_id).first()
-        
-        if not por:
-            return jsonify({'success': False, 'error': 'POR not found'})
-        
-        # Add timestamp to comment
-        timestamp = datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M')
-        formatted_comment = f"[{timestamp}] {comment}"
-        
-        # Update the appropriate comment field
-        if stage == 'received':
-            existing = por.received_comments or ""
-            por.received_comments = f"{existing}\n{formatted_comment}".strip()
-        elif stage == 'sent':
-            existing = por.sent_comments or ""
-            por.sent_comments = f"{existing}\n{formatted_comment}".strip()
-        elif stage == 'filed':
-            existing = por.filed_comments or ""
-            por.filed_comments = f"{existing}\n{formatted_comment}".strip()
-        
-        # Update status color if specified
-        if status_color != 'normal':
-            por.status_color = status_color
-        
-        db_session.commit()
-        
-        return jsonify({
-            'success': True,
-            'comment': formatted_comment,
-            'status_color': por.status_color
-        })
-        
-    except Exception as e:
-        logger.error(f"Error adding timeline comment: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-    finally:
-        if 'db_session' in locals():
-            db_session.close()
-
-
-@app.route('/delete_timeline_comment', methods=['POST'])
-def delete_timeline_comment():
-    """Delete a comment from a specific timeline stage."""
-    try:
-        from flask import jsonify
-        from models import get_session
-        
-        data = request.get_json()
-        por_id = data.get('por_id')
-        stage = data.get('stage')
-        
-        if not all([por_id, stage]):
-            return jsonify({'success': False, 'error': 'Missing required fields'})
-        
-        # Validate stage
-        allowed_stages = ['received', 'sent', 'filed']
-        if stage not in allowed_stages:
-            return jsonify({'success': False, 'error': 'Invalid stage'})
-        
-        db_session = get_session()
-        por = db_session.query(POR).filter(POR.id == por_id).first()
-        
-        if not por:
-            return jsonify({'success': False, 'error': 'POR not found'})
-        
-        # Clear the appropriate comment field
-        if stage == 'received':
-            por.received_comments = None
-        elif stage == 'sent':
-            por.sent_comments = None
-        elif stage == 'filed':
-            por.filed_comments = None
-        
-        db_session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': f'{stage.capitalize()} comment deleted successfully'
-        })
-        
-    except Exception as e:
-        logger.error(f"Error deleting timeline comment: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-    finally:
-        if 'db_session' in locals():
-            db_session.close()
-
-
-@app.route('/update_order_type', methods=['POST'])
-def update_order_type():
-    """Update the order type for a POR record."""
-    try:
-        from flask import jsonify
-        from models import get_session
-        
-        data = request.get_json()
-        por_id = data.get('por_id')
-        order_type = data.get('order_type')
-        
-        if not all([por_id, order_type]):
-            return jsonify({'success': False, 'error': 'Missing required fields'})
-        
-        # Validate order type
-        allowed_types = ['new', 'revised', 'cancelled']
-        if order_type not in allowed_types:
-            return jsonify({'success': False, 'error': 'Invalid order type'})
-        
-        db_session = get_session()
-        por = db_session.query(POR).filter(POR.id == por_id).first()
-        
-        if not por:
-            return jsonify({'success': False, 'error': 'POR not found'})
-        
-        # Update order type
-        por.order_type = order_type
-        db_session.commit()
-        
-        return jsonify({
-            'success': True, 
-            'order_type': order_type
-        })
-        
-    except Exception as e:
-        logger.error(f"Error updating order type: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-    finally:
-        if 'db_session' in locals():
-            db_session.close()
-
-
-@app.route('/update_content_type', methods=['POST'])
-def update_content_type():
-    """Update the content type for a POR record."""
-    try:
-        from flask import jsonify
-        from models import get_session
-        
-        data = request.get_json()
-        por_id = data.get('por_id')
-        content_type = data.get('content_type')
-        
-        if not all([por_id, content_type]):
-            return jsonify({'success': False, 'error': 'Missing required fields'})
-        
-        # Validate content type
-        allowed_types = ['work_iwo', 'supply_and_fit', 'supply']
-        if content_type not in allowed_types:
-            return jsonify({'success': False, 'error': 'Invalid content type'})
-        
-        db_session = get_session()
-        por = db_session.query(POR).filter(POR.id == por_id).first()
-        
-        if not por:
-            return jsonify({'success': False, 'error': 'POR not found'})
-        
-        # Update content type
-        por.content_type = content_type
-        
-        # Handle work date comment based on content type change
-        if content_type in ['work_iwo', 'supply_and_fit']:
-            # Create work date comment for work_iwo or supply_and_fit
-            work_date_comment = "WORK DATE CARRIED OUT TBC"
-            por.work_date_comment = work_date_comment
-            logger.info(f"Added work date comment for PO {por.po_number} after content type change: {work_date_comment}")
-        else:
-            # Remove work date comment for supply and other content types
-            por.work_date_comment = None
-            logger.info(f"Removed work date comment for PO {por.po_number} after content type change to {content_type}")
-        
-        db_session.commit()
-        
-        return jsonify({
-            'success': True, 
-            'content_type': content_type
-        })
-        
-    except Exception as e:
-        logger.error(f"Error updating content type: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-    finally:
-        if 'db_session' in locals():
-            db_session.close()
-
-
-@app.route('/attach_email/<int:por_id>', methods=['POST'])
-def attach_email_to_por(por_id):
-    """Attach an email file to a specific POR record."""
-    try:
-        from flask import jsonify
-        from models import get_session
-        
-        # Get the POR record
-        db_session = get_session()
-        por = db_session.query(POR).filter(POR.id == por_id).first()
-        
-        if not por:
-            return jsonify({'success': False, 'error': 'POR not found'})
-        
-        # Check if file was uploaded
-        if 'file' not in request.files:
-            return jsonify({'success': False, 'error': 'No file provided'})
-        
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify({'success': False, 'error': 'No file selected'})
-        
-        # Validate file type
-        if not allowed_file(file.filename):
-            return jsonify({'success': False, 'error': 'Invalid file type. Only .msg and .eml files are allowed'})
-        
-        # Check file extension
-        file_extension = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
-        if file_extension not in ['msg', 'eml']:
-            return jsonify({'success': False, 'error': 'Only email files (.msg, .eml) are allowed'})
-        
-        # Generate safe filename with PO number
-        original_filename = file.filename
-        file_extension = os.path.splitext(original_filename)[1]
-        safe_filename = f"POR_{por.po_number}_EMAIL_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}{file_extension}"
-        
-        # Save file
-        file_path = os.path.join(UPLOAD_FOLDER, safe_filename)
-        file.save(file_path)
-        file_size = os.path.getsize(file_path)
-        
-        # Parse email content for description
-        file.seek(0)
-        email_description = "Email attachment"
-        
-        try:
-            import email
-            from email import policy
-            
-            if file_extension == '.eml':
-                msg = email.message_from_file(file, policy=policy.default)
-                subject = msg.get('subject', 'No Subject')
-                from_header = msg.get('from', 'Unknown Sender')
-                email_description = f"Email: {subject} (from {from_header})"
-            else:
-                email_description = f"Outlook Message: {original_filename}"
-        except:
-            email_description = f"Email: {original_filename}"
-        
-        # Create PORFile record
-        por_file = PORFile(
-            por_id=por_id,
-            original_filename=original_filename,
-            stored_filename=safe_filename,
-            file_type='email',
-            file_size=file_size,
-            mime_type='message/rfc822' if file_extension == '.eml' else 'application/vnd.ms-outlook',
-            description=email_description
-        )
-        
-        db_session.add(por_file)
-        db_session.commit()
-        db_session.close()
-        
-        return jsonify({
-            'success': True, 
-            'message': f'Email attached to PO #{por.po_number}',
-            'file_id': por_file.id,
-            'filename': original_filename
-        })
-        
-    except Exception as e:
-        logger.error(f"Error attaching email: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-    finally:
-        if 'db_session' in locals():
-            db_session.close()
-
-
-@app.route('/delete_line_item/<int:line_item_id>', methods=['DELETE'])
-def delete_line_item(line_item_id):
-    """Delete a specific line item from a POR record."""
-    try:
-        from flask import jsonify
-        from models import get_session, LineItem
-        
-        db_session = get_session()
-        line_item = db_session.query(LineItem).filter(LineItem.id == line_item_id).first()
-        
-        if not line_item:
-            return jsonify({'success': False, 'error': 'Line item not found'})
-        
-        # Store some info for the response
-        line_description = line_item.description or 'this line item'
-        por_id = line_item.por_id
-        
-        # Delete the line item
-        db_session.delete(line_item)
-        
-        # Recalculate order total after deletion
-        por = db_session.query(POR).filter(POR.id == por_id).first()
-        if por:
-            # Calculate new total from remaining line items
-            total = 0.0
-            for item in por.line_items:
-                if item.line_total:
-                    total += float(item.line_total)
-            por.order_total = total
-        
-        db_session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': f'Line item "{line_description}" deleted successfully'
-        })
-        
-    except Exception as e:
-        logger.error(f"Error deleting line item: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-    finally:
-        if 'db_session' in locals():
-            db_session.close()
-
-
-@app.route('/add_line_item', methods=['POST'])
-def add_line_item():
-    """Add a new line item to a POR record."""
-    try:
-        from flask import jsonify
-        from models import get_session, LineItem
-        
-        data = request.get_json()
-        por_id = data.get('por_id')
-        
-        if not por_id:
-            return jsonify({'success': False, 'error': 'Missing POR ID'})
-        
-        db_session = get_session()
-        
-        # Verify the POR exists
-        por = db_session.query(POR).filter(POR.id == por_id).first()
-        if not por:
-            return jsonify({'success': False, 'error': 'POR not found'})
-        
-        # Create new line item with empty values
-        new_line_item = LineItem(
-            por_id=por_id,
-            job_contract_no='',
-            op_no='',
-            description='',
-            quantity=0,
-            price_each=0.0,
-            line_total=0.0
-        )
-        
-        db_session.add(new_line_item)
-        db_session.commit()
-        
-        return jsonify({
-            'success': True,
-            'line_item_id': new_line_item.id,
-            'message': 'New line item added successfully'
-        })
-        
-    except Exception as e:
-        logger.error(f"Error adding line item: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-    finally:
-        if 'db_session' in locals():
-            db_session.close()
-
-
-# Register custom Jinja2 filters
-app.jinja_env.filters['clean_query_string'] = clean_query_string
-
-
-@app.route('/api/pors')
-def api_get_pors():
-    """API endpoint to get PORs data for the modern view page."""
-    try:
-        from models import get_session, LineItem
-        from sqlalchemy import desc
-        
-        # Get query parameters
-        page = request.args.get('page', 1, type=int)
-        page_size = request.args.get('page_size', 10, type=int)
-        search_query = request.args.get('search', '').strip()
-        status_filter = request.args.get('status', 'all')
-        company_filter = request.args.get('company', 'all')
-        date_filter = request.args.get('date', '')
-        
-        db_session = get_session()
-        
-        # Start with base query
-        query = db_session.query(POR)
-        
-        # Apply filters
-        if search_query:
-            search_pattern = f"%{search_query}%"
-            query = query.filter(
-                db_session.query(POR).filter(
-                    db_session.or_(
-                        POR.po_number.like(search_pattern),
-                        POR.requestor_name.like(search_pattern),
-                        POR.ship_project_name.like(search_pattern),
-                        POR.supplier.like(search_pattern)
-                    )
-                ).exists()
-            )
-        
-        if status_filter != 'all':
-            query = query.filter(POR.current_stage == status_filter)
-        
-        if company_filter != 'all':
-            query = query.filter(POR.company == company_filter)
-        
-        if date_filter:
-            try:
-                from datetime import datetime, timedelta
-                today = datetime.now().date()
-                
-                if date_filter == 'today':
-                    query = query.filter(db_session.func.date(POR.created_at) == today)
-                elif date_filter == 'week':
-                    week_ago = today - timedelta(days=7)
-                    query = query.filter(db_session.func.date(POR.created_at) >= week_ago)
-                elif date_filter == 'month':
-                    month_ago = today - timedelta(days=30)
-                    query = query.filter(db_session.func.date(POR.created_at) >= month_ago)
-                elif date_filter == 'quarter':
-                    quarter_ago = today - timedelta(days=90)
-                    query = query.filter(db_session.func.date(POR.created_at) >= quarter_ago)
-            except Exception as e:
-                logger.error(f"Date filter error: {str(e)}")
-        
-        # Get total count before pagination
-        total_count = query.count()
-        
-        # Apply pagination
-        offset = (page - 1) * page_size
-        pors = query.order_by(desc(POR.id)).offset(offset).limit(page_size).all()
-        
-        # Prepare response data
-        por_data = []
-        for por in pors:
-            # Get line items count
-            line_items_count = db_session.query(LineItem).filter_by(por_id=por.id).count()
-            
-            # Get file count
-            file_count = len(por.attached_files) if hasattr(por, 'attached_files') else 0
-            
-            por_data.append({
-                'id': por.id,
-                'po_number': por.po_number,
-                'project': por.ship_project_name or 'Unknown Project',
-                'requestor': por.requestor_name or 'Unknown',
-                'date': por.created_at.strftime('%d/%m/%Y') if por.created_at else 'Unknown',
-                'status': por.current_stage or 'received',
-                'company': por.company or 'a&p',
-                'line_items_count': line_items_count,
-                'file_count': file_count,
-                'order_total': float(por.order_total) if por.order_total else 0.0
-            })
-        
-        db_session.close()
-        
-        # Calculate pagination info
-        total_pages = (total_count + page_size - 1) // page_size
-        
-        return jsonify({
-            'success': True,
-            'data': por_data,
-            'pagination': {
-                'current_page': page,
-                'page_size': page_size,
-                'total_pages': total_pages,
-                'total_count': total_count
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+        
+        line_items = db_session.query(db_manager.LineItem).filter_by(por_id=por_id).all()
+        
+        # Convert to list of dicts
+        line_items_data = [
+            {
+                'id': item.id,
+                'job_contract_no': item.job_contract_no,
+                'op_no': item.op_no,
+                'description': item.description,
+                'quantity': item.quantity,
+                'price_each': item.price_each,
+                'line_total': item.line_total
             }
-        })
-        
-    except Exception as e:
-        logger.error(f"API get PORs error: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
-
-@app.route('/get-content-type-classification/<int:line_item_id>')
-def get_content_type_classification(line_item_id):
-    """Get the current content type classification for a line item."""
-    try:
-        from models import get_session, LineItem
-        
-        db_session = get_session()
-        line_item = db_session.query(LineItem).filter(LineItem.id == line_item_id).first()
-        
-        if not line_item:
-            return jsonify({
-                'status': 'error',
-                'message': 'Line item not found'
-            }), 404
-        
-        # Get the POR record
-        por = db_session.query(POR).filter(POR.id == line_item.por_id).first()
-        if not por:
-            return jsonify({
-                'status': 'error',
-                'message': 'POR record not found'
-            }), 404
-        
-        # Get current content type
-        current_content_type = por.content_type or 'supply'
+            for item in line_items
+        ]
         
         db_session.close()
         
-        return jsonify({
-            'status': 'success',
-            'line_item_id': line_item_id,
-            'description': line_item.description or '',
-            'current_content_type': current_content_type,
-            'suggestion': 'Content type is determined by rule-based pattern matching'
-        })
+        return jsonify({'success': True, 'line_items': line_items_data})
         
     except Exception as e:
-        logger.error(f"Error getting content type classification: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': f'Error getting classification: {str(e)}'
-        }), 500
+        logger.error(f"Get line items error: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
 
 
-@app.route('/api/update-por-field', methods=['POST'])
-def api_update_por_field():
-    """API endpoint to update a field in a POR record for the modern interface."""
+@app.route('/update-line-item/<int:item_id>', methods=['POST'])
+def update_line_item(item_id):
+    """Update a line item in the database."""
     try:
-        from models import get_session
-        
         data = request.get_json()
-        por_id = data.get('por_id')
-        field_name = data.get('field_name')
-        new_value = data.get('new_value')
         
-        if not all([por_id, field_name, new_value is not None]):
-            return jsonify({'success': False, 'error': 'Missing required fields'})
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
         
-        # Validate field name to prevent SQL injection
-        allowed_fields = {
-            'ship_project_name', 'requestor_name', 'description', 'current_stage', 'content_type', 'order_type', 'supplier'
-        }
-        
-        if field_name not in allowed_fields:
-            return jsonify({'success': False, 'error': 'Invalid field name'})
-        
-        db_session = get_session()
-        por = db_session.query(POR).filter(POR.id == por_id).first()
-        
-        if not por:
-            return jsonify({'success': False, 'error': 'POR not found'})
-        
-        # Handle different field types
-        if field_name == 'description':
-            # This is for line item descriptions - need to handle differently
-            # For now, return error as this needs line item ID
-            return jsonify({'success': False, 'error': 'Line item updates not yet implemented'})
-        else:
-            # Update POR field
-            old_value = getattr(por, field_name, None)
-            setattr(por, field_name, new_value)
-            
-            # Log the change
-            logger.info(f"Updated POR {por_id} field {field_name} from '{old_value}' to '{new_value}'")
-        
-        db_session.commit()
-        db_session.close()
-        
-        return jsonify({'success': True})
-        
-    except Exception as e:
-        logger.error(f"API update POR field error: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-
-@app.route('/api/update-line-item-description', methods=['POST'])
-def api_update_line_item_description():
-    """API endpoint to update a line item description."""
-    try:
-        from models import get_session, LineItem
-        
-        data = request.get_json()
-        line_item_id = data.get('line_item_id')
-        new_description = data.get('new_description')
-        
-        if not all([line_item_id, new_description is not None]):
-            return jsonify({'success': False, 'error': 'Missing required fields'})
-        
-        db_session = get_session()
-        line_item = db_session.query(LineItem).filter(LineItem.id == line_item_id).first()
+        line_item = db_session.query(db_manager.LineItem).filter_by(id=item_id).first()
         
         if not line_item:
             return jsonify({'success': False, 'error': 'Line item not found'})
         
-        # Update the description
-        old_description = line_item.description
-        line_item.description = new_description
-        
-        # Log the change
-        logger.info(f"Updated line item {line_item_id} description from '{old_description}' to '{new_description}'")
+        # Update fields
+        line_item.job_contract_no = data.get('job_contract_no', line_item.job_contract_no)
+        line_item.op_no = data.get('op_no', line_item.op_no)
+        line_item.description = data.get('description', line_item.description)
+        line_item.quantity = data.get('quantity', line_item.quantity)
+        line_item.price_each = data.get('price_each', line_item.price_each)
+        line_item.line_total = data.get('line_total', line_item.line_total)
         
         db_session.commit()
         db_session.close()
         
-        return jsonify({'success': True})
+        return jsonify({'success': True, 'message': 'Line item updated successfully'})
         
     except Exception as e:
-        logger.error(f"API update line item description error: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        logger.error(f"Update line item error: {str(e)}")
+        db_session.rollback()
+        db_session.close()
+        return jsonify({'success': False, 'error': str(e)})
 
 
-@app.route('/api/create-line-item', methods=['POST'])
-def api_create_line_item():
-    """API endpoint to create a new line item."""
+@app.route('/add-line-item/<int:por_id>', methods=['POST'])
+def add_line_item(por_id):
+    """Add a new line item to a POR."""
     try:
-        from models import get_session, LineItem
-        
         data = request.get_json()
-        por_id = data.get('por_id')
-        description = data.get('description')
-        quantity = data.get('quantity', 1)
-        unit_price = data.get('unit_price', 0.00)
         
-        if not all([por_id, description]):
-            return jsonify({'success': False, 'error': 'Missing required fields'})
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
         
-        db_session = get_session()
-        
-        # Create new line item
-        new_line_item = LineItem(
+        new_line_item = db_manager.LineItem(
             por_id=por_id,
-            description=description,
-            quantity=quantity,
-            unit_price=unit_price
+            job_contract_no=data.get('job_contract_no'),
+            op_no=data.get('op_no'),
+            description=data.get('description'),
+            quantity=data.get('quantity'),
+            price_each=data.get('price_each'),
+            line_total=data.get('line_total')
         )
         
         db_session.add(new_line_item)
+        db_session.commit()
         
-        # Log the creation
-        logger.info(f"Created new line item for POR {por_id}: {description}")
+        # Return the new line item with its ID
+        new_item_data = {
+            'id': new_line_item.id,
+            'job_contract_no': new_line_item.job_contract_no,
+            'op_no': new_line_item.op_no,
+            'description': new_line_item.description,
+            'quantity': new_line_item.quantity,
+            'price_each': new_line_item.price_each,
+            'line_total': new_line_item.line_total
+        }
         
+        db_session.close()
+        
+        return jsonify({'success': True, 'message': 'Line item added successfully', 'new_item': new_item_data})
+        
+    except Exception as e:
+        logger.error(f"Add line item error: {str(e)}")
+        db_session.rollback()
+        db_session.close()
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/delete-line-item/<int:item_id>', methods=['POST'])
+def delete_line_item(item_id):
+    """Delete a line item from a POR."""
+    try:
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+        
+        line_item = db_session.query(db_manager.LineItem).filter_by(id=item_id).first()
+        
+        if not line_item:
+            return jsonify({'success': False, 'error': 'Line item not found'})
+        
+        db_session.delete(line_item)
         db_session.commit()
         db_session.close()
         
-        return jsonify({'success': True, 'line_item_id': new_line_item.id})
+        return jsonify({'success': True, 'message': 'Line item deleted successfully'})
         
     except Exception as e:
-        logger.error(f"API create line item error: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-
-@app.errorhandler(404)
-def not_found_error(error):
-    """Handle 404 errors."""
-    return render_template('404.html'), 404
-
-
-@app.errorhandler(500)
-def internal_error(error):
-    """Handle 500 errors."""
-    from models import get_session
-    db_session = get_session()
-    try:
+        logger.error(f"Delete line item error: {str(e)}")
         db_session.rollback()
-    except:
-        pass
-    finally:
         db_session.close()
-    return render_template('500.html'), 500
+        return jsonify({'success': False, 'error': str(e)})
 
 
-@app.route('/analytics')
-def analytics():
-    """Display comprehensive POR analytics and breakdowns."""
+@app.route('/update_por_field/<int:por_id>', methods=['POST'])
+def update_por_field(por_id):
+    """Update a single field of a POR record."""
     try:
-        from sqlalchemy import func, extract
-        from datetime import datetime, timedelta
+        data = request.get_json()
+        field = data.get('field')
+        value = data.get('value')
         
-        # Use database-aware session
+        if not field:
+            return jsonify({'success': False, 'error': 'Field name is required'})
+        
         current_db = get_current_database()
-        db_session = get_database_session(current_db)
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
         
-        # Get total counts and values
-        total_pors = db_session.query(POR).count()
-        total_value = db_session.query(func.sum(POR.order_total)).scalar() or 0
+        por = db_session.query(db_manager.POR).filter_by(id=por_id).first()
         
-        # Get status distribution
-        status_counts = db_session.query(
-            POR.current_stage, 
-            func.count(POR.id)
-        ).group_by(POR.current_stage).all()
+        if not por:
+            return jsonify({'success': False, 'error': 'POR not found'})
         
-        status_labels = [status or 'Unknown' for status, _ in status_counts]
-        status_data = [count for _, count in status_counts]
-        
-        # Get content type distribution
-        content_type_counts = db_session.query(
-            POR.content_type, 
-            func.count(POR.id)
-        ).group_by(POR.content_type).all()
-        
-        content_type_labels = [ct or 'Unknown' for ct, _ in content_type_counts]
-        content_type_data = [count for _, count in content_type_counts]
-        
-        # Get top suppliers by value
-        top_suppliers = db_session.query(
-            POR.supplier,
-            func.sum(POR.order_total).label('total_value')
-        ).filter(
-            POR.supplier.isnot(None),
-            POR.order_total.isnot(None)
-        ).group_by(POR.supplier).order_by(
-            func.sum(POR.order_total).desc()
-        ).limit(5).all()
-        
-        top_suppliers_data = [
-            {'name': supplier, 'total_value': float(total_value)}
-            for supplier, total_value in top_suppliers
-        ]
-        
-        # Get top requestors by count
-        top_requestors = db_session.query(
-            POR.requestor_name,
-            func.count(POR.id).label('count')
-        ).filter(
-            POR.requestor_name.isnot(None)
-        ).group_by(POR.requestor_name).order_by(
-            func.count(POR.id).desc()
-        ).limit(5).all()
-        
-        top_requestors_data = [
-            {'name': requestor, 'count': count}
-            for requestor, count in top_requestors
-        ]
-        
-        # Get monthly trends (last 12 months)
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=365)
-        
-        monthly_data = db_session.query(
-            extract('year', POR.created_at).label('year'),
-            extract('month', POR.created_at).label('month'),
-            func.count(POR.id).label('count'),
-            func.sum(POR.order_total).label('total_value')
-        ).filter(
-            POR.created_at >= start_date
-        ).group_by(
-            extract('year', POR.created_at),
-            extract('month', POR.created_at)
-        ).order_by(
-            extract('year', POR.created_at),
-            extract('month', POR.created_at)
-        ).all()
-        
-        # Process monthly data
-        monthly_labels = []
-        monthly_counts = []
-        monthly_values = []
-        
-        for year, month, count, total_value in monthly_data:
-            month_name = datetime(year, month, 1).strftime('%b %Y')
-            monthly_labels.append(month_name)
-            monthly_counts.append(count)
-            monthly_values.append(float(total_value or 0))
-        
-        # Calculate active and completed PORs
-        active_pors = db_session.query(POR).filter(
-            POR.current_stage.in_(['received', 'sent'])
-        ).count()
-        
-        completed_pors = db_session.query(POR).filter(
-            POR.current_stage == 'filed'
-        ).count()
-        
-        db_session.close()
-        
-        # Get current database info for template
-        current_db = get_current_database()
-        company_info = COMPANIES.get(current_db, COMPANIES['a&p'])
-        
-        return render_template('analytics.html',
-                             total_pors=total_pors,
-                             total_value=total_value,
-                             active_pors=active_pors,
-                             completed_pors=completed_pors,
-                             status_labels=status_labels,
-                             status_data=status_data,
-                             content_type_labels=content_type_labels,
-                             content_type_data=content_type_data,
-                             top_suppliers=top_suppliers_data,
-                             top_requestors=top_requestors_data,
-                             monthly_labels=monthly_labels,
-                             monthly_data=monthly_counts,
-                             monthly_values=monthly_values,
-                             company=current_db,
-                             company_info=company_info)
-        
+        # Update the field
+        if hasattr(por, field):
+            setattr(por, field, value)
+            db_session.commit()
+            db_session.close()
+            return jsonify({'success': True, 'message': f'{field} updated successfully'})
+        else:
+            return jsonify({'success': False, 'error': f'Invalid field: {field}'})
+            
     except Exception as e:
-        logger.error(f"Analytics error: {str(e)}")
-        flash('Error loading analytics data', 'error')
-        return redirect(url_for('dashboard'))
+        logger.error(f"Update POR field error: {str(e)}")
+        db_session.rollback()
+        db_session.close()
+        return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/switch_database', methods=['POST'])
 def switch_database():
-    """Switch between A&P and FDEC databases."""
+    """Switch the active database for the session."""
     try:
         data = request.get_json()
-        new_database = data.get('database')
+        new_db = data.get('database')
         
-        logger.info(f"[DEBUG] Switching database from {get_current_database()} to {new_database}")
-        logger.info(f"[DEBUG] Session before switch: {dict(session)}")
-        
-        if new_database not in DATABASES:
-            logger.error(f"Invalid database specified: {new_database}")
-            return jsonify({'success': False, 'error': 'Invalid database specified'}), 400
-        
-        # Store the selected database in session
-        session['current_database'] = new_database
-        
-        # Force session to be saved
-        session.modified = True
-        
-        # Verify the session was updated
-        current_db = get_current_database()
-        logger.info(f"[DEBUG] Session after switch: {dict(session)}")
-        logger.info(f"[DEBUG] Session updated. Current database is now: {current_db}")
-        
-        # Initialize the new database if it doesn't exist
-        engine = get_database_engine(new_database)
-        
-        # Get database-aware models for this database
-        LocalBase, LocalPOR, LocalLineItem, LocalPORFile, LocalBatchCounter = create_database_models(new_database)
-        
-        # Create all tables in this database
-        LocalBase.metadata.create_all(engine)
-        
-        # Test the database connection
-        test_session = get_database_session(new_database)
-        por_count = test_session.query(LocalPOR).count()
-        test_session.close()
-        
-        logger.info(f"Successfully switched to {new_database} database. Found {por_count} PORs.")
-        
-        return jsonify({
-            'success': True, 
-            'message': f'Switched to {DATABASES[new_database]["display_name"]}',
-            'database': new_database,
-            'por_count': por_count
-        })
-        
+        if new_db in DATABASES:
+            session['current_database'] = new_db
+            logger.info(f"Database switched to: {new_db}")
+            return jsonify({'success': True, 'message': f'Database switched to {new_db}'})
+        else:
+            return jsonify({'success': False, 'error': 'Invalid database'})
+            
     except Exception as e:
-        logger.error(f"Database switch error: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-
-@app.route('/get_database_info')
-def get_database_info():
-    """Get information about the current database."""
-    try:
-        current_db = get_current_database()
-        db_config = DATABASES[current_db]
-        
-        # Get database statistics
-        engine = get_database_engine(current_db)
-        db_session = get_database_session(current_db)
-        
-        total_pors = db_session.query(POR).count()
-        total_value = db_session.query(func.sum(POR.order_total)).scalar() or 0
-        
-        db_session.close()
-        
-        return jsonify({
-            'success': True,
-            'current_database': current_db,
-            'display_name': db_config['display_name'],
-            'total_pors': total_pors,
-            'total_value': float(total_value)
-        })
-        
-    except Exception as e:
-        logger.error(f"Database info error: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-
-@app.route('/update_company', methods=['POST'])
-def update_company():
-    """Update the company for a POR record."""
-    try:
-        from flask import jsonify
-        from models import get_session
-        
-        data = request.get_json()
-        por_id = data.get('por_id')
-        company = data.get('company')
-        
-        if not all([por_id, company]):
-            return jsonify({'success': False, 'error': 'Missing required fields'})
-        
-        # Validate company
-        allowed_companies = ['a&p', 'fdec']
-        if company not in allowed_companies:
-            return jsonify({'success': False, 'error': 'Invalid company'})
-        
-        db_session = get_session()
-        por = db_session.query(POR).filter(POR.id == por_id).first()
-        
-        if not por:
-            return jsonify({'success': False, 'error': 'POR not found'})
-        
-        # Update company
-        por.company = company
-        db_session.commit()
-        
-        return jsonify({
-            'success': True, 
-            'company': company
-        })
-        
-    except Exception as e:
-        logger.error(f"Error updating company: {str(e)}")
+        logger.error(f"Switch database error: {str(e)}")
         return jsonify({'success': False, 'error': str(e)})
-    finally:
-        if 'db_session' in locals():
-            db_session.close()
-
-
-@app.route('/debug_database_status')
-def debug_database_status():
-    """Debug route to check current database status and session."""
-    try:
-        current_db = get_current_database()
-        session_data = dict(session)
-        
-        # Get database info
-        db_config = DATABASES.get(current_db, DATABASES['a&p'])
-        
-        # Test database connection
-        engine = get_database_engine(current_db)
-        db_session = get_database_session(current_db)
-        por_count = db_session.query(POR).count()
-        db_session.close()
-        
-        return jsonify({
-            'success': True,
-            'current_database': current_db,
-            'session_data': session_data,
-            'database_config': db_config,
-            'por_count': por_count,
-            'session_id': session.sid if hasattr(session, 'sid') else 'No SID'
-        })
-        
-    except Exception as e:
-        logger.error(f"Debug database status error: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-
-@app.route('/test_database')
-def test_database():
-    """Test route to verify database switching and show current database contents."""
-    try:
-        current_db = get_current_database()
-        logger.info(f"[DEBUG] Test route - Current database: {current_db}")
-        
-        # Get database session
-        db_session = get_database_session(current_db)
-        
-        # Count PORs
-        por_count = db_session.query(POR).count()
-        
-        # Get sample PORs
-        sample_pors = db_session.query(POR).limit(5).all()
-        
-        # Get database file info
-        import os
-        db_config = DATABASES.get(current_db, DATABASES['a&p'])
-        db_path = db_config['path']
-        file_exists = os.path.exists(db_path)
-        file_size = os.path.getsize(db_path) if file_exists else 0
-        
-        db_session.close()
-        
-        return jsonify({
-            'success': True,
-            'current_database': current_db,
-            'database_path': db_path,
-            'file_exists': file_exists,
-            'file_size': file_size,
-            'por_count': por_count,
-            'sample_pors': [
-                {
-                    'id': por.id,
-                    'po_number': por.po_number,
-                    'company': por.company,
-                    'project': por.ship_project_name
-                } for por in sample_pors
-            ]
-        })
-        
-    except Exception as e:
-        logger.error(f"Test database error: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-
-def check_fdec_job_warning(job_contract_no, current_database: str) -> Optional[str]:
-    """
-    Check if a job number starting with 6 is being uploaded to A&P database.
-    Returns warning message if applicable, None otherwise.
-    """
-    if not job_contract_no:
-        return None
-    
-    # Convert to string if it's not already
-    job_str = str(job_contract_no)
-    
-    # Check if job number starts with 6 and is being uploaded to A&P
-    if job_str.startswith('6') and current_database == 'a&p':
-        return "⚠️ WARNING: This POR contains job numbers starting with '6' which indicates it is for FDEC. Please ensure you are uploading to the correct database."
-    
-    return None
-
-
-def check_batch_number_conflict(po_number: int, current_database: str) -> Optional[str]:
-    """
-    Check if a batch number is being used across different company databases.
-    Returns error message if there's a conflict, None otherwise.
-    """
-    try:
-        # Check if this PO number exists in the other database
-        other_database = 'fdec' if current_database == 'a&p' else 'a&p'
-        
-        # Get database session for the other database
-        other_db_session = get_database_session(other_database)
-        
-        # Get database-aware models for the other database
-        LocalBase, LocalPOR, LocalLineItem, LocalPORFile, LocalBatchCounter = create_database_models(other_database)
-        
-        # Check if PO number exists in other database using the correct model
-        existing_por = other_db_session.query(LocalPOR).filter_by(po_number=po_number).first()
-        other_db_session.close()
-        
-        if existing_por:
-            company_name = "FDEC" if other_database == 'fdec' else "A&P"
-            current_company = "FDEC" if current_database == 'fdec' else "A&P"
-            return f"🚫 UPLOAD BLOCKED: PO number {po_number} is already in use in the {company_name} database! You cannot use the same PO number in both {current_company} and {company_name} databases. Please use a different PO number or contact your administrator."
-        
-        return None
-        
-    except Exception as e:
-        logger.error(f"Error checking batch number conflict: {str(e)}")
-        return None
-
-
-@app.route('/company-management')
-def company_management():
-    """Company and supplier management interface."""
-    try:
-        current_db = get_current_database()
-        company_info = COMPANIES.get(current_db, COMPANIES['a&p'])
-        
-        # Get statistics for both databases
-        a_and_p_session = get_database_session('a&p')
-        fdec_session = get_database_session('fdec')
-        
-        # Get POR counts for each company
-        a_and_p_count = a_and_p_session.query(POR).count()
-        fdec_count = fdec_session.query(POR).count()
-        
-        # Get supplier statistics
-        a_and_p_suppliers = a_and_p_session.query(POR.supplier, func.count(POR.id)).group_by(POR.supplier).all()
-        fdec_suppliers = fdec_session.query(POR.supplier, func.count(POR.id)).group_by(POR.supplier).all()
-        
-        a_and_p_session.close()
-        fdec_session.close()
-        
-        return render_template("company_management.html", 
-                             company=current_db,
-                             company_info=company_info,
-                             a_and_p_count=a_and_p_count,
-                             fdec_count=fdec_count,
-                             a_and_p_suppliers=a_and_p_suppliers,
-                             fdec_suppliers=fdec_suppliers)
-                             
-    except Exception as e:
-        logger.error(f"Company management error: {str(e)}")
-        flash(f"❌ Error loading company management: {str(e)}", 'error')
-        return redirect(url_for('dashboard'))
-
-
-
 
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(debug=True, host='0.0.0.0', port=port)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)

@@ -27,20 +27,6 @@ DATABASES = {
 # Current active database
 CURRENT_DATABASE = 'a&p'
 
-# Company configurations
-COMPANIES = {
-    'a&p': {
-        'name': 'A&P',
-        'color': 'blue',
-        'description': 'A&P Company PORs'
-    },
-    'fdec': {
-        'name': 'FDEC',
-        'color': 'green',
-        'description': 'FDEC Company PORs'
-    }
-}
-
 # File Upload Settings
 UPLOAD_FOLDER = "static/uploads"
 ALLOWED_EXTENSIONS: Set[str] = {'xlsx', 'xls'}
@@ -68,4 +54,4 @@ HOST = os.environ.get('HOST', '0.0.0.0')
 PORT = int(os.environ.get('PORT', 5000))
 
 # Development Settings
-RELOAD_ON_CHANGE = DEBUG 
+RELOAD_ON_CHANGE = DEBUG

@@ -81,29 +81,72 @@ def read_ws(stream) -> Tuple[List[List[Any]], Worksheet]:
 
 
 
+import xlrd # Added import for xlrd
+
+
+def read_ws(stream) -> Tuple[List[List[Any]], Worksheet]:
+    """
+    Read Excel worksheet from stream, handling both .xls and .xlsx formats.
+    """
+    try:
+        stream.seek(0)
+        # Read the first few bytes to determine file type
+        header = stream.read(8)
+        stream.seek(0) # Reset stream position
+
+        if header.startswith(b'PK'): # PK is the magic number for zip files (xlsx)
+            return read_xlsx_file(stream)
+        elif header.startswith(b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'): # Magic number for OLE Compound Document (xls)
+            return read_xls_file(stream)
+        else:
+            raise ValueError("Unsupported Excel file format. Please upload a .xls or .xlsx file.")
+    except Exception as e:
+        raise ValueError(f"Error reading Excel file: {str(e)}")
+
+def read_xls_file(stream) -> Tuple[List[List[Any]], Worksheet]:
+    """
+    Read old Excel file (.xls) using xlrd.
+    """
+    try:
+        # xlrd.open_workbook can take a file_contents argument
+        # For BytesIO, we can pass the entire content
+        workbook = xlrd.open_workbook(file_contents=stream.read())
+        sheet = workbook.sheet_by_index(0) # Get the first sheet
+
+        rows = []
+        for row_idx in range(sheet.nrows):
+            row_values = []
+            for col_idx in range(sheet.ncols):
+                cell_value = sheet.cell_value(row_idx, col_idx)
+                row_values.append(cell_value)
+            rows.append(row_values)
+
+        # xlrd does not provide a 'worksheet' object directly like openpyxl
+        # For compatibility, we might need to wrap it or adjust downstream code.
+        # For now, we'll return the sheet object itself, assuming it has enough attributes.
+        return rows, sheet # sheet object from xlrd
+
+    except Exception as e:
+        raise ValueError(f"Error reading .xls file: {str(e)}")
+
+# Keep read_xlsx_file as is
 def read_xlsx_file(stream) -> Tuple[List[List[Any]], Worksheet]:
     """
     Read modern Excel file (.xlsx) using openpyxl.
-    
-    Args:
-        stream: File stream
-        
-    Returns:
-        Tuple of (rows, worksheet)
     """
     try:
         stream.seek(0)
         wb = load_workbook(stream, data_only=True, read_only=True)
         ws = wb.active
-        
+
         if not ws:
             raise ValueError("No active worksheet found")
-        
+
         # Convert to list for easier processing
         rows = [list(row) for row in ws.iter_rows(values_only=True)]
-        
+
         return rows, ws
-        
+
     except Exception as e:
         raise ValueError(f"Error reading Excel file: {str(e)}")
 

@@ -8,6 +8,149 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Load theme preference based on database on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check current database from backend and apply theme automatically
+            const currentCompany = '{{ company }}';
+            if (currentCompany === 'fdec') {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('darkMode', 'enabled');
+                localStorage.setItem('activeDatabase', 'FDEC');
+            } else {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('darkMode', 'disabled');
+                localStorage.setItem('activeDatabase', 'A&P');
+            }
+        });
+    </script>
+    <style>
+        /* Dark Mode Styles */
+        .dark-mode {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460) !important;
+            color: #e2e8f0 !important;
+        }
+        
+        .dark-mode .bg-white\/80 {
+            background-color: rgba(30, 41, 59, 0.8) !important;
+        }
+        
+        .dark-mode .text-gray-900 {
+            color: #f1f5f9 !important;
+        }
+        
+        .dark-mode .text-gray-600 {
+            color: #cbd5e1 !important;
+        }
+        
+        .dark-mode .text-gray-700 {
+            color: #e2e8f0 !important;
+        }
+        
+        .dark-mode .bg-gray-50 {
+            background-color: #1e293b !important;
+        }
+        
+        .dark-mode .border-gray-200\/50 {
+            border-color: rgba(51, 65, 85, 0.5) !important;
+        }
+        
+        .dark-mode .bg-gray-100 {
+            background-color: #334155 !important;
+        }
+        
+        .dark-mode .hover\:bg-gray-100:hover {
+            background-color: #475569 !important;
+        }
+        
+        .dark-mode .bg-white {
+            background-color: #1e293b !important;
+        }
+        
+        .dark-mode .bg-gray-50\/50 {
+            background-color: rgba(30, 41, 59, 0.5) !important;
+        }
+        
+        .dark-mode .border-gray-200 {
+            border-color: #475569 !important;
+        }
+        
+        /* Fix input and form element colors in dark mode */
+        .dark-mode input[type="text"] {
+            background-color: #334155 !important;
+            color: #f1f5f9 !important;
+            border-color: #64748b !important;
+        }
+        
+        .dark-mode input[type="text"]:focus {
+            background-color: #475569 !important;
+            border-color: #60a5fa !important;
+        }
+        
+        .dark-mode .bg-blue-50 {
+            background-color: #1e3a8a !important;
+        }
+        
+        .dark-mode .text-blue-900 {
+            color: #93c5fd !important;
+        }
+        
+        .dark-mode .text-blue-700 {
+            color: #bfdbfe !important;
+        }
+        
+        .dark-mode .text-blue-600 {
+            color: #60a5fa !important;
+        }
+        
+        .dark-mode .border-blue-200 {
+            border-color: #1e40af !important;
+        }
+        
+        .dark-mode .bg-green-50 {
+            background-color: #065f46 !important;
+        }
+        
+        .dark-mode .text-green-900 {
+            color: #6ee7b7 !important;
+        }
+        
+        .dark-mode .text-green-700 {
+            color: #86efac !important;
+        }
+        
+        .dark-mode .text-green-600 {
+            color: #34d399 !important;
+        }
+        
+        .dark-mode .border-green-200 {
+            border-color: #047857 !important;
+        }
+        
+        .dark-mode .text-red-600 {
+            color: #f87171 !important;
+        }
+        
+        .dark-mode .text-red-700 {
+            color: #fca5a5 !important;
+        }
+        
+        /* Button contrast fixes */
+        .dark-mode button {
+            background-color: #475569 !important;
+            color: #f1f5f9 !important;
+            border-color: #64748b !important;
+        }
+        
+        .dark-mode .bg-gray-500 {
+            background-color: #64748b !important;
+        }
+        
+        .dark-mode .bg-yellow-500 {
+            background-color: #eab308 !important;
+            color: #1f2937 !important;
+        }
+    </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 min-h-screen font-inter">
     <div class="relative z-10 flex min-h-screen">
@@ -15,16 +158,14 @@
         <aside class="w-20 bg-white/80 backdrop-blur-xl border-r border-gray-200/50 shadow-xl">
             <div class="flex flex-col items-center justify-between h-full py-6">
                 <!-- Logo -->
-                <div class="mb-8">
-                    <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-lg cursor-pointer hover:scale-110 transition-transform duration-300" onclick="window.location.href='/dashboard'">
-                        {{ company_info.name[:3] }}
-                    </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg cursor-pointer hover:scale-110 transition-transform duration-300" onclick="window.location.href='/dashboard'">
+                    <span class="text-white font-bold text-sm">{{ company_info.name[:3] }}</span>
                 </div>
                 
                 <!-- Navigation -->
                 <nav class="flex-1 space-y-4">
                     <a href="/" class="group relative">
-                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
+                        <div class="w-12 h-12 bg-gray-100 {% if company == 'fdec' %}hover:bg-gradient-to-br hover:from-green-500 hover:to-green-600{% else %}hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600{% endif %} hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
                             <i class="fas fa-upload text-lg"></i>
                         </div>
                         <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
@@ -81,7 +222,7 @@
                         </div>
                     </div>
                     <div class="flex space-x-3">
-                        <button onclick="window.location.href='/'" class="px-6 py-3 bg-white text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center space-x-2 border border-gray-200">
+                        <button onclick="window.location.href='/'" class="px-6 py-3 bg-white text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center space-x-2 border border-gray-200 dark-mode:bg-slate-700 dark-mode:text-gray-200 dark-mode:border-slate-600">
                             <i class="fas fa-upload"></i>
                             <span>Back to Upload</span>
                         </button>
@@ -207,35 +348,6 @@
         </main>
     </div>
 
-    <!-- Confirmation Modal -->
-    <div id="confirmModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-        <div class="bg-white rounded-2xl p-8 max-w-md mx-4 shadow-2xl">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-exclamation-triangle text-2xl text-yellow-600"></i>
-                </div>
-                <h3 class="text-xl font-bold text-gray-900 mb-2">⚠️ Warning: Potential PO Duplicates</h3>
-                <p class="text-gray-600 mb-4">
-                    You are setting the batch range to <strong id="warningBatchRange" class="text-red-600"></strong>, which may overlap with existing PO numbers in the {{ company.upper() }} database.
-                </p>
-                <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                    <p class="text-red-800 text-sm font-medium">
-                        <strong>This may cause PO number conflicts when uploading new files!</strong>
-                    </p>
-                </div>
-            </div>
-            
-            <div class="flex space-x-3">
-                <button id="confirmYes" class="flex-1 px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors duration-300">
-                    Yes, Continue
-                </button>
-                <button id="confirmNo" class="flex-1 px-6 py-3 bg-gray-500 text-white font-semibold rounded-lg hover:bg-gray-600 transition-colors duration-300">
-                    Cancel
-                </button>
-            </div>
-        </div>
-    </div>
-
     <script>
         let batchStart = 0;
         let batchEnd = 0;
@@ -261,26 +373,7 @@
                 return;
             }
             
-            const currentHighestPo = parseInt('{{ current_highest_po|default(0) }}');
-            
-            if (currentHighestPo > 0 && batchStart < currentHighestPo) {
-                // Show warning modal
-                document.getElementById('warningBatchRange').textContent = batchRange;
-                document.getElementById('confirmModal').classList.remove('hidden');
-                
-                // Handle confirmation
-                document.getElementById('confirmYes').onclick = function() {
-                    document.getElementById('confirmModal').classList.add('hidden');
-                    startBatch();
-                };
-                
-                document.getElementById('confirmNo').onclick = function() {
-                    document.getElementById('confirmModal').classList.add('hidden');
-                };
-            } else {
-                // No warning needed, start batch directly
-                startBatch();
-            }
+            startBatch();
         });
         
         function startBatch() {
@@ -329,21 +422,51 @@
         }
         
         function updateProgress() {
-            const remaining = batchEnd - currentPo + 1;
-            const total = batchEnd - batchStart + 1;
-            const used = total - remaining;
-            const percentage = (used / total) * 100;
-            
-            document.getElementById('currentPo').textContent = currentPo;
-            document.getElementById('targetEnd').textContent = batchEnd;
-            document.getElementById('remaining').textContent = remaining;
-            document.getElementById('progressBar').style.width = percentage + '%';
-            
-            if (remaining <= 0) {
-                document.getElementById('batchStatus').textContent = 'Batch Complete!';
+            // Handle case where current PO is outside the batch range
+            if (currentPo < batchStart) {
+                // Current PO is below batch range - show as not started
+                const remaining = batchEnd - batchStart + 1;
+                const total = batchEnd - batchStart + 1;
+                const used = 0;
+                const percentage = 0;
+                
+                document.getElementById('currentPo').textContent = batchStart;
+                document.getElementById('targetEnd').textContent = batchEnd;
+                document.getElementById('remaining').textContent = remaining;
+                document.getElementById('progressBar').style.width = percentage + '%';
+                document.getElementById('batchStatus').textContent = `Batch ready: ${total} numbers available`;
+                
+            } else if (currentPo > batchEnd) {
+                // Current PO is above batch range - show as complete/exceeded
+                const total = batchEnd - batchStart + 1;
+                const used = total;
+                const percentage = 100;
+                
+                document.getElementById('currentPo').textContent = currentPo;
+                document.getElementById('targetEnd').textContent = batchEnd;
+                document.getElementById('remaining').textContent = 0;
+                document.getElementById('progressBar').style.width = percentage + '%';
+                document.getElementById('batchStatus').textContent = `Batch exceeded! Current PO (${currentPo}) is beyond target end (${batchEnd})`;
                 document.getElementById('batchComplete').classList.remove('hidden');
+                
             } else {
-                document.getElementById('batchStatus').textContent = `${used} of ${total} numbers used`;
+                // Current PO is within batch range - normal calculation
+                const remaining = batchEnd - currentPo + 1;
+                const total = batchEnd - batchStart + 1;
+                const used = currentPo - batchStart + 1;
+                const percentage = Math.min((used / total) * 100, 100);
+                
+                document.getElementById('currentPo').textContent = currentPo;
+                document.getElementById('targetEnd').textContent = batchEnd;
+                document.getElementById('remaining').textContent = remaining;
+                document.getElementById('progressBar').style.width = percentage + '%';
+                
+                if (remaining <= 0) {
+                    document.getElementById('batchStatus').textContent = 'Batch Complete!';
+                    document.getElementById('batchComplete').classList.remove('hidden');
+                } else {
+                    document.getElementById('batchStatus').textContent = `${used} of ${total} numbers used`;
+                }
             }
         }
         
