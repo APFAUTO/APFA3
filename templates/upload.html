@@ -21,9 +21,9 @@
                         <button type="button" class="browse-btn" onclick="document.getElementById('fileInput').click()">
                             Browse Files
                         </button>
-                        <p class="file-info">Supported formats: .xlsx, .xls (Excel files only)</p>
+                        <p class="file-info">Supported formats: .xlsx, .xls, .xlsm, .xltx, .xltm, .xlt, .xlm (Excel files only)</p>
                     </div>
-                    <input type="file" name="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
+                    <input type="file" name="file" id="fileInput" accept=".xlsx,.xls,.xlsm,.xltx,.xltm,.xlt,.xlm" style="display: none;">
                 </div>
                 
                 <div class="file-preview" id="filePreview" style="display: none;">
@@ -129,7 +129,7 @@
 
         function handleFile(file) {
             // Check file type
-            const allowedTypes = ['.xlsx', '.xls'];
+            const allowedTypes = ['.xlsx', '.xls', '.xlsm', '.xltx', '.xltm', '.xlt', '.xlm'];
             const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
             
             if (!allowedTypes.includes(fileExtension)) {

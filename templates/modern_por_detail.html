@@ -106,8 +106,8 @@
             background-color: #334155 !important;
         }
         
-        .dark-mode .hover\:bg-gray-100:hover {
-            background-color: #475569 !important;
+                .dark-mode .hover\:bg-blue-50:hover {
+            background-color: rgba(59, 130, 246, 0.2) !important; /* A darker blue for hover */
         }
         
         .dark-mode .bg-blue-100 {
@@ -319,13 +319,7 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="p-3 bg-gray-700/50 rounded-xl">
-                            <label class="block text-gray-300 font-medium mb-2">Company</label>
-                            <select id="companySelect" onchange="updateCompany('{{ por.id }}', this.value)" class="w-full p-3 border border-gray-600 rounded-xl bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                <option value="a&p" {% if por.company == 'a&p' %}selected{% endif %}>A&P</option>
-                                <option value="fdec" {% if por.company == 'fdec' %}selected{% endif %}>FDEC</option>
-                            </select>
-                        </div>
+                        
                         <div class="p-3 bg-gray-700/50 rounded-xl">
                             <label class="block text-gray-300 font-medium mb-2">Order Type</label>
                             <select id="orderTypeSelect" onchange="updateOrderType('{{ por.id }}', this.value)" class="w-full p-3 border border-gray-600 rounded-xl bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
@@ -555,6 +549,51 @@
                 {% endif %}
             </div>
 
+            <!-- New File Upload Card -->
+            <div class="bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-700 mb-8">
+                <h2 class="text-xl font-bold text-white mb-4 flex items-center">
+                    <i class="fas fa-upload text-blue-500 mr-2"></i>
+                    Upload New Files
+                </h2>
+                <form method="post" enctype="multipart/form-data" id="inlineUploadForm">
+                    <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center transition-all duration-300 hover:border-blue-400 hover:bg-blue-50" 
+                         id="inlineDragArea" 
+                         ondragover="handleInlineDragOver(event)" 
+                         ondragleave="handleInlineDragLeave(event)" 
+                         ondrop="handleInlineDrop(event)">
+                        <div class="space-y-4">
+                            <i class="fas fa-cloud-upload-alt text-4xl text-blue-500"></i>
+                            <h3 class="text-lg font-semibold text-white">Drag & Drop Files Here</h3>
+                            <p class="text-gray-300">or click to browse files</p>
+                            <p class="text-sm text-blue-400 font-medium">💡 You can select multiple files and add more later!</p>
+                            <input type="file" name="files" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm,.xltx,.xltm,.xlt,.xlm,.jpg,.jpeg,.png,.msg,.eml" style="display: none;" id="inlineFileInput" onchange="handleInlineFileSelect(this.files)">
+                            <button type="button" onclick="document.getElementById('inlineFileInput').click()" class="px-6 py-3 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 transition-colors duration-200">
+                                Browse Files
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="inlineFileList" style="display: none;" class="mt-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <h3 class="text-lg font-semibold text-white">Selected Files:</h3>
+                                <span id="inlineFileCounter" class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">0</span>
+                            </div>
+                            <button type="button" onclick="clearAllInlineFiles()" class="px-4 py-2 text-gray-300 hover:text-white transition-colors duration-200 flex items-center space-x-2">
+                                <i class="fas fa-trash"></i>
+                                <span>Clear All</span>
+                            </button>
+                        </div>
+                        <div id="inlineFileItems"></div>
+                    </div>
+                    
+                    <button type="submit" class="w-full px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-2 mt-6" id="inlineUploadBtn" style="display: none;">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span>Upload Selected Files</span>
+                    </button>
+                </form>
+            </div>
+
             <!-- Attached Files Card -->
             <div class="bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-700">
                 <div class="flex items-center mb-4">
@@ -563,57 +602,33 @@
                     </div>
                     <h2 class="text-xl font-bold text-white">Attached Files</h2>
                 </div>
-                {% if por.files %}
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {% for file in por.files %}
-                    <div class="bg-gray-700/50 rounded-xl p-4 border border-gray-700">
-                        <div class="flex items-center mb-3">
-                            <div class="w-10 h-10 bg-gray-700 rounded-lg flex items-center justify-center mr-3">
-                                <i class="fas fa-file-alt text-blue-400"></i>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-semibold text-white truncate">{{ file.filename }}</p>
-                                <p class="text-xs text-gray-400">{{ file.upload_date.strftime('%d/%m/%Y %H:%M') if file.upload_date else 'Unknown date' }}</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {% if por.files %}
+                        {% for file in por.files %}
+                        <div class="bg-gray-700/50 rounded-xl p-4 border border-gray-700">
+                                                            <p class="text-sm font-semibold text-white truncate">{{ file.filename }}</p>
+                                <p class="text-xs text-gray-400 capitalize">{{ file.description }}</p>
+                                <p class="text-xs text-gray-400">{{ file.uploaded_at.strftime('%d/%m/%Y %H:%M') if file.uploaded_at else 'Unknown date' }}</p>
+                            <div class="flex space-x-2">
+                                <a href="{{ url_for('view_file', file_id=file.id) }}" target="_blank" class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs px-3 py-2 rounded-lg hover:shadow-lg transition-all duration-300 text-center font-medium">
+                                    <i class="fas fa-download mr-1"></i>
+                                    Download
+                                </a>
+                                <button onclick="deleteFile({{ file.id }})" class="px-3 py-2 bg-red-500 text-white text-xs rounded-lg hover:bg-red-600 transition-colors duration-300">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </div>
                         </div>
-                        <div class="flex space-x-2">
-                            <a href="{{ url_for('download_file', file_id=file.id) }}" class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs px-3 py-2 rounded-lg hover:shadow-lg transition-all duration-300 text-center font-medium">
-                                <i class="fas fa-download mr-1"></i>
-                                Download
-                            </a>
-                            <button onclick="deleteFile({{ file.id }})" class="px-3 py-2 bg-red-500 text-white text-xs rounded-lg hover:bg-red-600 transition-colors duration-300">
-                                <i class="fas fa-trash"></i>
-                            </button>
+                        {% endfor %}
+                    {% else %}
+                    <div class="text-center py-12 text-gray-400 col-span-full">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-paperclip text-2xl text-gray-400"></i>
                         </div>
+                        <p class="text-lg font-medium mb-4">No files attached to this POR</p>
                     </div>
-                    {% endfor %}
+                    {% endif %}
                 </div>
-                {% else %}
-                <div class="text-center py-12 text-gray-400">
-                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-paperclip text-2xl text-gray-400"></i>
-                    </div>
-                    <p class="text-lg font-medium mb-4">No files attached to this POR</p>
-                    
-                    <!-- File Type Classification Dropdown -->
-                    <div class="mb-6 max-w-xs mx-auto">
-                        <label class="block text-gray-300 font-medium mb-2 text-center">File Type Classification</label>
-                        <select id="fileTypeSelect" class="w-full p-3 border border-gray-600 rounded-xl bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="por">P.O.R</option>
-                            <option value="quote">Quote</option>
-                            <option value="correspondence">Correspondence</option>
-                            <option value="order_confirmation">Order Confirmation</option>
-                            <option value="order_update">Order Update</option>
-                        </select>
-                    </div>
-                    
-                    <a href="{{ url_for('attach_files', por_id=por.id) }}" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                        <i class="fas fa-plus mr-2"></i>
-                        Attach Files
-                    </a>
-                </div>
-                {% endif %}
-            </div>
 
             <!-- Email Subject Line Card -->
             <div class="bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-700 mb-8">
@@ -923,6 +938,159 @@
                 localStorage.setItem('activeDatabase', 'A&P'); // Or whatever the default is
                 localStorage.setItem('darkMode', 'disabled');
             }
+        });
+
+        let inlineSelectedFiles = [];
+
+        function handleInlineFileSelect(files) {
+            Array.from(files).forEach(file => {
+                // Check for duplicates before adding
+                const isDuplicate = inlineSelectedFiles.some(existingFile =>
+                    existingFile.name === file.name && existingFile.size === file.size
+                );
+                if (!isDuplicate) {
+                    inlineSelectedFiles.push(file);
+                }
+            });
+            updateInlineFileList();
+            updateInlineUploadButton();
+        }
+
+        function updateInlineFileList() {
+            const fileListDiv = document.getElementById('inlineFileList');
+            const fileItemsDiv = document.getElementById('inlineFileItems');
+            const fileCounterSpan = document.getElementById('inlineFileCounter');
+
+            if (inlineSelectedFiles.length === 0) {
+                fileListDiv.style.display = 'none';
+                return;
+            }
+
+            fileListDiv.style.display = 'block';
+            fileCounterSpan.textContent = inlineSelectedFiles.length;
+
+            fileItemsDiv.innerHTML = inlineSelectedFiles.map((file, index) => `
+                <div class="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg border border-gray-700 mb-2">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-file text-blue-400 text-lg"></i>
+                        <div>
+                            <p class="text-sm font-medium text-white truncate">${file.name}</p>
+                            <p class="text-xs text-gray-400">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <select name="file_types" class="px-2 py-1 bg-gray-600 text-white text-xs rounded-md focus:ring-blue-500 focus:border-blue-500">
+                            <option value="original">Original</option>
+                            <option value="quote">Quote</option>
+                            <option value="correspondence">Correspondence</option>
+                            <option value="updates">Updates</option>
+                            <option value="por">POR</option>
+                            <option value="other" selected>Other</option>
+                        </select>
+                        <input type="text" name="descriptions" placeholder="Description (optional)" class="px-2 py-1 bg-gray-600 text-white text-xs rounded-md focus:ring-blue-500 focus:border-blue-500 flex-1 min-w-0">
+                        <button type="button" onclick="removeInlineFile(${index})" class="text-red-400 hover:text-red-600 transition-colors duration-200">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function removeInlineFile(index) {
+            inlineSelectedFiles.splice(index, 1);
+            updateInlineFileList();
+            updateInlineUploadButton();
+        }
+
+        function clearAllInlineFiles() {
+            inlineSelectedFiles = [];
+            updateInlineFileList();
+            updateInlineUploadButton();
+            document.getElementById('inlineFileInput').value = ''; // Clear the file input
+        }
+
+        function updateInlineUploadButton() {
+            const uploadBtn = document.getElementById('inlineUploadBtn');
+            uploadBtn.style.display = inlineSelectedFiles.length > 0 ? 'flex' : 'none';
+        }
+
+        function handleInlineDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
+        }
+
+        function handleInlineDragLeave(e) {
+            e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+        }
+
+        function handleInlineDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+            handleInlineFileSelect(e.dataTransfer.files);
+        }
+
+        // Handle inline form submission
+        document.getElementById('inlineUploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            if (inlineSelectedFiles.length === 0) {
+                alert('Please select files to upload.');
+                return;
+            }
+
+            const formData = new FormData();
+            
+            // Iterate over selected files and append their data
+            inlineSelectedFiles.forEach((file, index) => {
+                formData.append('files', file);
+
+                // Get the corresponding file type and description from the dynamically created elements
+                const fileItemDiv = document.querySelector(`#inlineFileItems > div:nth-child(${index + 1})`);
+                const fileTypeSelect = fileItemDiv.querySelector('select[name="file_types"]');
+                const descriptionInput = fileItemDiv.querySelector('input[name="descriptions"]');
+
+                const selectedFileType = fileTypeSelect ? fileTypeSelect.value : 'other';
+                let description = descriptionInput ? descriptionInput.value.trim() : '';
+
+                // If no custom description is provided, use the selected file type as the description
+                if (!description) {
+                    description = selectedFileType;
+                }
+
+                formData.append('file_types', selectedFileType);
+                formData.append('descriptions', description);
+            });
+
+            const uploadBtn = document.getElementById('inlineUploadBtn');
+            const originalBtnText = uploadBtn.innerHTML;
+            uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Uploading...';
+            uploadBtn.disabled = true;
+
+            const porId = {{ por.id }}; // Get POR ID from Flask context
+
+            fetch(`/attach-files/${porId}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Files uploaded successfully!');
+                    clearAllInlineFiles();
+                    // Reload the page to show updated attached files list
+                    location.reload(); 
+                } else {
+                    alert('Error uploading files: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred during upload.');
+            })
+            .finally(() => {
+                uploadBtn.innerHTML = originalBtnText;
+                uploadBtn.disabled = false;
+            });
         });
     </script>
 </body>

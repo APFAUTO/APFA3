@@ -29,7 +29,7 @@ CURRENT_DATABASE = 'a&p'
 
 # File Upload Settings
 UPLOAD_FOLDER = "static/uploads"
-ALLOWED_EXTENSIONS: Set[str] = {'xlsx', 'xls'}
+ALLOWED_EXTENSIONS: Set[str] = {'xlsx', 'xlsm', 'xltx', 'xltm', 'xls', 'xlt', 'xlm'}
 MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
 
 # Database Settings

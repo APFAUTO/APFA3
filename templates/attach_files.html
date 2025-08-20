@@ -50,7 +50,7 @@
                             <h3 style="margin: 0 0 10px 0; color: #022b3a;">Drag & Drop Files Here</h3>
                             <p style="margin: 0 0 10px 0; color: #666;">or click to browse files</p>
                             <p style="margin: 0 0 20px 0; color: #017bb5; font-size: 14px; font-weight: 500;">💡 You can select multiple files and add more later!</p>
-                            <input type="file" name="files" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.msg,.eml" style="display: none;" id="fileInput">
+                            <input type="file" name="files" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm,.xltx,.xltm,.xlt,.xlm,.jpg,.jpeg,.png,.msg,.eml" style="display: none;" id="fileInput">
                             <button type="button" class="browse-btn" onclick="event.stopPropagation(); document.getElementById('fileInput').click()">Browse Files</button>
                         </div>
                     </div>
@@ -307,6 +307,11 @@
                     return '&#128221;'; // 📝
                 case 'xls':
                 case 'xlsx':
+                case 'xlsm':
+                case 'xltx':
+                case 'xltm':
+                case 'xlt':
+                case 'xlm':
                     return '&#128202;'; // 📊
                 case 'jpg':
                 case 'jpeg':

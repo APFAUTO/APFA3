@@ -1,0 +1,10 @@
+1. 
+     ^^^
+NameError: name 'app' is not defined
+PS C:\Users\wesle\APFA3> python app.py
+Traceback (most recent call last):
+  File "C:\Users\wesle\APFA3\app.py", line 3, in <module>
+    @app.route('/update_order_type', methods=['POST'])
+     ^^^
+NameError: name 'app' is not defined
+PS C:\Users\wesle\APFA3>

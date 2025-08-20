@@ -32,7 +32,7 @@ UPLOAD_FOLDER = "static/uploads"
 # Ensure the upload folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'msg', 'eml'}
+ALLOWED_EXTENSIONS = {'xlsx', 'xlsm', 'xltx', 'xltm', 'xls', 'xlt', 'xlm', 'msg', 'eml'}
 MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
 RECORDS_PER_PAGE = 10
 
@@ -69,13 +69,13 @@ def add_cache_headers(response):
 
 def allowed_file(filename: str) -> bool:
     """Check if file extension is allowed."""
-    allowed_extensions = {'xlsx', 'xls', 'msg', 'eml', 'pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'}
+    allowed_extensions = {'xlsx', 'xls', 'xlsm', 'xltx', 'xltm', 'xlt', 'xlm', 'msg', 'eml', 'pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
 
 def allowed_excel_file(filename: str) -> bool:
     """Check if file extension is allowed for main POR uploader (Excel only)."""
-    allowed_extensions = {'xlsx', 'xls'}
+    allowed_extensions = {'xlsx', 'xls', 'xlsm', 'xltx', 'xltm', 'xlt', 'xlm'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
 
@@ -339,30 +339,13 @@ def process_uploaded_file(file) -> Tuple[bool, str, Optional[dict], Optional[lis
         # For main POR uploader, we only process Excel files
         if not allowed_excel_file(file.filename):
             logger.warning(f"File type not allowed for main uploader: {file.filename}")
-            return False, "Only Excel files (.xlsx, .xls) are allowed for POR uploads", None, None
+            return False, "Only Excel files (.xlsx, .xls, .xlsm, .xltx, .xltm, .xlt, .xlm) are allowed for POR uploads", None, None
         
         # Check file extension
         file_extension = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
         logger.info(f"File extension detected: {file_extension}")
         
-        # If no extension in filename, try to detect from content (Excel only for main uploader)
-        if not file_extension:
-            try:
-                file.seek(0)
-                first_bytes = file.read(8)
-                file.seek(0)
-                logger.info(f"File header bytes: {first_bytes}")
-                
-                # Detect Excel file type from content
-                if first_bytes.startswith(b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'):
-                    if 'xls' in file.filename.lower():
-                        file_extension = 'xls'
-                        logger.info("Detected .xls file from content")
-                elif first_bytes.startswith(b'PK'):
-                    file_extension = 'xlsx'
-                    logger.info("Detected .xlsx file from content")
-            except Exception as e:
-                logger.error(f"Error detecting file type from content: {str(e)}")
+        
         
         # For main uploader, only process Excel files
         logger.info("Processing as Excel file")
@@ -851,6 +834,7 @@ def test():
         </html>
         '''
 
+
 @app.route('/debug-upload', methods=['GET', 'POST'])
 def debug_upload():
     """Debug route to test file upload functionality."""
@@ -894,8 +878,6 @@ def debug_upload():
     </body>
     </html>
     '''
-
-
 
 
 @app.route('/dashboard')
@@ -952,6 +934,114 @@ def dashboard():
                              company_info=company_info)
 
 
+
+@app.route('/switch-database/<database_name>')
+def switch_database(database_name):
+    """Switch between A&P and FDEC databases."""
+    try:
+        if database_name not in ['a&p', 'fdec']:
+            flash("❌ Invalid database selection", 'error')
+            return redirect(url_for('dashboard'))
+        
+        # Update session with new database
+        session['current_database'] = database_name
+        logger.info(f"Switched to database: {database_name}")
+        
+        # Get company info for confirmation
+        company_info = get_company_config(database_name)
+        flash(f"✅ Switched to {company_info.display_name} database", 'success')
+        
+        return redirect(url_for('dashboard'))
+        
+    except Exception as e:
+        logger.error(f"Error switching database: {str(e)}")
+        flash(f"❌ Error switching database: {str(e)}", 'error')
+        return redirect(url_for('dashboard'))
+
+
+@app.route('/switch_database', methods=['POST'])
+def switch_database_api():
+    """API endpoint for switching databases via AJAX."""
+    try:
+        data = request.get_json()
+        database_name = data.get('database', '').lower()
+        
+        if database_name not in ['a&p', 'fdec']:
+            return jsonify({'success': False, 'error': 'Invalid database selection'})
+        
+        # Update session with new database
+        session['current_database'] = database_name
+        logger.info(f"API switched to database: {database_name}")
+        
+        # Get company info and stats
+        company_info = get_company_config(database_name)
+        db_manager = get_database_manager(database_name)
+        db_session = db_manager.get_session()
+        por_count = db_session.query(db_manager.POR).count()
+        db_session.close()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Switched to {company_info.display_name} database',
+            'por_count': por_count,
+            'database': database_name
+        })
+        
+    except Exception as e:
+        logger.error(f"Error switching database via API: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/test_database')
+def test_database_api():
+    """API endpoint to verify current database."""
+    try:
+        current_db = get_current_database()
+        company_info = get_company_config(current_db)
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+        por_count = db_session.query(db_manager.POR).count()
+        db_session.close()
+        
+        return jsonify({
+            'success': True,
+            'current_database': current_db,
+            'display_name': company_info.display_name,
+            'por_count': por_count
+        })
+        
+    except Exception as e:
+        logger.error(f"Error testing database: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/get_database_info')
+def get_database_info():
+    """API endpoint to get current database information."""
+    try:
+        current_db = get_current_database()
+        company_info = get_company_config(current_db)
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+        
+        por_count = db_session.query(db_manager.POR).count()
+        total_value = db_session.query(func.sum(db_manager.POR.order_total)).scalar() or 0
+        
+        db_session.close()
+        
+        return jsonify({
+            'success': True,
+            'current_database': current_db,
+            'display_name': company_info.display_name,
+            'total_pors': por_count,
+            'total_value': float(total_value)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting database info: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
 @app.route('/')
 def root():
     """Redirect root to dashboard."""
@@ -1005,7 +1095,7 @@ def upload():
             # For main POR uploader, only allow Excel files
             if not allowed_excel_file(file.filename):
                 logger.warning(f"File type not allowed for main uploader: {file.filename}")
-                flash("❌ Only Excel files (.xlsx, .xls) are allowed for POR uploads", 'error')
+                flash("❌ Only Excel files (.xlsx, .xls, .xlsm, .xltx, .xltm, .xlt, .xlm) are allowed for POR uploads", 'error')
                 # Get current PO from database for template
                 try:
                     current_db = get_current_database()
@@ -1120,16 +1210,12 @@ def check_updates():
         # Get the last check time from request
         last_check = request.args.get('last_check', 0, type=float)
         
-        # Check if there's new data since last check
         has_new_data = False
         if latest_por:
-            # Check if the latest POR was created after the last check
             if hasattr(latest_por, 'created_at') and latest_por.created_at:
-                # Convert datetime to timestamp for comparison
                 por_created_timestamp = latest_por.created_at.timestamp()
                 has_new_data = por_created_timestamp > last_check
             else:
-                # Fallback to ID comparison if no created_at field
                 has_new_data = latest_por.id > int(last_check) if last_check > 0 else True
         
         db_session.close()
@@ -1286,7 +1372,6 @@ def view():
         return render_template("modern_view.html", por=None, current_po=current_po_value, 
                              total_records=0, current_position=0, timestamp=int(time.time()), 
                              company=current_db, company_info=company_info)
-
 
 
 
@@ -1618,7 +1703,7 @@ def change_batch():
                             })
                         else:
                             flash(f"✅ Batch range {start_po}-{end_po} started successfully for {current_db.upper()}", 'success')
-                        
+            
         except Exception as e:
             logger.error(f"Batch change error: {str(e)}")
             logger.error(f"Error type: {type(e)}")
@@ -1726,8 +1811,6 @@ def check_batch_completion():
         return jsonify({'error': str(e)}), 500
 
 
-
-
 @app.route('/attach-files/<int:por_id>', methods=['GET', 'POST'])
 def attach_files(por_id):
     """Handle file attachments for POR records."""
@@ -1805,24 +1888,20 @@ def attach_files(por_id):
                 if uploaded_count > 0:
                     db_session.commit()
                     logger.info(f"Committed {uploaded_count} files to database")
-                    
-                    # Create detailed success message
-                    if uploaded_count == 1:
-                        flash(f"✅ Successfully uploaded 1 file", 'success')
-                    else:
-                        flash(f"✅ Successfully uploaded {uploaded_count} files", 'success')
+                    message = f"✅ Successfully uploaded {uploaded_count} file(s)"
+                    return jsonify({'success': True, 'message': message})
                 else:
                     logger.warning("No files were uploaded")
-                    flash("❌ No valid files were uploaded", 'error')
+                    return jsonify({'success': False, 'error': "No valid files were uploaded"})
                     
             except Exception as e:
                 db_session.rollback()
                 logger.error(f"File upload error: {str(e)}")
-                flash(f"❌ Error uploading files: {str(e)}", 'error')
+                return jsonify({'success': False, 'error': f"Error uploading files: {str(e)}"})
             finally:
                 db_session.close()
         
-        # Get existing attachments
+        # For GET requests, render the template
         db_session = db_manager.get_session()
         por = db_session.query(db_manager.POR).filter_by(id=por_id).first()
         attached_files = por.attached_files if por else []
@@ -1859,8 +1938,13 @@ def attach_files(por_id):
         return render_template("modern_attach_files.html", por=por, attached_files=attached_files, attachment_icons=attachment_icons, from_search=from_search)
         
     except Exception as e:
-        logger.error(f"Attach files error: {str(e)}")
+        logger.error(f"Error in attach_files: {str(e)}")
         flash(f"❌ Error: {str(e)}", 'error')
+        try:
+            db_session.rollback()
+            db_session.close()
+        except:
+            pass
         return redirect(url_for('view'))
 
 
@@ -1913,11 +1997,6 @@ def view_file(file_id):
         # Force inline viewing for all file types
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['Content-Type'] = mime_type
-        
-        # Add cache control to prevent caching issues
-        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-        response.headers['Pragma'] = 'no-cache'
-        response.headers['Expires'] = '0'
         
         return response
         
@@ -2019,37 +2098,6 @@ def open_file(file_id):
         return redirect(url_for('view'))
 
 
-@app.route('/download-file/<int:file_id>')
-def download_file(file_id):
-    """Download an attached file."""
-    try:
-        current_db = get_current_database()
-        db_manager = get_database_manager(current_db)
-        db_session = db_manager.get_session()
-        por_file = db_session.query(db_manager.PORFile).filter_by(id=file_id).first()
-        
-        if not por_file:
-            flash("❌ File not found", 'error')
-            return redirect(url_for('view'))
-        
-        company_config = get_company_config(current_db)
-        upload_folder = company_config.upload_folder
-        file_path = os.path.join(upload_folder, por_file.stored_filename)
-        
-        if not os.path.exists(file_path):
-            flash("❌ File not found on server", 'error')
-            return redirect(url_for('view'))
-        
-        db_session.close()
-        
-        return send_file(file_path, as_attachment=True, download_name=por_file.original_filename)
-        
-    except Exception as e:
-        logger.error(f"Download error: {str(e)}")
-        flash(f"❌ Error downloading file: {str(e)}", 'error')
-        return redirect(url_for('view'))
-
-
 @app.route('/delete-file/<int:file_id>', methods=['POST'])
 def delete_file(file_id):
     """Delete an attached file."""
@@ -2075,189 +2123,328 @@ def delete_file(file_id):
         db_session.commit()
         db_session.close()
         
-        flash("✅ File deleted successfully", 'success')
+        flash("✅ File deleted successfully!", 'success')
+        return redirect(url_for('view', id=por_file.por_id))
         
     except Exception as e:
         logger.error(f"Delete file error: {str(e)}")
         flash(f"❌ Error deleting file: {str(e)}", 'error')
-    
-    return redirect(request.referrer or url_for('view'))
+        return redirect(url_for('view'))
 
 
 @app.route('/delete_por', methods=['POST'])
 def delete_por():
-    """Delete a POR record and manage PO numbering."""
+    """Delete a POR record and its associated files and line items."""
     try:
-        from flask import jsonify
-        
         data = request.get_json()
         por_id = data.get('por_id')
-        po_number = data.get('po_number')
-        
-        if not por_id or not po_number:
-            return jsonify({'success': False, 'error': 'Missing required fields'})
+        po_number = data.get('po_number') # For logging/feedback
         
         current_db = get_current_database()
         db_manager = get_database_manager(current_db)
         db_session = db_manager.get_session()
         
-        # Get the POR record
         por = db_session.query(db_manager.POR).filter_by(id=por_id).first()
+        
         if not por:
-            return jsonify({'success': False, 'error': 'POR not found'})
+            return jsonify({'success': False, 'error': 'POR not found'}), 404
         
-        # Check if this is the latest PO number
-        latest_por = db_session.query(db_manager.POR).order_by(db_manager.POR.po_number.desc()).first()
+        # Delete associated files
+        for por_file in por.attached_files:
+            company_config = get_company_config(current_db)
+            upload_folder = company_config.upload_folder
+            file_path = os.path.join(upload_folder, por_file.stored_filename)
+            if os.path.exists(file_path):
+                os.remove(file_path)
         
-        if por.po_number == latest_por.po_number:
-            # If it is the latest, decrement the batch counter
-            batch_manager = get_batch_manager(current_db)
-            batch_manager.set_batch_number(por.po_number - 1)
-            
-            # Delete the POR
-            db_session.delete(por)
-            db_session.commit()
-            db_session.close()
-            
-            return jsonify({'success': True, 'message': f'POR #{por.po_number} deleted and PO number reclaimed.'})
-        else:
-            # If not the latest, just delete the POR
-            db_session.delete(por)
-            db_session.commit()
-            db_session.close()
-            
-            return jsonify({'success': True, 'message': f'POR #{por.po_number} deleted.'})
-            
-    except Exception as e:
-        logger.error(f"Delete POR error: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-
-
-@app.route('/get_line_items/<int:por_id>')
-def get_line_items(por_id):
-    """Get line items for a given POR ID."""
-    try:
-        current_db = get_current_database()
-        db_manager = get_database_manager(current_db)
-        db_session = db_manager.get_session()
-        
-        line_items = db_session.query(db_manager.LineItem).filter_by(por_id=por_id).all()
-        
-        # Convert to list of dicts
-        line_items_data = [
-            {
-                'id': item.id,
-                'job_contract_no': item.job_contract_no,
-                'op_no': item.op_no,
-                'description': item.description,
-                'quantity': item.quantity,
-                'price_each': item.price_each,
-                'line_total': item.line_total
-            }
-            for item in line_items
-        ]
-        
+        # Delete POR and cascade delete line items and files via relationship
+        db_session.delete(por)
+        db_session.commit()
         db_session.close()
         
-        return jsonify({'success': True, 'line_items': line_items_data})
+        logger.info(f"✅ Successfully deleted PO #{po_number} (ID: {por_id})")
+        return jsonify({'success': True, 'message': f"PO #{po_number} deleted successfully"})
         
     except Exception as e:
-        logger.error(f"Get line items error: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
+        logger.error(f"Error deleting POR: {str(e)}")
+        db_session.rollback()
+        db_session.close()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@app.route('/update-line-item/<int:item_id>', methods=['POST'])
-def update_line_item(item_id):
-    """Update a line item in the database."""
+@app.route('/update_timeline_stage', methods=['POST'])
+def update_timeline_stage():
+    """Update the timeline stage of a POR."""
     try:
         data = request.get_json()
+        por_id = data.get('por_id')
+        stage = data.get('stage')
         
         current_db = get_current_database()
         db_manager = get_database_manager(current_db)
         db_session = db_manager.get_session()
         
-        line_item = db_session.query(db_manager.LineItem).filter_by(id=item_id).first()
+        por = db_session.query(db_manager.POR).filter_by(id=por_id).first()
         
-        if not line_item:
-            return jsonify({'success': False, 'error': 'Line item not found'})
+        if not por:
+            db_session.close()
+            return jsonify({'success': False, 'error': 'POR not found'}), 404
         
-        # Update fields
-        line_item.job_contract_no = data.get('job_contract_no', line_item.job_contract_no)
-        line_item.op_no = data.get('op_no', line_item.op_no)
-        line_item.description = data.get('description', line_item.description)
-        line_item.quantity = data.get('quantity', line_item.quantity)
-        line_item.price_each = data.get('price_each', line_item.price_each)
-        line_item.line_total = data.get('line_total', line_item.line_total)
+        por.current_stage = stage
+        por.stage_updated_at = datetime.now(timezone.utc) # Update timestamp
+        
+        # Determine status color based on stage
+        if stage == 'received':
+            por.status_color = 'normal'
+        elif stage == 'sent':
+            por.status_color = 'green' # Assuming 'sent' is a positive step
+        elif stage == 'filed':
+            por.status_color = 'normal' # Filed is also a normal state
         
         db_session.commit()
         db_session.close()
         
-        return jsonify({'success': True, 'message': 'Line item updated successfully'})
+        return jsonify({'success': True, 'message': 'Timeline stage updated', 'status_color': por.status_color})
         
     except Exception as e:
-        logger.error(f"Update line item error: {str(e)}")
+        logger.error(f"Error updating timeline stage: {str(e)}")
         db_session.rollback()
         db_session.close()
-        return jsonify({'success': False, 'error': str(e)})
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@app.route('/add-line-item/<int:por_id>', methods=['POST'])
-def add_line_item(por_id):
+@app.route('/add_timeline_comment', methods=['POST'])
+def add_timeline_comment():
+    """Add a comment to a specific timeline stage of a POR."""
+    try:
+        data = request.get_json()
+        por_id = data.get('por_id')
+        stage = data.get('stage')
+        comment = data.get('comment')
+        status_color = data.get('status_color', 'normal') # Get status color from frontend
+        
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+        
+        por = db_session.query(db_manager.POR).filter_by(id=por_id).first()
+        
+        if not por:
+            db_session.close()
+            return jsonify({'success': False, 'error': 'POR not found'}), 404
+        
+        timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+        new_comment_entry = f"[{timestamp}] {comment}"
+        
+        if stage == 'received':
+            por.received_comments = new_comment_entry
+        elif stage == 'sent':
+            por.sent_comments = new_comment_entry
+        elif stage == 'filed':
+            por.filed_comments = new_comment_entry
+        
+        # Update status color if provided and different from current
+        if status_color != 'normal': # Only update if it's a specific status (orange/red)
+            por.status_color = status_color
+        
+        db_session.commit()
+        db_session.close()
+        
+        return jsonify({'success': True, 'message': 'Comment added', 'status_color': por.status_color})
+        
+    except Exception as e:
+        logger.error(f"Error adding timeline comment: {str(e)}")
+        db_session.rollback()
+        db_session.close()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/delete_timeline_comment', methods=['POST'])
+def delete_timeline_comment():
+    """Delete a comment from a specific timeline stage of a POR."""
+    try:
+        data = request.get_json()
+        por_id = data.get('por_id')
+        stage = data.get('stage')
+        
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+        
+        por = db_session.query(db_manager.POR).filter_by(id=por_id).first()
+        
+        if not por:
+            db_session.close()
+            return jsonify({'success': False, 'error': 'POR not found'}), 404
+        
+        if stage == 'received':
+            por.received_comments = None
+        elif stage == 'sent':
+            por.sent_comments = None
+        elif stage == 'filed':
+            por.filed_comments = None
+        
+        db_session.commit()
+        db_session.close()
+        
+        return jsonify({'success': True, 'message': 'Comment deleted'})
+        
+    except Exception as e:
+        logger.error(f"Error deleting timeline comment: {str(e)}")
+        db_session.rollback()
+        db_session.close()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/update_por_field', methods=['POST'])
+def update_por_field():
+    """Update a single field of a POR record."""
+    try:
+        data = request.get_json()
+        por_id = data.get('por_id')
+        field = data.get('field')
+        value = data.get('value')
+        
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+        
+        por = db_session.query(db_manager.POR).filter_by(id=por_id).first()
+        
+        if not por:
+            db_session.close()
+            return jsonify({'success': False, 'error': 'POR not found'}), 404
+        
+        # Save old value for history
+        old_value = getattr(por, field)
+        
+        # Type conversion for specific fields
+        if field in ['order_total', 'price_each', 'quantity']:
+            try:
+                value = float(value)
+            except (ValueError, TypeError):
+                value = 0.0 # Default to 0.0 if conversion fails
+        
+        setattr(por, field, value)
+        
+        # Add to change history
+        add_change_to_history(por, field, old_value, value)
+        
+        db_session.commit()
+        db_session.close()
+        
+        return jsonify({'success': True, 'message': f'{field} updated successfully'})
+        
+    except Exception as e:
+        logger.error(f"Error updating POR field {field}: {str(e)}")
+        db_session.rollback()
+        db_session.close()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/update_line_item_field', methods=['POST'])
+def update_line_item_field():
+    """Update a single field of a LineItem record."""
+    try:
+        data = request.get_json()
+        line_item_id = data.get('line_item_id')
+        field = data.get('field')
+        value = data.get('value')
+        
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+        
+        line_item = db_session.query(db_manager.LineItem).filter_by(id=line_item_id).first()
+        
+        if not line_item:
+            db_session.close()
+            return jsonify({'success': False, 'error': 'Line item not found'}), 404
+        
+        # Save old value for history (optional for line items)
+        old_value = getattr(line_item, field)
+        
+        # Type conversion for specific fields
+        if field in ['quantity', 'price_each', 'line_total']:
+            try:
+                value = float(value)
+            except (ValueError, TypeError):
+                value = 0.0 # Default to 0.0 if conversion fails
+        
+        setattr(line_item, field, value)
+        
+        # Recalculate line_total if quantity or price_each changed
+        if field in ['quantity', 'price_each']:
+            line_item.line_total = (line_item.quantity or 0) * (line_item.price_each or 0)
+        
+        db_session.commit()
+        db_session.close()
+        
+        return jsonify({'success': True, 'message': f'{field} updated successfully', 'new_line_total': line_item.line_total})
+        
+    except Exception as e:
+        logger.error(f"Error updating line item field {field}: {str(e)}")
+        db_session.rollback()
+        db_session.close()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/add_line_item', methods=['POST'])
+def add_line_item():
     """Add a new line item to a POR."""
     try:
         data = request.get_json()
+        por_id = data.get('por_id')
         
         current_db = get_current_database()
         db_manager = get_database_manager(current_db)
         db_session = db_manager.get_session()
         
+        por = db_session.query(db_manager.POR).filter_by(id=por_id).first()
+        
+        if not por:
+            db_session.close()
+            return jsonify({'success': False, 'error': 'POR not found'}), 404
+        
         new_line_item = db_manager.LineItem(
             por_id=por_id,
-            job_contract_no=data.get('job_contract_no'),
-            op_no=data.get('op_no'),
-            description=data.get('description'),
-            quantity=data.get('quantity'),
-            price_each=data.get('price_each'),
-            line_total=data.get('line_total')
+            job_contract_no='',
+            op_no='',
+            description='',
+            quantity=0,
+            price_each=0.0,
+            line_total=0.0
         )
-        
         db_session.add(new_line_item)
         db_session.commit()
         
-        # Return the new line item with its ID
-        new_item_data = {
-            'id': new_line_item.id,
-            'job_contract_no': new_line_item.job_contract_no,
-            'op_no': new_line_item.op_no,
-            'description': new_line_item.description,
-            'quantity': new_line_item.quantity,
-            'price_each': new_line_item.price_each,
-            'line_total': new_line_item.line_total
-        }
+        # Get the ID of the newly created line item
+        new_line_item_id = new_line_item.id
         
         db_session.close()
         
-        return jsonify({'success': True, 'message': 'Line item added successfully', 'new_item': new_item_data})
+        return jsonify({'success': True, 'message': 'Line item added successfully', 'line_item_id': new_line_item_id})
         
     except Exception as e:
-        logger.error(f"Add line item error: {str(e)}")
+        logger.error(f"Error adding line item: {str(e)}")
         db_session.rollback()
         db_session.close()
-        return jsonify({'success': False, 'error': str(e)})
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@app.route('/delete-line-item/<int:item_id>', methods=['POST'])
-def delete_line_item(item_id):
+@app.route('/delete_line_item/<int:line_item_id>', methods=['DELETE'])
+def delete_line_item(line_item_id):
     """Delete a line item from a POR."""
     try:
         current_db = get_current_database()
         db_manager = get_database_manager(current_db)
         db_session = db_manager.get_session()
         
-        line_item = db_session.query(db_manager.LineItem).filter_by(id=item_id).first()
+        line_item = db_session.query(db_manager.LineItem).filter_by(id=line_item_id).first()
         
         if not line_item:
-            return jsonify({'success': False, 'error': 'Line item not found'})
+            db_session.close()
+            return jsonify({'success': False, 'error': 'Line item not found'}), 404
         
         db_session.delete(line_item)
         db_session.commit()
@@ -2266,22 +2453,19 @@ def delete_line_item(item_id):
         return jsonify({'success': True, 'message': 'Line item deleted successfully'})
         
     except Exception as e:
-        logger.error(f"Delete line item error: {str(e)}")
+        logger.error(f"Error deleting line item: {str(e)}")
         db_session.rollback()
         db_session.close()
-        return jsonify({'success': False, 'error': str(e)})
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@app.route('/update_por_field/<int:por_id>', methods=['POST'])
-def update_por_field(por_id):
-    """Update a single field of a POR record."""
+@app.route('/update_company', methods=['POST'])
+def update_company():
+    """Update the company for a POR record."""
     try:
         data = request.get_json()
-        field = data.get('field')
-        value = data.get('value')
-        
-        if not field:
-            return jsonify({'success': False, 'error': 'Field name is required'})
+        por_id = data.get('por_id')
+        company = data.get('company')
         
         current_db = get_current_database()
         db_manager = get_database_manager(current_db)
@@ -2290,43 +2474,147 @@ def update_por_field(por_id):
         por = db_session.query(db_manager.POR).filter_by(id=por_id).first()
         
         if not por:
-            return jsonify({'success': False, 'error': 'POR not found'})
-        
-        # Update the field
-        if hasattr(por, field):
-            setattr(por, field, value)
-            db_session.commit()
             db_session.close()
-            return jsonify({'success': True, 'message': f'{field} updated successfully'})
-        else:
-            return jsonify({'success': False, 'error': f'Invalid field: {field}'})
-            
+            return jsonify({'success': False, 'error': 'POR not found'}), 404
+        
+        por.company = company
+        db_session.commit()
+        db_session.close()
+        
+        return jsonify({'success': True, 'message': 'Company updated successfully'})
+        
     except Exception as e:
-        logger.error(f"Update POR field error: {str(e)}")
+        logger.error(f"Error updating company: {str(e)}")
         db_session.rollback()
         db_session.close()
-        return jsonify({'success': False, 'error': str(e)})
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@app.route('/switch_database', methods=['POST'])
-def switch_database():
-    """Switch the active database for the session."""
+@app.route('/undo_change', methods=['POST'])
+def undo_change():
+    """Undo the last change for a POR."""
     try:
         data = request.get_json()
-        new_db = data.get('database')
+        por_id = data.get('por_id')
         
-        if new_db in DATABASES:
-            session['current_database'] = new_db
-            logger.info(f"Database switched to: {new_db}")
-            return jsonify({'success': True, 'message': f'Database switched to {new_db}'})
-        else:
-            return jsonify({'success': False, 'error': 'Invalid database'})
-            
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+        
+        por = db_session.query(db_manager.POR).filter_by(id=por_id).first()
+        
+        if not por:
+            db_session.close()
+            return jsonify({'success': False, 'error': 'POR not found'}), 404
+        
+        success, message = undo_last_change(por)
+        
+        db_session.commit()
+        db_session.close()
+        
+        return jsonify({'success': success, 'message': message})
+        
     except Exception as e:
-        logger.error(f"Switch database error: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
+        logger.error(f"Error undoing change: {str(e)}")
+        db_session.rollback()
+        db_session.close()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/redo_change', methods=['POST'])
+def redo_change():
+    """Redo the last undone change for a POR."""
+    try:
+        data = request.get_json()
+        por_id = data.get('por_id')
+        
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+        
+        por = db_session.query(db_manager.POR).filter_by(id=por_id).first()
+        
+        if not por:
+            db_session.close()
+            return jsonify({'success': False, 'error': 'POR not found'}), 404
+        
+        success, message = redo_last_change(por)
+        
+        db_session.commit()
+        db_session.close()
+        
+        return jsonify({'success': success, 'message': message})
+        
+    except Exception as e:
+        logger.error(f"Error redoing change: {str(e)}")
+        db_session.rollback()
+        db_session.close()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/update_content_type', methods=['POST'])
+def update_content_type():
+    """Update the content type of a POR."""
+    try:
+        data = request.get_json()
+        por_id = data.get('por_id')
+        content_type = data.get('content_type')
+        
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+        
+        por = db_session.query(db_manager.POR).filter_by(id=por_id).first()
+        
+        if not por:
+            db_session.close()
+            return jsonify({'success': False, 'error': 'POR not found'}), 404
+        
+        por.content_type = content_type
+        db_session.commit()
+        db_session.close()
+        
+        return jsonify({'success': True, 'message': 'Content type updated successfully'})
+        
+    except Exception as e:
+        logger.error(f"Error updating content type: {str(e)}")
+        db_session.rollback()
+        db_session.close()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/update_order_type', methods=['POST'])
+def update_order_type_route():
+    """Update the order type of a POR."""
+    try:
+        data = request.get_json()
+        por_id = data.get('por_id')
+        order_type = data.get('order_type')
+
+        if not por_id or not order_type:
+            return jsonify({'success': False, 'error': 'Missing POR ID or order type'}), 400
+
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+
+        por = db_session.query(db_manager.POR).filter_by(id=por_id).first()
+
+        if not por:
+            db_session.close()
+            return jsonify({'success': False, 'error': 'POR not found'}), 404
+
+        # Update the order_type
+        por.order_type = order_type
+        db_session.commit()
+        db_session.close()
+
+        return jsonify({'success': True, 'message': 'Order type updated successfully'})
+
+    except Exception as e:
+        logger.error(f"Error updating order type: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)
