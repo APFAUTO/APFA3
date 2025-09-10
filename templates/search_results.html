@@ -195,7 +195,7 @@
                 <div class="card-view" id="cardView" style="display: flex; flex-direction: column; gap: 15px;">
                     {% for por in results %}
                         <div class="result-card" style="background: white; border: 2px solid #e3f0fa; border-radius: 15px; padding: 20px; cursor: pointer; transition: all 0.3s ease; hover:border-color: #017bb5;" 
-                             onclick="window.location.href='{{ url_for('view', id=por.id, from_search=request.query_string.decode('utf-8')|clean_query_string) }}'"
+                             onclick="window.location.href='{{ url_for('routes.view', id=por.id, from_search=request.query_string.decode('utf-8')|clean_query_string) }}'"
                              onmouseover="this.style.borderColor='#017bb5'; this.style.transform='translateY(-2px)'" 
                              onmouseout="this.style.borderColor='#e3f0fa'; this.style.transform='translateY(0)'">
                             
@@ -404,7 +404,7 @@
                                                 £{{ "%.0f"|format(por.order_total or 0) }}
                                             </td>
                                             <td style="padding: 12px;">
-                                                <button onclick="window.location.href='{{ url_for('view', id=por.id, from_search=request.query_string.decode('utf-8')|clean_query_string) }}'" 
+                                                <button onclick="window.location.href='{{ url_for('routes.view', id=por.id, from_search=request.query_string.decode('utf-8')|clean_query_string) }}'" 
                                                         style="background: #017bb5; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;">
                                                     👁️ View
                                                 </button>
@@ -423,7 +423,7 @@
                 <div style="text-align: center; padding: 40px; background: white; border-radius: 15px; border: 2px solid #e3f0fa;">
                     <h3 style="color: #666; margin-bottom: 10px;">No Results Found</h3>
                     <p style="color: #888; margin-bottom: 20px;">Try searching with different terms or check your spelling.</p>
-                    <a href="{{ url_for('view') }}" class="nav-link" style="background: #017bb5; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+                    <a href="{{ url_for('routes.view') }}" class="nav-link" style="background: #017bb5; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold;">
                         🔙 Back to Records
                     </a>
                 </div>

@@ -78,15 +78,15 @@
             color: #e2e8f0 !important;
         }
         
-        .dark-mode .bg-white\/80 {
+        .dark-mode .bg-gray-100\/80 {
             background-color: rgba(30, 41, 59, 0.8) !important;
         }
         
-        .dark-mode .text-white {
+        .dark-mode .text-gray-900 {
             color: #f1f5f9 !important;
         }
         
-        .dark-mode .text-gray-300 {
+        .dark-mode .text-gray-600 {
             color: #cbd5e1 !important;
         }
         
@@ -94,7 +94,7 @@
             color: #e2e8f0 !important;
         }
         
-        .dark-mode .bg-gray-700 {
+        .dark-mode .bg-gray-100 {
             background-color: #1e293b !important;
         }
         
@@ -182,70 +182,86 @@
             color: #059669 !important;
         }
     </style>
+    <script>
+        // Load theme preference based on database on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check current database from backend and apply theme automatically
+            const currentCompany = '{{ company }}';
+            if (currentCompany === 'fdec') {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('darkMode', 'enabled');
+                localStorage.setItem('activeDatabase', 'FDEC');
+            } else {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('darkMode', 'disabled');
+                localStorage.setItem('activeDatabase', 'A&P');
+            }
+        });
+    </script>
 </head>
-<body class="min-h-screen font-inter">
+<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 min-h-screen font-inter">
 
     <div class="relative z-10 flex min-h-screen">
         <!-- Compact Sidebar -->
-        <aside class="w-20 bg-gray-900 border-r border-gray-700 shadow-xl">
+        <aside class="w-20 bg-gray-100/80 backdrop-blur-xl border-r border-gray-200/50 shadow-xl">
             <div class="flex flex-col items-center py-6 space-y-8">
                 <!-- Logo -->
                 <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg cursor-pointer hover:scale-110 transition-transform duration-300" onclick="window.location.href='/dashboard'">
-                    <span class="text-white font-bold text-sm">{{ company_info.name[:3] }}</span>
+                    <span class="text-gray-900 font-bold text-sm">{{ company_info.name[:3] }}</span>
                 </div>
                 
                 <!-- Navigation -->
                 <nav class="flex flex-col space-y-4">
                     <a href="/dashboard" class="group relative">
-                        <div class="w-12 h-12 bg-gray-700 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-white rounded-xl flex items-center justify-center text-gray-300 transition-all duration-300 group-hover:scale-110">
+                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-gray-900 rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
                             <i class="fas fa-home text-lg"></i>
                         </div>
-                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-gray-900 px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
                             Dashboard
                         </span>
                     </a>
                     
                     <a href="/upload" class="group relative">
-                        <div class="w-12 h-12 bg-gray-700 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-white rounded-xl flex items-center justify-center text-gray-300 transition-all duration-300 group-hover:scale-110">
+                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-gray-900 rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
                             <i class="fas fa-upload text-lg"></i>
                         </div>
-                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-gray-900 px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
                             Upload
                         </span>
                     </a>
                     
                     <a href="/view" class="group relative">
-                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg transition-all duration-300 group-hover:scale-110">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-gray-900 shadow-lg transition-all duration-300 group-hover:scale-110">
                             <i class="fas fa-eye text-lg"></i>
                         </div>
-                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-gray-900 px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
                             View PORs
                         </span>
                     </a>
                     
                     <a href="/search" class="group relative">
-                        <div class="w-12 h-12 bg-gray-700 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-white rounded-xl flex items-center justify-center text-gray-300 transition-all duration-300 group-hover:scale-110">
+                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-gray-900 rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
                             <i class="fas fa-search text-lg"></i>
                         </div>
-                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-gray-900 px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
                             Search
                         </span>
                     </a>
                     
                     <a href="/analytics" class="group relative">
-                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-orange-500 hover:to-orange-600 hover:text-white rounded-xl flex items-center justify-center text-gray-300 transition-all duration-300 group-hover:scale-110">
+                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-orange-500 hover:to-orange-600 hover:text-gray-900 rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
                             <i class="fas fa-chart-bar text-lg"></i>
                         </div>
-                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-gray-900 px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
                             Analytics
                         </span>
                     </a>
                     
                     <a href="/change-batch" class="group relative">
-                        <div class="w-12 h-12 bg-gray-700 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-white rounded-xl flex items-center justify-center text-gray-300 transition-all duration-300 group-hover:scale-110">
+                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-gray-900 rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
                             <i class="fas fa-exchange-alt text-lg"></i>
                         </div>
-                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-gray-900 px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
                             Batch Change
                         </span>
                     </a>
@@ -258,22 +274,22 @@
             </div>
         </aside>
 
-        <!-- Main Content with Background -->
+        <!-- Main Content -->
         <main class="flex-1 p-8">
             <!-- Header -->
             <div class="mb-8">
                 <div class="flex items-center justify-between mb-4">
                     <div>
-                        <h1 class="text-4xl font-bold text-white mb-2">POR Details</h1>
-                        <p class="text-gray-300 text-lg">Purchase Order Request ID: {{ por.id }}</p>
+                        <h1 class="text-4xl font-bold text-gray-900 mb-2">POR Details</h1>
+                        <p class="text-gray-600 text-lg">Purchase Order Request ID: {{ por.id }}</p>
                     </div>
                     <div class="flex space-x-3">
-                        <a href="{{ url_for('routes.view') }}" class="px-6 py-3 bg-gray-700 text-gray-300 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center space-x-2 border border-gray-600">
+                        <a href="{{ url_for('routes.view') }}" class="px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center space-x-2 border border-gray-200">
                             <i class="fas fa-arrow-left"></i>
                             <span>Back to Records</span>
                         </a>
                         
-                        <a href="{{ url_for('routes.attach_files', por_id=por.id) }}" class="btn">
+                        <a href="{{ url_for('routes.attach_files', por_id=por.id) }}" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-gray-900 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                             <i class="fas fa-paperclip mr-2"></i>
                             <span>Attach Files</span>
                         </a>
@@ -284,45 +300,45 @@
             <!-- POR Data Grid -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 <!-- Basic Information Card -->
-                <div class="bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-700">
+                <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50">
                     <div class="flex items-center mb-4">
-                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white mr-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-gray-900 mr-3">
                             <i class="fas fa-info-circle"></i>
                         </div>
-                        <h2 class="text-xl font-bold text-white">Basic Information</h2>
+                        <h2 class="text-xl font-bold text-gray-900">Basic Information</h2>
                     </div>
                     <div class="space-y-4">
-                        <div class="flex justify-between items-center p-3 bg-gray-700/50 rounded-xl">
-                            <span class="text-gray-300 font-medium">Ship/Project Name</span>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                            <span class="text-gray-600 font-medium">Ship/Project Name</span>
                             <div class="flex items-center space-x-2">
-                                <span id="ship_project_name_{{ por.id }}" onclick="makeEditable('ship_project_name_{{ por.id }}', 'ship_project_name_{{ por.id }}')" class="text-white font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.ship_project_name or 'Not specified')|title }}</span>
+                                <span id="ship_project_name_{{ por.id }}" onclick="makeEditable('ship_project_name_{{ por.id }}', 'ship_project_name_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.ship_project_name or 'Not specified')|title }}</span>
                                 <button onclick="copyToClipboard('{{ por.ship_project_name or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                     <i class="fas fa-copy"></i>
                                 </button>
                             </div>
                         </div>
-                        <div class="flex justify-between items-center p-3 bg-gray-700/50 rounded-xl">
-                            <span class="text-gray-300 font-medium">Supplier</span>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                            <span class="text-gray-600 font-medium">Supplier</span>
                             <div class="flex items-center space-x-2">
-                                <span id="supplier_{{ por.id }}" onclick="makeEditable('supplier_{{ por.id }}', 'supplier_{{ por.id }}')" class="text-white font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.supplier or 'Not specified')|title }}</span>
+                                <span id="supplier_{{ por.id }}" onclick="makeEditable('supplier_{{ por.id }}', 'supplier_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.supplier or 'Not specified')|title }}</span>
                                 <button onclick="copyToClipboard('{{ por.supplier or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                     <i class="fas fa-copy"></i>
                                 </button>
                             </div>
                         </div>
-                        <div class="flex justify-between items-center p-3 bg-gray-700/50 rounded-xl">
-                            <span class="text-gray-300 font-medium">Requestor Name</span>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                            <span class="text-gray-600 font-medium">Requestor Name</span>
                             <div class="flex items-center space-x-2">
-                                <span id="requestor_name_{{ por.id }}" onclick="makeEditable('requestor_name_{{ por.id }}', 'requestor_name_{{ por.id }}')" class="text-white font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.requestor_name or 'Not specified')|title }}</span>
+                                <span id="requestor_name_{{ por.id }}" onclick="makeEditable('requestor_name_{{ por.id }}', 'requestor_name_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.requestor_name or 'Not specified')|title }}</span>
                                 <button onclick="copyToClipboard('{{ por.requestor_name or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                     <i class="fas fa-copy"></i>
                                 </button>
                             </div>
                         </div>
                         
-                        <div class="p-3 bg-gray-700/50 rounded-xl">
-                            <label class="block text-gray-300 font-medium mb-2">Order Type</label>
-                            <select id="orderTypeSelect" onchange="updateOrderType('{{ por.id }}', this.value)" class="w-full p-3 border border-gray-600 rounded-xl bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <div class="p-3 bg-gray-50 rounded-xl">
+                            <label class="block text-gray-600 font-medium mb-2">Order Type</label>
+                            <select id="orderTypeSelect" onchange="updateOrderType('{{ por.id }}', this.value)" class="w-full p-3 border border-gray-300 rounded-xl bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                 <option value="new" {% if por.order_type == 'new' %}selected{% endif %}>New Order</option>
                                 <option value="revised" {% if por.order_type == 'revised' %}selected{% endif %}>Revised Order</option>
                                 <option value="cancelled" {% if por.order_type == 'cancelled' %}selected{% endif %}>Cancelled Order</option>
@@ -332,45 +348,45 @@
                 </div>
 
                 <!-- Financial Information Card -->
-                <div class="bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-700">
+                <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50">
                     <div class="flex items-center mb-4">
-                        <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white mr-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center text-gray-900 mr-3">
                             <i class="fas fa-pound-sign"></i>
                         </div>
-                        <h2 class="text-xl font-bold text-white">Financial Details</h2>
+                        <h2 class="text-xl font-bold text-gray-900">Financial Details</h2>
                     </div>
                     <div class="space-y-4">
-                        <div class="flex justify-between items-center p-3 bg-gray-700/50 rounded-xl">
-                            <span class="text-gray-300 font-medium">Order Total</span>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                            <span class="text-gray-600 font-medium">Order Total</span>
                             <div class="flex items-center space-x-2">
-                                <span id="order_total_{{ por.id }}" onclick="makeEditable('order_total_{{ por.id }}', 'order_total_{{ por.id }}')" class="text-white font-bold text-lg cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">£{{ "%.2f"|format(por.order_total or 0) }}</span>
+                                <span id="order_total_{{ por.id }}" onclick="makeEditable('order_total_{{ por.id }}', 'order_total_{{ por.id }}')" class="text-gray-900 font-bold text-lg cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">£{{ "%.2f"|format(por.order_total or 0) }}</span>
                                 <button onclick="copyToClipboard('£{{ "%.2f"|format(por.order_total or 0) }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                     <i class="fas fa-copy"></i>
                                 </button>
                             </div>
                         </div>
-                        <div class="flex justify-between items-center p-3 bg-gray-700/50 rounded-xl">
-                            <span class="text-gray-300 font-medium">Date Order Raised</span>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                            <span class="text-gray-600 font-medium">Date Order Raised</span>
                             <div class="flex items-center space-x-2">
-                                <span id="date_order_raised_{{ por.id }}" onclick="makeEditable('date_order_raised_{{ por.id }}', 'date_order_raised_{{ por.id }}')" class="text-white font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.date_order_raised or 'Not specified' }}</span>
+                                <span id="date_order_raised_{{ por.id }}" onclick="makeEditable('date_order_raised_{{ por.id }}', 'date_order_raised_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.date_order_raised or 'Not specified' }}</span>
                                 <button onclick="copyToClipboard('{{ por.date_order_raised or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                     <i class="fas fa-copy"></i>
                                 </button>
                             </div>
                         </div>
-                        <div class="flex justify-between items-center p-3 bg-gray-700/50 rounded-xl">
-                            <span class="text-gray-300 font-medium">Date Required By</span>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                            <span class="text-gray-600 font-medium">Date Required By</span>
                             <div class="flex items-center space-x-2">
-                                <span id="date_required_by_{{ por.id }}" onclick="makeEditable('date_required_by_{{ por.id }}', 'date_required_by_{{ por.id }}')" class="text-white font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.date_required_by or 'Not specified' }}</span>
+                                <span id="date_required_by_{{ por.id }}" onclick="makeEditable('date_required_by_{{ por.id }}', 'date_required_by_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.date_required_by or 'Not specified' }}</span>
                                 <button onclick="copyToClipboard('{{ por.date_required_by or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                     <i class="fas fa-copy"></i>
                                 </button>
                             </div>
                         </div>
-                        <div class="flex justify-between items-center p-3 bg-gray-700/50 rounded-xl">
-                            <span class="text-gray-300 font-medium">Show Price</span>
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
+                            <span class="text-gray-600 font-medium">Show Price</span>
                             <div class="flex items-center space-x-2">
-                                <span id="show_price_{{ por.id }}" onclick="makeEditable('show_price_{{ por.id }}', 'show_price_{{ por.id }}')" class="text-white font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.show_price or 'Not specified' }}</span>
+                                <span id="show_price_{{ por.id }}" onclick="makeEditable('show_price_{{ por.id }}', 'show_price_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.show_price or 'Not specified' }}</span>
                                 <button onclick="copyToClipboard('{{ por.show_price or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                     <i class="fas fa-copy"></i>
                                 </button>
@@ -381,34 +397,34 @@
             </div>
 
             <!-- Timeline & Stage Management Card -->
-            <div class="bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-700 mb-8">
+            <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 mb-8">
                 <div class="flex items-center mb-4">
-                    <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-white mr-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-gray-900 mr-3">
                         <i class="fas fa-clock"></i>
                     </div>
-                    <h2 class="text-xl font-bold text-white">Timeline & Stage Management</h2>
+                    <h2 class="text-xl font-bold text-gray-900">Timeline & Stage Management</h2>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="p-4 bg-gray-700/50 rounded-xl relative">
-                        <label class="block text-gray-300 font-medium mb-2">Current Stage</label>
-                        <select id="stageSelect" onchange="updateStage('{{ por.id }}', this.value)" class="w-full p-3 border border-gray-600 rounded-xl bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <div class="p-4 bg-gray-50 rounded-xl relative">
+                        <label class="block text-gray-600 font-medium mb-2">Current Stage</label>
+                        <select id="stageSelect" onchange="updateStage('{{ por.id }}', this.value)" class="w-full p-3 border border-gray-300 rounded-xl bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <option value="received" {% if por.current_stage == 'received' %}selected{% endif %}>Received</option>
                             <option value="sent" {% if por.current_stage == 'sent' %}selected{% endif %}>Sent</option>
                             <option value="filed" {% if por.current_stage == 'filed' %}selected{% endif %}>Filed</option>
                         </select>
                     </div>
-                    <div class="p-4 bg-gray-700/50 rounded-xl">
-                        <label class="block text-gray-300 font-medium mb-2">Content Type</label>
-                        <select id="contentTypeSelect" onchange="updateContentType('{{ por.id }}', this.value)" class="w-full p-3 border border-gray-600 rounded-xl bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <div class="p-4 bg-gray-50 rounded-xl">
+                        <label class="block text-gray-600 font-medium mb-2">Content Type</label>
+                        <select id="contentTypeSelect" onchange="updateContentType('{{ por.id }}', this.value)" class="w-full p-3 border border-gray-300 rounded-xl bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <option value="work_iwo" {% if por.content_type == 'work_iwo' %}selected{% endif %}>Work IWO</option>
                             <option value="supply_and_fit" {% if por.content_type == 'supply_and_fit' %}selected{% endif %}>Supply & Fit</option>
                             <option value="supply" {% if por.content_type == 'supply' %}selected{% endif %}>Supply Only</option>
                         </select>
                     </div>
-                    <div class="p-4 bg-gray-700/50 rounded-xl">
-                        <label class="block text-gray-300 font-medium mb-2">Created</label>
+                    <div class="p-4 bg-gray-50 rounded-xl">
+                        <label class="block text-gray-600 font-medium mb-2">Created</label>
                         <div class="flex items-center justify-between">
-                            <span id="created_at_{{ por.id }}" onclick="makeEditable('created_at_{{ por.id }}', 'created_at_{{ por.id }}')" class="text-white font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.created_at.strftime('%d/%m/%Y %H:%M') if por.created_at else 'Not specified' }}</span>
+                            <span id="created_at_{{ por.id }}" onclick="makeEditable('created_at_{{ por.id }}', 'created_at_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.created_at.strftime('%d/%m/%Y %H:%M') if por.created_at else 'Not specified' }}</span>
                             <button onclick="copyToClipboard('{{ por.created_at.strftime('%d/%m/%Y %H:%M') if por.created_at else 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                 <i class="fas fa-copy"></i>
                             </button>
@@ -418,45 +434,45 @@
             </div>
 
             <!-- Quote & Contact Information Card -->
-            <div class="bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-700 mb-8">
+            <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 mb-8">
                 <div class="flex items-center mb-4">
-                    <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center text-white mr-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center text-gray-900 mr-3">
                         <i class="fas fa-phone"></i>
                     </div>
-                    <h2 class="text-xl font-bold text-white">Quote & Contact Information</h2>
+                    <h2 class="text-xl font-bold text-gray-900">Quote & Contact Information</h2>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="p-4 bg-gray-700/50 rounded-xl">
-                        <label class="block text-gray-300 font-medium mb-2">Quote Reference</label>
+                    <div class="p-4 bg-gray-50 rounded-xl">
+                        <label class="block text-gray-600 font-medium mb-2">Quote Reference</label>
                         <div class="flex items-center justify-between">
-                            <span id="quote_ref_{{ por.id }}" onclick="makeEditable('quote_ref_{{ por.id }}', 'quote_ref_{{ por.id }}')" class="text-white font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.quote_ref or 'Not specified')|title }}</span>
+                            <span id="quote_ref_{{ por.id }}" onclick="makeEditable('quote_ref_{{ por.id }}', 'quote_ref_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.quote_ref or 'Not specified')|title }}</span>
                             <button onclick="copyToClipboard('{{ por.quote_ref or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                 <i class="fas fa-copy"></i>
                             </button>
                         </div>
                     </div>
-                    <div class="p-4 bg-gray-700/50 rounded-xl">
-                        <label class="block text-gray-300 font-medium mb-2">Quote Date</label>
+                    <div class="p-4 bg-gray-50 rounded-xl">
+                        <label class="block text-gray-600 font-medium mb-2">Quote Date</label>
                         <div class="flex items-center justify-between">
-                            <span id="quote_date_{{ por.id }}" onclick="makeEditable('quote_date_{{ por.id }}', 'quote_date_{{ por.id }}')" class="text-white font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.quote_date or 'Not specified')|title }}</span>
+                            <span id="quote_date_{{ por.id }}" onclick="makeEditable('quote_date_{{ por.id }}', 'quote_date_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.quote_date or 'Not specified')|title }}</span>
                             <button onclick="copyToClipboard('{{ por.quote_date or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                 <i class="fas fa-copy"></i>
                             </button>
                         </div>
                     </div>
-                    <div class="p-4 bg-gray-700/50 rounded-xl">
-                        <label class="block text-gray-300 font-medium mb-2">Supplier Contact Name</label>
+                    <div class="p-4 bg-gray-50 rounded-xl">
+                        <label class="block text-gray-600 font-medium mb-2">Supplier Contact Name</label>
                         <div class="flex items-center justify-between">
-                            <span id="supplier_contact_name_{{ por.id }}" onclick="makeEditable('supplier_contact_name_{{ por.id }}', 'supplier_contact_name_{{ por.id }}')" class="text-white font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.supplier_contact_name or 'Not specified')|title }}</span>
+                            <span id="supplier_contact_name_{{ por.id }}" onclick="makeEditable('supplier_contact_name_{{ por.id }}', 'supplier_contact_name_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.supplier_contact_name or 'Not specified')|title }}</span>
                             <button onclick="copyToClipboard('{{ por.supplier_contact_name or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                 <i class="fas fa-copy"></i>
                             </button>
                         </div>
                     </div>
-                    <div class="p-4 bg-gray-700/50 rounded-xl">
-                        <label class="block text-gray-300 font-medium mb-2">Supplier Contact Email</label>
+                    <div class="p-4 bg-gray-50 rounded-xl">
+                        <label class="block text-gray-600 font-medium mb-2">Supplier Contact Email</label>
                         <div class="flex items-center justify-between">
-                            <span id="supplier_contact_email_{{ por.id }}" onclick="makeEditable('supplier_contact_email_{{ por.id }}', 'supplier_contact_email_{{ por.id }}')" class="text-white font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.supplier_contact_email or 'Not specified')|title }}</span>
+                            <span id="supplier_contact_email_{{ por.id }}" onclick="makeEditable('supplier_contact_email_{{ por.id }}', 'supplier_contact_email_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.supplier_contact_email or 'Not specified')|title }}</span>
                             <button onclick="copyToClipboard('{{ por.supplier_contact_email or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                 <i class="fas fa-copy"></i>
                             </button>
@@ -466,17 +482,17 @@
             </div>
 
             <!-- Specifications & Requirements Card -->
-            <div class="bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-700 mb-8">
+            <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 mb-8">
                 <div class="flex items-center mb-4">
-                    <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center text-white mr-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center text-gray-900 mr-3">
                         <i class="fas fa-clipboard-list"></i>
                     </div>
-                    <h2 class="text-xl font-bold text-white">Specifications & Requirements</h2>
+                    <h2 class="text-xl font-bold text-gray-900">Specifications & Requirements</h2>
                 </div>
-                <div class="p-4 bg-gray-700/50 rounded-xl">
-                    <label class="block text-gray-300 font-medium mb-2">Specification/Standards</label>
+                <div class="p-4 bg-gray-50 rounded-xl">
+                    <label class="block text-gray-600 font-medium mb-2">Specification/Standards</label>
                     <div class="flex items-start justify-between">
-                        <span id="specification_standards_{{ por.id }}" onclick="makeEditable('specification_standards_{{ por.id }}', 'specification_standards_{{ por.id }}')" class="text-white font-semibold flex-1 mr-4 cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.specification_standards or 'Not specified' }}</span>
+                        <span id="specification_standards_{{ por.id }}" onclick="makeEditable('specification_standards_{{ por.id }}', 'specification_standards_{{ por.id }}')" class="text-gray-900 font-semibold flex-1 mr-4 cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.specification_standards or 'Not specified' }}</span>
                         <button onclick="copyToClipboard('{{ por.specification_standards or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200 flex-shrink-0">
                             <i class="fas fa-copy"></i>
                         </button>
@@ -485,31 +501,31 @@
             </div>
 
             <!-- Line Items Card -->
-            <div class="bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-700 mb-8">
+            <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 mb-8">
                 <div class="flex items-center mb-4">
-                    <div class="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center text-white mr-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center text-gray-900 mr-3">
                         <i class="fas fa-boxes"></i>
                     </div>
-                    <h2 class="text-xl font-bold text-white">Line Items</h2>
+                    <h2 class="text-xl font-bold text-gray-900">Line Items</h2>
                 </div>
                 {% if por.job_contract_no or por.description %}
                 <div class="overflow-x-auto">
                     <table class="min-w-full">
                         <thead>
                             <tr class="border-b border-gray-200">
-                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-300">Item</th>
-                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-300">Job/Contract No</th>
-                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-300">OP No</th>
-                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-300">Description</th>
-                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-300">Quantity</th>
-                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-300">Unit Price</th>
-                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-300">Total</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Item</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Job/Contract No</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">OP No</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Description</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Quantity</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Unit Price</th>
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Total</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr class="border-b border-gray-800">
-                                <td class="py-3 px-4 text-sm text-white">1</td>
-                                <td class="py-3 px-4 text-sm text-white">
+                            <tr class="border-b border-gray-200">
+                                <td class="py-3 px-4 text-sm text-gray-900">1</td>
+                                <td class="py-3 px-4 text-sm text-gray-900">
                                     <div class="flex items-center justify-between">
                                         <span id="job_contract_no_{{ por.id }}" onclick="makeEditable('job_contract_no_{{ por.id }}', 'job_contract_no_{{ por.id }}')" class="cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.job_contract_no or 'N/A')|title }}</span>
                                         <button onclick="copyToClipboard('{{ por.job_contract_no or 'N/A' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200 ml-2">
@@ -517,7 +533,7 @@
                                         </button>
                                     </div>
                                 </td>
-                                <td class="py-3 px-4 text-sm text-white">
+                                <td class="py-3 px-4 text-sm text-gray-900">
                                     <div class="flex items-center justify-between">
                                         <span id="op_no_{{ por.id }}" onclick="makeEditable('op_no_{{ por.id }}', 'op_no_{{ por.id }}')" class="cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.op_no or 'N/A')|title }}</span>
                                         <button onclick="copyToClipboard('{{ por.op_no or 'N/A' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200 ml-2">
@@ -525,16 +541,16 @@
                                         </button>
                                     </div>
                                 </td>
-                                <td class="py-3 px-4 text-sm text-white">
+                                <td class="py-3 px-4 text-sm text-gray-900">
                                     <span id="desc_{{ por.id }}" onclick="makeEditable('desc_{{ por.id }}', 'description_{{ por.id }}')" class="cursor-pointer text-blue-600 hover:text-blue-800 underline" title="Click to edit">{{ (por.description or 'No description')|title }}</span>
                                 </td>
-                                <td class="py-3 px-4 text-sm text-white">
+                                <td class="py-3 px-4 text-sm text-gray-900">
                                     <span id="quantity_{{ por.id }}" onclick="makeEditable('quantity_{{ por.id }}', 'quantity_{{ por.id }}')" class="cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.quantity or 1 }}</span>
                                 </td>
-                                <td class="py-3 px-4 text-sm text-white">
+                                <td class="py-3 px-4 text-sm text-gray-900">
                                     <span id="price_each_{{ por.id }}" onclick="makeEditable('price_each_{{ por.id }}', 'price_each_{{ por.id }}')" class="cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">£{{ "%.2f"|format(por.price_each or 0) }}</span>
                                 </td>
-                                <td class="py-3 px-4 text-sm text-white font-semibold">£{{ "%.2f"|format((por.quantity or 1) * (por.price_each or 0)) }}</td>
+                                <td class="py-3 px-4 text-sm text-gray-900 font-semibold">£{{ "%.2f"|format((por.quantity or 1) * (por.price_each or 0)) }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -550,8 +566,8 @@
             </div>
 
             <!-- New File Upload Card -->
-            <div class="bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-700 mb-8">
-                <h2 class="text-xl font-bold text-white mb-4 flex items-center">
+            <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 mb-8">
+                <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
                     <i class="fas fa-upload text-blue-500 mr-2"></i>
                     Upload New Files
                 </h2>
@@ -563,11 +579,11 @@
                          ondrop="handleInlineDrop(event)">
                         <div class="space-y-4">
                             <i class="fas fa-cloud-upload-alt text-4xl text-blue-500"></i>
-                            <h3 class="text-lg font-semibold text-white">Drag & Drop Files Here</h3>
-                            <p class="text-gray-300">or click to browse files</p>
+                            <h3 class="text-lg font-semibold text-gray-900">Drag & Drop Files Here</h3>
+                            <p class="text-gray-600">or click to browse files</p>
                             <p class="text-sm text-blue-400 font-medium">💡 You can select multiple files and add more later!</p>
                             <input type="file" name="files" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm,.xltx,.xltm,.xlt,.xlm,.jpg,.jpeg,.png,.msg,.eml" style="display: none;" id="inlineFileInput" onchange="handleInlineFileSelect(this.files)">
-                            <button type="button" onclick="document.getElementById('inlineFileInput').click()" class="px-6 py-3 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 transition-colors duration-200">
+                            <button type="button" onclick="document.getElementById('inlineFileInput').click()" class="px-6 py-3 bg-blue-500 text-gray-900 font-semibold rounded-xl hover:bg-blue-600 transition-colors duration-200">
                                 Browse Files
                             </button>
                         </div>
@@ -576,10 +592,10 @@
                     <div id="inlineFileList" style="display: none;" class="mt-6">
                         <div class="flex items-center justify-between mb-4">
                             <div class="flex items-center space-x-3">
-                                <h3 class="text-lg font-semibold text-white">Selected Files:</h3>
+                                <h3 class="text-lg font-semibold text-gray-900">Selected Files:</h3>
                                 <span id="inlineFileCounter" class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">0</span>
                             </div>
-                            <button type="button" onclick="clearAllInlineFiles()" class="px-4 py-2 text-gray-300 hover:text-white transition-colors duration-200 flex items-center space-x-2">
+                            <button type="button" onclick="clearAllInlineFiles()" class="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors duration-200 flex items-center space-x-2">
                                 <i class="fas fa-trash"></i>
                                 <span>Clear All</span>
                             </button>
@@ -587,7 +603,7 @@
                         <div id="inlineFileItems"></div>
                     </div>
                     
-                    <button type="submit" class="w-full px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-2 mt-6" id="inlineUploadBtn" style="display: none;">
+                    <button type="submit" class="w-full px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 text-gray-900 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-2 mt-6" id="inlineUploadBtn" style="display: none;">
                         <i class="fas fa-cloud-upload-alt"></i>
                         <span>Upload Selected Files</span>
                     </button>
@@ -595,26 +611,26 @@
             </div>
 
             <!-- Attached Files Card -->
-            <div class="bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-700">
+            <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50">
                 <div class="flex items-center mb-4">
-                    <div class="w-10 h-10 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl flex items-center justify-center text-white mr-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl flex items-center justify-center text-gray-900 mr-3">
                         <i class="fas fa-paperclip"></i>
                     </div>
-                    <h2 class="text-xl font-bold text-white">Attached Files</h2>
+                    <h2 class="text-xl font-bold text-gray-900">Attached Files</h2>
                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {% if por.files %}
                         {% for file in por.files %}
-                        <div class="bg-gray-700/50 rounded-xl p-4 border border-gray-700">
-                                                            <p class="text-sm font-semibold text-white truncate">{{ file.filename }}</p>
+                        <div class="bg-gray-50 rounded-xl p-4 border border-gray-200/50">
+                                                            <p class="text-sm font-semibold text-gray-900 truncate">{{ file.filename }}</p>
                                 <p class="text-xs text-gray-400 capitalize">{{ file.description }}</p>
                                 <p class="text-xs text-gray-400">{{ file.uploaded_at.strftime('%d/%m/%Y %H:%M') if file.uploaded_at else 'Unknown date' }}</p>
                             <div class="flex space-x-2">
-                                <a href="{{ url_for('view_file', file_id=file.id) }}" target="_blank" class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs px-3 py-2 rounded-lg hover:shadow-lg transition-all duration-300 text-center font-medium">
+                                <a href="{{ url_for('view_file', file_id=file.id) }}" target="_blank" class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-gray-900 text-xs px-3 py-2 rounded-lg hover:shadow-lg transition-all duration-300 text-center font-medium">
                                     <i class="fas fa-download mr-1"></i>
                                     Download
                                 </a>
-                                <button onclick="deleteFile({{ file.id }})" class="px-3 py-2 bg-red-500 text-white text-xs rounded-lg hover:bg-red-600 transition-colors duration-300">
+                                <button onclick="deleteFile({{ file.id }})" class="px-3 py-2 bg-red-500 text-gray-900 text-xs rounded-lg hover:bg-red-600 transition-colors duration-300">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -631,17 +647,17 @@
                 </div>
 
             <!-- Email Subject Line Card -->
-            <div class="bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-700 mb-8">
+            <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 mb-8">
                 <div class="flex items-center mb-4">
-                    <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center text-white mr-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center text-gray-900 mr-3">
                         <i class="fas fa-envelope"></i>
                     </div>
-                    <h2 class="text-xl font-bold text-white">Email Subject Line</h2>
+                    <h2 class="text-xl font-bold text-gray-900">Email Subject Line</h2>
                 </div>
-                <div class="p-4 bg-gray-700/50 rounded-xl">
-                    <label class="block text-gray-300 font-medium mb-2">Generated Subject</label>
+                <div class="p-4 bg-gray-50 rounded-xl">
+                    <label class="block text-gray-600 font-medium mb-2">Generated Subject</label>
                     <div class="flex items-center justify-between">
-                        <span id="emailSubject" class="text-white font-semibold text-lg">
+                        <span id="emailSubject" class="text-gray-900 font-semibold text-lg">
                             {{ (por.order_type or 'New Order')|title|replace('_', ' ') }} | {{ (por.supplier or 'Supplier')|title }} | {{ (por.ship_project_name or 'Project Name')|title }} | PO {{ por.id }}
                         </span>
                         <button onclick="copyToClipboard(document.getElementById('emailSubject').textContent)" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
@@ -654,7 +670,7 @@
     </div>
 
     <!-- Copy to Clipboard Feedback -->
-    <div id="copyFeedback" class="fixed top-6 right-6 bg-green-500 text-white px-6 py-3 rounded-xl shadow-xl transform translate-x-full transition-transform duration-300 z-50 opacity-0 pointer-events-none">
+    <div id="copyFeedback" class="fixed top-6 right-6 bg-green-500 text-gray-900 px-6 py-3 rounded-xl shadow-xl transform translate-x-full transition-transform duration-300 z-50 opacity-0 pointer-events-none">
         <div class="flex items-center space-x-2">
             <i class="fas fa-check"></i>
             <span>Copied to clipboard!</span>
@@ -663,17 +679,17 @@
 
     <!-- Edit Modal -->
     <div id="editModal" class="fixed inset-0 bg-black/50 overflow-y-auto h-full w-full hidden z-50">
-        <div class="relative top-20 mx-auto p-8 border-gray-700 w-full max-w-2xl shadow-2xl rounded-2xl bg-gray-800">
+        <div class="relative top-20 mx-auto p-8 border-gray-200/50 w-full max-w-2xl shadow-2xl rounded-2xl bg-gray-100/80 backdrop-blur-xl">
             <div class="mb-6">
-                <h3 class="text-2xl font-bold text-white">Edit Field</h3>
-                <p class="text-gray-300 mt-2">Update the value for this field</p>
+                <h3 class="text-2xl font-bold text-gray-900">Edit Field</h3>
+                <p class="text-gray-600 mt-2">Update the value for this field</p>
             </div>
-            <textarea id="editTextarea" class="w-full p-4 border-2 border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" rows="4" placeholder="Enter value..."></textarea>
+            <textarea id="editTextarea" class="w-full p-4 border-2 border-gray-200/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" rows="4" placeholder="Enter value..."></textarea>
             <div class="flex justify-end space-x-3 mt-6">
-                <button onclick="closeEditModal()" class="px-6 py-3 bg-gray-600 text-white font-semibold rounded-xl hover:bg-gray-400 transition-colors duration-300">
+                <button onclick="closeEditModal()" class="px-6 py-3 bg-gray-100 text-gray-900 font-semibold rounded-xl hover:bg-gray-400 transition-colors duration-300">
                     Cancel
                 </button>
-                <button onclick="saveEdit()" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-300">
+                <button onclick="saveEdit()" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-gray-900 font-semibold rounded-xl hover:shadow-lg transition-all duration-300">
                     Save Changes
                 </button>
             </div>
@@ -970,16 +986,16 @@
             fileCounterSpan.textContent = inlineSelectedFiles.length;
 
             fileItemsDiv.innerHTML = inlineSelectedFiles.map((file, index) => `
-                <div class="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg border border-gray-700 mb-2">
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200/50 mb-2">
                     <div class="flex items-center space-x-3">
                         <i class="fas fa-file text-blue-400 text-lg"></i>
                         <div>
-                            <p class="text-sm font-medium text-white truncate">${file.name}</p>
+                            <p class="text-sm font-medium text-gray-900 truncate">${file.name}</p>
                             <p class="text-xs text-gray-400">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
                         </div>
                     </div>
                     <div class="flex items-center space-x-2">
-                        <select name="file_types" class="px-2 py-1 bg-gray-600 text-white text-xs rounded-md focus:ring-blue-500 focus:border-blue-500">
+                        <select name="file_types" class="px-2 py-1 bg-gray-100 text-gray-900 text-xs rounded-md focus:ring-blue-500 focus:border-blue-500">
                             <option value="original">Original</option>
                             <option value="quote">Quote</option>
                             <option value="correspondence">Correspondence</option>
@@ -987,7 +1003,7 @@
                             <option value="por">POR</option>
                             <option value="other" selected>Other</option>
                         </select>
-                        <input type="text" name="descriptions" placeholder="Description (optional)" class="px-2 py-1 bg-gray-600 text-white text-xs rounded-md focus:ring-blue-500 focus:border-blue-500 flex-1 min-w-0">
+                        <input type="text" name="descriptions" placeholder="Description (optional)" class="px-2 py-1 bg-gray-100 text-gray-900 text-xs rounded-md focus:ring-blue-500 focus:border-blue-500 flex-1 min-w-0">
                         <button type="button" onclick="removeInlineFile(${index})" class="text-red-400 hover:text-red-600 transition-colors duration-200">
                             <i class="fas fa-times"></i>
                         </button>

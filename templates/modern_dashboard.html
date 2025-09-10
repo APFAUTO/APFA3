@@ -643,13 +643,15 @@
             }
             
             // Load active database preference and apply theme automatically
-            const activeDB = localStorage.getItem('activeDatabase');
-            if (activeDB === 'FDEC') {
+            const currentCompany = '{{ company }}';
+            if (currentCompany === 'fdec') {
                 document.body.classList.add('dark-mode');
                 localStorage.setItem('darkMode', 'enabled');
+                localStorage.setItem('activeDatabase', 'FDEC');
             } else {
                 document.body.classList.remove('dark-mode');
                 localStorage.setItem('darkMode', 'disabled');
+                localStorage.setItem('activeDatabase', 'A&P');
             }
 
             // Load and display database info
