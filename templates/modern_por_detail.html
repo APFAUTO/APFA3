@@ -106,6 +106,13 @@
             background-color: #334155 !important;
         }
         
+        .dark-mode .bg-gray-50 {
+            background-color: #1e293b !important; /* Darker gray for dark mode */
+        }
+        .dark-mode .bg-white {
+            background-color: #1e293b !important; /* Darker gray for dark mode */
+        }
+        
                 .dark-mode .hover\:bg-blue-50:hover {
             background-color: rgba(59, 130, 246, 0.2) !important; /* A darker blue for hover */
         }
@@ -626,7 +633,7 @@
                                 <p class="text-xs text-gray-400 capitalize">{{ file.description }}</p>
                                 <p class="text-xs text-gray-400">{{ file.uploaded_at.strftime('%d/%m/%Y %H:%M') if file.uploaded_at else 'Unknown date' }}</p>
                             <div class="flex space-x-2">
-                                <a href="{{ url_for('view_file', file_id=file.id) }}" target="_blank" class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-gray-900 text-xs px-3 py-2 rounded-lg hover:shadow-lg transition-all duration-300 text-center font-medium">
+                                <a href="{{ url_for('routes.view_file', file_id=file.id) }}" target="_blank" class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-gray-900 text-xs px-3 py-2 rounded-lg hover:shadow-lg transition-all duration-300 text-center font-medium">
                                     <i class="fas fa-download mr-1"></i>
                                     Download
                                 </a>

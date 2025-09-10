@@ -440,7 +440,7 @@
                         <h4 style="color: #017bb5; margin-bottom: 15px;">📎 Attached Files</h4>
                         <div class="file-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px;">
                             {% for file in por.files %}
-                                    <a href="{{ url_for('view_file', file_id=file.id) }}" target="_blank" class="file-link" 
+                                    <a href="{{ url_for('routes.view_file', file_id=file.id) }}" target="_blank" class="file-link" 
                                title="{{ file.description or file.original_filename }} ({{ (file.file_size / 1024)|round(1) }} KB)"
                                style="display: flex; align-items: center; gap: 10px; padding: 10px; background: white; border-radius: 8px; border: 1px solid #e3f0fa; text-decoration: none; color: inherit; transition: background-color 0.2s ease;">
                                 <span class="file-icon" style="font-size: 20px;">
