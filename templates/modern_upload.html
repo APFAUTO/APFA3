@@ -350,7 +350,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const errorMessages = document.querySelectorAll('.bg-red-100');
             errorMessages.forEach(function(errorDiv) {
-                const message = errorDiv.querySelector('p:last-child').textContent;
+                const message = errorDiv.querySelector('p.text-sm').textContent;
                 if (message.includes('UPLOAD BLOCKED')) {
                     showCriticalErrorModal(message);
                 }

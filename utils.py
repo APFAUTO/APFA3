@@ -1,14 +1,20 @@
+
 """
 Utility functions for processing Excel files and extracting POR data.
 """
 
+import logging
+
+# Setup logging
+logger = logging.getLogger(__name__)
+
 import re
 import os
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from typing import List, Dict, Any, Tuple, Optional
 from openpyxl import load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
-
+import json
 
 def stringify(value: Any) -> str:
     """
@@ -23,15 +29,6 @@ def stringify(value: Any) -> str:
     if isinstance(value, (datetime, date)):
         return value.strftime("%d/%m/%Y")
     return str(value) if value is not None else ""
-
-
-def capitalize_text(value):
-    """Capitalize text values, handling None and non-string values."""
-    if value is None:
-        return None
-    if isinstance(value, str):
-        return value.strip().title()
-    return str(value).strip().title()
 
 
 def to_float(value: Any) -> float:
@@ -57,19 +54,6 @@ def to_float(value: Any) -> float:
     
     return 0.0
 
-
-
-
-
-
-
-
-import re
-import os
-from datetime import datetime, date
-from typing import List, Dict, Any, Tuple, Optional
-from openpyxl import load_workbook
-from openpyxl.worksheet.worksheet import Worksheet
 import xlrd # Added import for xlrd
 
 
@@ -409,4 +393,230 @@ def validate_excel_structure(rows: List[List[Any]]) -> bool:
                         found_keywords += 1
                         break
     
-    return found_keywords >= 3  # At least 3 keywords should be found 
+    return found_keywords >= 3  # At least 3 keywords should be found
+
+def allowed_file(filename: str) -> bool:
+    """Check if file extension is allowed."""
+    allowed_extensions = {'xlsx', 'xls', 'xlsm', 'xltx', 'xltm', 'xlt', 'xlm', 'msg', 'eml', 'pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+
+
+def allowed_excel_file(filename: str) -> bool:
+    """Check if file extension is allowed for main POR uploader (Excel only)."""
+    allowed_extensions = {'xlsx', 'xls', 'xlsm', 'xltx', 'xltm', 'xlt', 'xlm'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+
+
+def get_file_type_icon(file_type: str) -> str:
+    """Get the appropriate icon for a file type."""
+    icon_map = {
+        'quote': '💰',
+        'original': '📄',
+        'correspondence': '📝',
+        'updates': '🔄',
+        'por': '📋',
+        'other': '📎'
+    }
+    return icon_map.get(file_type, '📎')
+
+
+def capitalize_text(value):
+    """Capitalize text values, handling None and non-string values."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value.upper()
+    return value
+
+def clean_query_string(query_string):
+    """Custom filter to clean query string by removing from_search parameter."""
+    if not query_string:
+        return ''
+    
+    # Parse the query string
+    from urllib.parse import parse_qs, urlencode
+    params = parse_qs(query_string)
+    
+    # Remove the from_search parameter if it exists
+    if 'from_search' in params:
+        del params['from_search']
+    
+    # Rebuild the query string
+    return urlencode(params, doseq=True)
+
+
+def get_company_info(company: str) -> dict:
+    """Get company configuration information."""
+    from company_config import get_company_config
+    return get_company_config(company)
+
+
+def add_change_to_history(por, field, old_value, new_value):
+    """Add a change to the POR's change history."""
+    try:
+        # Parse existing history
+        history = json.loads(por.change_history) if por.change_history else []
+        
+        # Create change record
+        change = {
+            'field': field,
+            'old_value': old_value,
+            'new_value': new_value,
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        }
+        
+        # Add to history
+        history.append(change)
+        
+        # Limit to 100 changes
+        if len(history) > 100:
+            history = history[-100:]
+        
+        # Update POR
+        por.change_history = json.dumps(history)
+        por.current_change_index = len(history) - 1
+        
+        return True
+    except Exception as e:
+        # logger.error(f"Error adding change to history: {str(e)}")
+        return False
+
+
+def undo_last_change(por):
+    """Undo the last change for a POR."""
+    try:
+        # Parse existing history
+        history = json.loads(por.change_history) if por.change_history else []
+        
+        if not history or por.current_change_index < 0:
+            return False, "No changes to undo"
+        
+        # Get the last change
+        change = history[por.current_change_index]
+        
+        # Revert the field
+        setattr(por, change['field'], change['old_value'])
+        
+        # Move index back
+        por.current_change_index -= 1
+        
+        return True, f"Undid change to {change['field']}"
+        
+    except Exception as e:
+        logger.error(f"Error undoing change: {str(e)}")
+        return False, str(e)
+
+
+def redo_last_change(por):
+    """Redo the last undone change for a POR."""
+    try:
+        # Parse existing history
+        history = json.loads(por.change_history) if por.change_history else []
+        
+        if not history or por.current_change_index >= len(history) - 1:
+            return False, "No changes to redo"
+        
+        # Get the next change
+        change = history[por.current_change_index + 1]
+        
+        # Apply the change
+        setattr(por, change['field'], change['new_value'])
+        
+        # Move index forward
+        por.current_change_index += 1
+        
+        return True, f"Redid change to {change['field']}"
+        
+    except Exception as e:
+        # logger.error(f"Error redoing change: {str(e)}")
+        return False, str(e)
+
+def detect_content_type_from_line_items(line_items: list, por_description: str = "") -> str:
+    """Detect content type based on line item descriptions using rule-based pattern matching."""
+    
+    # Combine all line item descriptions for comprehensive analysis
+    all_descriptions = []
+    for item in line_items:
+        desc = item.get('desc', '') or ''
+        if desc:
+            all_descriptions.append(desc)
+    
+    # Also include POR description if available
+    if por_description:
+        all_descriptions.append(por_description)
+    
+    if all_descriptions:
+        # Join all descriptions for comprehensive analysis
+        combined_text = ' '.join(all_descriptions)
+        
+        # Use rule-based pattern matching for content type detection
+        logger.info("📝 Using rule-based pattern matching for content type detection")
+    
+    # Work IWO patterns (highest priority)
+    work_iwo_patterns = [
+        r'work\s+iwo',
+        r'provide\s+labour\s+iwo',
+        r'labour\s+iwo',
+        r'iwo\s+work',
+        r'work\s+only',
+        r'labour\s+only',
+        r'provide\s+labour',
+        r'labour\s+services',
+        r'work\s+services',
+        r'installation\s+work',
+        r'fitting\s+work',
+        r'repair\s+work',
+        r'maintenance\s+work'
+    ]
+    
+    # Supply and Fit patterns
+    supply_fit_patterns = [
+        r'supply\s+and\s+fit',
+        r'supply\s*&\s*fit',
+        r'fit\s+and\s+supply',
+        r'install\s+and\s+supply',
+        r'supply\s+install',
+        r'install\s+supply',
+        r'fitting\s+and\s+supply',
+        r'supply\s+and\s+installation',
+        r'installation\s+and\s+supply',
+        r'fit\s+supply',
+        r'supply\s+fit',
+        r'install\s+supply',
+        r'supply\s+install'
+    ]
+    
+    def fuzzy_match(text, patterns):
+        """Fuzzy matching for content type detection."""
+        if not text:
+            return False
+        
+        text_lower = text.lower()
+        
+        for pattern in patterns:
+            if re.search(pattern, text_lower, re.IGNORECASE):
+                return True
+        
+        return False
+    
+    # Check all line items for patterns
+    for item in line_items:
+        description = item.get('desc', "") or ""
+        
+        # Check for Work IWO first (highest priority)
+        if fuzzy_match(description, work_iwo_patterns):
+            return 'work_iwo'
+        
+        # Check for Supply and Fit
+        if fuzzy_match(description, supply_fit_patterns):
+            return 'supply_and_fit'
+    
+    # Check POR description as fallback
+    if por_description:
+        if fuzzy_match(por_description, work_iwo_patterns):
+            return 'work_iwo'
+        if fuzzy_match(por_description, supply_fit_patterns):
+            return 'supply_and_fit'
+    
+    # Default to supply if no patterns found
+    return 'supply'

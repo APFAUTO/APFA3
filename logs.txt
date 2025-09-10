@@ -1,0 +1,9 @@
+upload:335 Uncaught TypeError: Cannot read properties of null (reading 'textContent')
+    at upload:335:71
+    at NodeList.forEach (<anonymous>)
+    at HTMLDocument.<anonymous> (upload:334:27) 
+
+    
+Upload Blocked!
+
+❌ Error loading record: Could not build url for endpoint 'attach_files' with values ['por_id']. Did you mean 'routes.attach_files' instead?

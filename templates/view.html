@@ -162,7 +162,7 @@
                                     {% endif %}
                                     
                             {% set from_search_param = request.args.get('from_search', '') %}
-                            <a href="{{ url_for('attach_files', por_id=por.id, from_search=from_search_param) if from_search_param else url_for('attach_files', por_id=por.id) }}" 
+                            <a href="{{ url_for('routes.attach_files', por_id=por.id, from_search=from_search_param) if from_search_param else url_for('routes.attach_files', por_id=por.id) }}" 
                                style="background: #017bb5; color: white; padding: 8px 15px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"
                                title="{% if por.file_count > 0 %}{{ por.file_count }} file(s) attached{% else %}No files attached - Click to add files{% endif %}">
                                 Attachments

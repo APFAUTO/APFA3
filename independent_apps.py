@@ -6,6 +6,7 @@ Each company can be worked on completely independently without affecting the oth
 from flask import Flask, request, session, jsonify, render_template, redirect, url_for, flash
 from company_config import get_ap_config, get_fdec_config, get_company_config
 import logging
+from datetime import datetime, timezone
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
