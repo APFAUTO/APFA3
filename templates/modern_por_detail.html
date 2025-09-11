@@ -203,6 +203,11 @@
                 localStorage.setItem('darkMode', 'disabled');
                 localStorage.setItem('activeDatabase', 'A&P');
             }
+            
+            // Apply the work order logic on page load
+            if (document.getElementById('contentTypeSelect')) {
+                applyWorkOrderLogic(document.getElementById('contentTypeSelect').value);
+            }
         });
     </script>
 </head>
@@ -923,22 +928,57 @@
         function applyWorkOrderLogic(contentType) {
             const supplier = '{{ por.supplier or "" }}';
             const isEAPL = supplier.toLowerCase().includes('eapl');
+            const descriptionElement = document.getElementById('desc_{{ por.id }}');
             
-            let prefix = '';
-            if (contentType === 'work_iwo' || contentType === 'supply_and_fit') {
-                if (isEAPL) {
-                    prefix = 'Provide Labour I.W.O';
-                } else {
-                    prefix = contentType === 'work_iwo' ? 'Work I.W.O' : 'Supply & Fit';
+            if (!descriptionElement) {
+                return;
+            }
+
+            let originalDescription = descriptionElement.textContent;
+
+            // List of all possible prefixes (new and old) to remove before applying the correct one.
+            const prefixes = [
+                "Work I.W.O Supply and Fit - X",
+                "Work I.W.O Supply and Fit -",
+                "Work I.W.O",
+                "Provide Labour I.W.O Supply and Fit - X",
+                "Provide Labour I.W.O Supply and Fit -",
+                "Provide Labour I.W.O",
+                "Supply & Fit" // Old incorrect prefix
+            ];
+
+            // Remove any existing prefix to avoid duplication
+            for (const p of prefixes) {
+                if (originalDescription.startsWith(p + ' ')) {
+                    originalDescription = originalDescription.substring(p.length + 1).trim();
+                } else if (originalDescription.startsWith(p)) {
+                    originalDescription = originalDescription.substring(p.length).trim();
                 }
             }
-            
-            // Update line item descriptions if prefix is needed
-            if (prefix) {
-                const descriptionElement = document.getElementById('desc_{{ por.id }}');
-                if (descriptionElement && !descriptionElement.textContent.startsWith(prefix)) {
-                    descriptionElement.textContent = `${prefix} ${descriptionElement.textContent}`;
+
+            let prefix = '';
+            if (isEAPL) {
+                if (contentType === 'supply_and_fit') {
+                    prefix = 'Provide Labour I.W.O Supply and Fit - ';
+                } else if (contentType === 'work_iwo') {
+                    prefix = 'Provide Labour I.W.O';
                 }
+            } else {
+                if (contentType === 'supply_and_fit') {
+                    prefix = 'Work I.W.O Supply and Fit - ';
+                } else if (contentType === 'work_iwo') {
+                    prefix = 'Work I.W.O';
+                }
+            }
+
+            if (prefix) {
+                if (prefix.endsWith(' ')) {
+                    descriptionElement.textContent = `${prefix}${originalDescription}`;
+                } else {
+                    descriptionElement.textContent = `${prefix} ${originalDescription}`;
+                }
+            } else {
+                descriptionElement.textContent = originalDescription;
             }
         }
 
@@ -949,19 +989,7 @@
             }
         });
         
-        // Load theme preference based on database on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            const currentCompany = '{{ company }}'; // Get company from Flask context
-            if (currentCompany === 'fdec') {
-                document.body.classList.add('dark-mode');
-                localStorage.setItem('activeDatabase', 'FDEC'); // Ensure localStorage is set correctly
-                localStorage.setItem('darkMode', 'enabled');
-            } else {
-                document.body.classList.remove('dark-mode');
-                localStorage.setItem('activeDatabase', 'A&P'); // Or whatever the default is
-                localStorage.setItem('darkMode', 'disabled');
-            }
-        });
+        
 
         let inlineSelectedFiles = [];
 
