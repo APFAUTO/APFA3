@@ -1457,8 +1457,10 @@ def delete_por():
 @routes.route('/update_timeline_stage', methods=['POST'])
 def update_timeline_stage():
     """Update the timeline stage of a POR."""
+    logger.info("update_timeline_stage endpoint hit")
     try:
         data = request.get_json()
+        logger.info(f"Request data: {data}")
         por_id = data.get('por_id')
         stage = data.get('stage')
         
@@ -1470,23 +1472,17 @@ def update_timeline_stage():
         
         if not por:
             db_session.close()
+            logger.warning(f"POR with id {por_id} not found")
             return jsonify({'success': False, 'error': 'POR not found'}), 404
         
         por.current_stage = stage
         por.stage_updated_at = datetime.now(timezone.utc) # Update timestamp
         
-        # Determine status color based on stage
-        if stage == 'received':
-            por.status_color = 'normal'
-        elif stage == 'sent':
-            por.status_color = 'green' # Assuming 'sent' is a positive step
-        elif stage == 'filed':
-            por.status_color = 'normal' # Filed is also a normal state
-        
         db_session.commit()
+        logger.info(f"Successfully updated stage for POR {por_id} to {stage}")
         db_session.close()
         
-        return jsonify({'success': True, 'message': 'Timeline stage updated', 'status_color': por.status_color})
+        return jsonify({'success': True, 'message': 'Timeline stage updated'})
         
     except Exception as e:
         logger.error(f"Error updating timeline stage: {str(e)}")

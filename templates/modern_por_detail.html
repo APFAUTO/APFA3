@@ -210,6 +210,15 @@
             }
         });
     </script>
+    <style>
+        .filed-stage {
+            outline: 3px solid #22c55e; /* green-500 */
+            outline-offset: -3px;
+        }
+        .filed-stage-inner {
+            background-color: #f0fff4; /* A very light green */
+        }
+    </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 min-h-screen font-inter">
 
@@ -312,7 +321,7 @@
             <!-- POR Data Grid -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 <!-- Basic Information Card -->
-                <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50">
+                <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 por-card">
                     <div class="flex items-center mb-4">
                         <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-gray-900 mr-3">
                             <i class="fas fa-info-circle"></i>
@@ -360,7 +369,7 @@
                 </div>
 
                 <!-- Financial Information Card -->
-                <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50">
+                <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 por-card">
                     <div class="flex items-center mb-4">
                         <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center text-gray-900 mr-3">
                             <i class="fas fa-pound-sign"></i>
@@ -409,7 +418,7 @@
             </div>
 
             <!-- Timeline & Stage Management Card -->
-            <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 mb-8">
+            <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 por-card">
                 <div class="flex items-center mb-4">
                     <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-gray-900 mr-3">
                         <i class="fas fa-clock"></i>
@@ -446,7 +455,7 @@
             </div>
 
             <!-- Quote & Contact Information Card -->
-            <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 mb-8">
+            <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 por-card">
                 <div class="flex items-center mb-4">
                     <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center text-gray-900 mr-3">
                         <i class="fas fa-phone"></i>
@@ -494,7 +503,7 @@
             </div>
 
             <!-- Specifications & Requirements Card -->
-            <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 mb-8">
+            <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 por-card">
                 <div class="flex items-center mb-4">
                     <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center text-gray-900 mr-3">
                         <i class="fas fa-clipboard-list"></i>
@@ -513,7 +522,7 @@
             </div>
 
             <!-- Line Items Card -->
-            <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 mb-8">
+            <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 por-card">
                 <div class="flex items-center mb-4">
                     <div class="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center text-gray-900 mr-3">
                         <i class="fas fa-boxes"></i>
@@ -578,7 +587,7 @@
             </div>
 
             <!-- New File Upload Card -->
-            <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 mb-8">
+            <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 por-card">
                 <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
                     <i class="fas fa-upload text-blue-500 mr-2"></i>
                     Upload New Files
@@ -623,7 +632,7 @@
             </div>
 
             <!-- Attached Files Card -->
-            <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50">
+            <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 por-card">
                 <div class="flex items-center mb-4">
                     <div class="w-10 h-10 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl flex items-center justify-center text-gray-900 mr-3">
                         <i class="fas fa-paperclip"></i>
@@ -659,7 +668,7 @@
                 </div>
 
             <!-- Email Subject Line Card -->
-            <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 mb-8">
+            <div class="bg-gray-100/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 por-card">
                 <div class="flex items-center mb-4">
                     <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center text-gray-900 mr-3">
                         <i class="fas fa-envelope"></i>
@@ -790,6 +799,23 @@
                     setTimeout(() => {
                         feedback.classList.add('translate-x-full');
                     }, 2000);
+
+                    // Apply the new style if the stage is 'filed'
+                    if (newStage === 'filed') {
+                        const mainContent = document.querySelector('main');
+                        mainContent.classList.add('filed-stage');
+                        const cards = mainContent.querySelectorAll('.por-card');
+                        cards.forEach(card => {
+                            card.classList.add('filed-stage-inner');
+                        });
+                    } else {
+                        const mainContent = document.querySelector('main');
+                        mainContent.classList.remove('filed-stage');
+                        const cards = mainContent.querySelectorAll('.por-card');
+                        cards.forEach(card => {
+                            card.classList.remove('filed-stage-inner');
+                        });
+                    }
                 } else {
                     alert('Error updating stage: ' + (data.error || 'Unknown error'));
                 }
@@ -1142,6 +1168,35 @@
                 uploadBtn.innerHTML = originalBtnText;
                 uploadBtn.disabled = false;
             });
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const stageSelect = document.getElementById('stageSelect');
+            if (stageSelect) {
+                const mainContent = document.querySelector('main');
+                const applyFiledStyle = () => {
+                    if (stageSelect.value === 'filed') {
+                        mainContent.classList.add('filed-stage');
+                        const cards = mainContent.querySelectorAll('.por-card');
+                        cards.forEach(card => {
+                            card.classList.add('filed-stage-inner');
+                        });
+                    } else {
+                        mainContent.classList.remove('filed-stage');
+                        const cards = mainContent.querySelectorAll('.por-card');
+                        cards.forEach(card => {
+                            card.classList.remove('filed-stage-inner');
+                        });
+                    }
+                };
+
+                // Apply on page load
+                applyFiledStyle();
+
+                // Apply on change
+                stageSelect.addEventListener('change', applyFiledStyle);
+            }
         });
     </script>
 </body>

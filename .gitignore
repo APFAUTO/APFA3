@@ -67,4 +67,4 @@ test_*.py
 
 # Documentation files (consolidated into README.md)
 *_SUMMARY.md
-*_INTEGRATION.md 
+*_INTEGRATION.md "a&p_por.db" 
