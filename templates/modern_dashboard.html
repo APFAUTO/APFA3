@@ -166,9 +166,99 @@
             background-color: #334155 !important;
             border-color: #475569 !important;
         }
+        
+        /* Dark mode for Quick Actions */
+        .dark-mode .bg-blue-50 {
+            background-color: #1e3a8a !important;
+        }
+        
+        .dark-mode .bg-indigo-50 {
+            background-color: #312e81 !important;
+        }
+        
+        .dark-mode .bg-green-50 {
+            background-color: #065f46 !important;
+        }
+        
+        .dark-mode .bg-emerald-50 {
+            background-color: #064e3b !important;
+        }
+        
+        .dark-mode .bg-purple-50 {
+            background-color: #581c87 !important;
+        }
+        
+        .dark-mode .bg-pink-50 {
+            background-color: #831843 !important;
+        }
+        
+        .dark-mode .border-blue-200 {
+            border-color: #312e81 !important;
+        }
+        
+        .dark-mode .border-green-200 {
+            border-color: #064e3b !important;
+        }
+        
+        .dark-mode .border-purple-200 {
+            border-color: #581c87 !important;
+        }
+        
+        .dark-mode .hover\:from-blue-100:hover {
+            background-color: #1e40af !important;
+        }
+        
+        .dark-mode .hover\:to-indigo-100:hover {
+            background-color: #3730a3 !important;
+        }
+        
+        .dark-mode .hover\:from-green-100:hover {
+            background-color: #047857 !important;
+        }
+        
+        .dark-mode .hover\:to-emerald-100:hover {
+            background-color: #065f46 !important;
+        }
+        
+        .dark-mode .hover\:from-purple-100:hover {
+            background-color: #6d28d9 !important;
+        }
+        
+        .dark-mode .hover\:to-pink-100:hover {
+            background-color: #9f1239 !important;
+        }
+        
+        /* Dark mode for gradient backgrounds in Quick Actions */
+        .dark-mode .bg-gradient-to-r.from-blue-50.to-indigo-50 {
+            background: linear-gradient(to right, #1e3a8a, #312e81) !important;
+        }
+        
+        .dark-mode .bg-gradient-to-r.from-green-50.to-emerald-50 {
+            background: linear-gradient(to right, #065f46, #064e3b) !important;
+        }
+        
+        .dark-mode .bg-gradient-to-r.from-purple-50.to-pink-50 {
+            background: linear-gradient(to right, #581c87, #831843) !important;
+        }
+        
+        .dark-mode .hover\:from-blue-100.hover\:to-indigo-100:hover {
+            background: linear-gradient(to right, #1e40af, #3730a3) !important;
+        }
+        
+        .dark-mode .hover\:from-green-100.hover\:to-emerald-100:hover {
+            background: linear-gradient(to right, #047857, #065f46) !important;
+        }
+        
+        .dark-mode .hover\:from-purple-100.hover\:to-pink-100:hover {
+            background: linear-gradient(to right, #6d28d9, #9f1239) !important;
+        }
     </style>
 </head>
-<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 min-h-screen font-inter">
+<body class="min-h-screen font-inter">
+    
+    <!-- Background layer -->
+    <div class="{% if company == 'fdec' %}dark-mode fdec-rain-background{% else %}bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100{% endif %} fixed inset-0 z-0"></div>
+    
     <!-- Animated Background Pattern -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none">
         <div class="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full blur-3xl animate-pulse"></div>
