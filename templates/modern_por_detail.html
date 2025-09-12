@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='elements.css') }}">
     <script>
         tailwind.config = {
             theme: {
@@ -231,14 +232,18 @@
         }
     </style>
 </head>
-<body class="{% if company == 'a&p' %}a-and-p-background{% else %}bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100{% endif %} min-h-screen font-inter">
+<body class="min-h-screen font-inter">
+    <span id="porId" data-por-id="{{ por.id }}" style="display: none;"></span>
+    
+    <!-- Background layer -->
+    <div class="{% if company == 'a&p' %}a-and-p-background{% else %}fdec-rain-background{% endif %} fixed inset-0 z-0"></div>
 
-    <div class="relative z-10 flex min-h-screen">
+    <div class="relative flex min-h-screen z-10">
         <!-- Compact Sidebar -->
         <aside class="w-20 bg-gray-100/80 backdrop-blur-xl border-r border-gray-200/50 shadow-xl">
             <div class="flex flex-col items-center py-6 space-y-8">
                 <!-- Logo -->
-                <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg cursor-pointer hover:scale-110 transition-transform duration-300" onclick="window.location.href='/dashboard'">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg cursor-pointer hover:scale-110 transition-transform duration-300 nav-btn" data-nav-url="/dashboard">
                     <span class="text-gray-900 font-bold text-sm">{{ company_info.name[:3] }}</span>
                 </div>
                 
@@ -343,8 +348,8 @@
                         <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
                             <span class="text-gray-600 font-medium">Ship/Project Name</span>
                             <div class="flex items-center space-x-2">
-                                <span id="ship_project_name_{{ por.id }}" onclick="makeEditable('ship_project_name_{{ por.id }}', 'ship_project_name_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.ship_project_name or 'Not specified')|title }}</span>
-                                <button onclick="copyToClipboard('{{ por.ship_project_name or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                                <span id="ship_project_name_{{ por.id }}" data-field="ship_project_name" data-por-id="{{ por.id }}" class="editable-field text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.ship_project_name or 'Not specified')|title }}</span>
+                                <button data-copy-text="{{ por.ship_project_name or 'Not specified' }}" class="copy-btn text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                     <i class="fas fa-copy"></i>
                                 </button>
                             </div>
@@ -352,8 +357,8 @@
                         <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
                             <span class="text-gray-600 font-medium">Supplier</span>
                             <div class="flex items-center space-x-2">
-                                <span id="supplier_{{ por.id }}" onclick="makeEditable('supplier_{{ por.id }}', 'supplier_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.supplier or 'Not specified')|title }}</span>
-                                <button onclick="copyToClipboard('{{ por.supplier or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                                <span id="supplier_{{ por.id }}" data-field="supplier" data-por-id="{{ por.id }}" class="editable-field text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.supplier or 'Not specified')|title }}</span>
+                                <button data-copy-text="{{ por.supplier or 'Not specified' }}" class="copy-btn text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                     <i class="fas fa-copy"></i>
                                 </button>
                             </div>
@@ -361,8 +366,8 @@
                         <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
                             <span class="text-gray-600 font-medium">Requestor Name</span>
                             <div class="flex items-center space-x-2">
-                                <span id="requestor_name_{{ por.id }}" onclick="makeEditable('requestor_name_{{ por.id }}', 'requestor_name_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.requestor_name or 'Not specified')|title }}</span>
-                                <button onclick="copyToClipboard('{{ por.requestor_name or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                                <span id="requestor_name_{{ por.id }}" data-field="requestor_name" data-por-id="{{ por.id }}" class="editable-field text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.requestor_name or 'Not specified')|title }}</span>
+                                <button data-copy-text="{{ por.requestor_name or 'Not specified' }}" class="copy-btn text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                     <i class="fas fa-copy"></i>
                                 </button>
                             </div>
@@ -391,8 +396,8 @@
                         <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
                             <span class="text-gray-600 font-medium">Order Total</span>
                             <div class="flex items-center space-x-2">
-                                <span id="order_total_{{ por.id }}" onclick="makeEditable('order_total_{{ por.id }}', 'order_total_{{ por.id }}')" class="text-gray-900 font-bold text-lg cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">£{{ "%.2f"|format(por.order_total or 0) }}</span>
-                                <button onclick="copyToClipboard('£{{ "%.2f"|format(por.order_total or 0) }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                                <span id="order_total_{{ por.id }}" data-field="order_total" data-por-id="{{ por.id }}" class="editable-field text-gray-900 font-bold text-lg cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">£{{ "%.2f"|format(por.order_total or 0) }}</span>
+                                <button data-copy-text="£{{ "%.2f"|format(por.order_total or 0) }}" class="copy-btn text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                     <i class="fas fa-copy"></i>
                                 </button>
                             </div>
@@ -400,8 +405,8 @@
                         <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
                             <span class="text-gray-600 font-medium">Date Order Raised</span>
                             <div class="flex items-center space-x-2">
-                                <span id="date_order_raised_{{ por.id }}" onclick="makeEditable('date_order_raised_{{ por.id }}', 'date_order_raised_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.date_order_raised or 'Not specified' }}</span>
-                                <button onclick="copyToClipboard('{{ por.date_order_raised or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                                <span id="date_order_raised_{{ por.id }}" data-field="date_order_raised" data-por-id="{{ por.id }}" class="editable-field text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.date_order_raised or 'Not specified' }}</span>
+                                <button data-copy-text="{{ por.date_order_raised or 'Not specified' }}" class="copy-btn text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                     <i class="fas fa-copy"></i>
                                 </button>
                             </div>
@@ -409,8 +414,8 @@
                         <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
                             <span class="text-gray-600 font-medium">Date Required By</span>
                             <div class="flex items-center space-x-2">
-                                <span id="date_required_by_{{ por.id }}" onclick="makeEditable('date_required_by_{{ por.id }}', 'date_required_by_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.date_required_by or 'Not specified' }}</span>
-                                <button onclick="copyToClipboard('{{ por.date_required_by or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                                <span id="date_required_by_{{ por.id }}" data-field="date_required_by" data-por-id="{{ por.id }}" class="editable-field text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.date_required_by or 'Not specified' }}</span>
+                                <button data-copy-text="{{ por.date_required_by or 'Not specified' }}" class="copy-btn text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                     <i class="fas fa-copy"></i>
                                 </button>
                             </div>
@@ -418,8 +423,8 @@
                         <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
                             <span class="text-gray-600 font-medium">Show Price</span>
                             <div class="flex items-center space-x-2">
-                                <span id="show_price_{{ por.id }}" onclick="makeEditable('show_price_{{ por.id }}', 'show_price_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.show_price or 'Not specified' }}</span>
-                                <button onclick="copyToClipboard('{{ por.show_price or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                                <span id="show_price_{{ por.id }}" data-field="show_price" data-por-id="{{ por.id }}" class="editable-field text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.show_price or 'Not specified' }}</span>
+                                <button data-copy-text="{{ por.show_price or 'Not specified' }}" class="copy-btn text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                     <i class="fas fa-copy"></i>
                                 </button>
                             </div>
@@ -456,8 +461,8 @@
                     <div class="p-4 bg-gray-50 rounded-xl">
                         <label class="block text-gray-600 font-medium mb-2">Created</label>
                         <div class="flex items-center justify-between">
-                            <span id="created_at_{{ por.id }}" onclick="makeEditable('created_at_{{ por.id }}', 'created_at_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.created_at.strftime('%d/%m/%Y %H:%M') if por.created_at else 'Not specified' }}</span>
-                            <button onclick="copyToClipboard('{{ por.created_at.strftime('%d/%m/%Y %H:%M') if por.created_at else 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                            <span id="created_at_{{ por.id }}" data-field="created_at" data-por-id="{{ por.id }}" class="editable-field text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.created_at.strftime('%d/%m/%Y %H:%M') if por.created_at else 'Not specified' }}</span>
+                            <button data-copy-text="{{ por.created_at.strftime('%d/%m/%Y %H:%M') if por.created_at else 'Not specified' }}" class="copy-btn text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                 <i class="fas fa-copy"></i>
                             </button>
                         </div>
@@ -477,8 +482,8 @@
                     <div class="p-4 bg-gray-50 rounded-xl">
                         <label class="block text-gray-600 font-medium mb-2">Quote Reference</label>
                         <div class="flex items-center justify-between">
-                            <span id="quote_ref_{{ por.id }}" onclick="makeEditable('quote_ref_{{ por.id }}', 'quote_ref_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.quote_ref or 'Not specified')|title }}</span>
-                            <button onclick="copyToClipboard('{{ por.quote_ref or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                            <span id="quote_ref_{{ por.id }}" data-field="quote_ref" data-por-id="{{ por.id }}" class="editable-field text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.quote_ref or 'Not specified')|title }}</span>
+                            <button data-copy-text="{{ por.quote_ref or 'Not specified' }}" class="copy-btn text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                 <i class="fas fa-copy"></i>
                             </button>
                         </div>
@@ -486,8 +491,8 @@
                     <div class="p-4 bg-gray-50 rounded-xl">
                         <label class="block text-gray-600 font-medium mb-2">Quote Date</label>
                         <div class="flex items-center justify-between">
-                            <span id="quote_date_{{ por.id }}" onclick="makeEditable('quote_date_{{ por.id }}', 'quote_date_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.quote_date or 'Not specified')|title }}</span>
-                            <button onclick="copyToClipboard('{{ por.quote_date or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                            <span id="quote_date_{{ por.id }}" data-field="quote_date" data-por-id="{{ por.id }}" class="editable-field text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.quote_date or 'Not specified')|title }}</span>
+                            <button data-copy-text="{{ por.quote_date or 'Not specified' }}" class="copy-btn text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                 <i class="fas fa-copy"></i>
                             </button>
                         </div>
@@ -495,8 +500,8 @@
                     <div class="p-4 bg-gray-50 rounded-xl">
                         <label class="block text-gray-600 font-medium mb-2">Supplier Contact Name</label>
                         <div class="flex items-center justify-between">
-                            <span id="supplier_contact_name_{{ por.id }}" onclick="makeEditable('supplier_contact_name_{{ por.id }}', 'supplier_contact_name_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.supplier_contact_name or 'Not specified')|title }}</span>
-                            <button onclick="copyToClipboard('{{ por.supplier_contact_name or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                            <span id="supplier_contact_name_{{ por.id }}" data-field="supplier_contact_name" data-por-id="{{ por.id }}" class="editable-field text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.supplier_contact_name or 'Not specified')|title }}</span>
+                            <button data-copy-text="{{ por.supplier_contact_name or 'Not specified' }}" class="copy-btn text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                 <i class="fas fa-copy"></i>
                             </button>
                         </div>
@@ -504,8 +509,8 @@
                     <div class="p-4 bg-gray-50 rounded-xl">
                         <label class="block text-gray-600 font-medium mb-2">Supplier Contact Email</label>
                         <div class="flex items-center justify-between">
-                            <span id="supplier_contact_email_{{ por.id }}" onclick="makeEditable('supplier_contact_email_{{ por.id }}', 'supplier_contact_email_{{ por.id }}')" class="text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.supplier_contact_email or 'Not specified')|title }}</span>
-                            <button onclick="copyToClipboard('{{ por.supplier_contact_email or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                            <span id="supplier_contact_email_{{ por.id }}" data-field="supplier_contact_email" data-por-id="{{ por.id }}" class="editable-field text-gray-900 font-semibold cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.supplier_contact_email or 'Not specified')|title }}</span>
+                            <button data-copy-text="{{ por.supplier_contact_email or 'Not specified' }}" class="copy-btn text-blue-600 hover:text-blue-800 transition-colors duration-200">
                                 <i class="fas fa-copy"></i>
                             </button>
                         </div>
@@ -524,8 +529,8 @@
                 <div class="p-4 bg-gray-50 rounded-xl">
                     <label class="block text-gray-600 font-medium mb-2">Specification/Standards</label>
                     <div class="flex items-start justify-between">
-                        <span id="specification_standards_{{ por.id }}" onclick="makeEditable('specification_standards_{{ por.id }}', 'specification_standards_{{ por.id }}')" class="text-gray-900 font-semibold flex-1 mr-4 cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.specification_standards or 'Not specified' }}</span>
-                        <button onclick="copyToClipboard('{{ por.specification_standards or 'Not specified' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200 flex-shrink-0">
+                        <span id="specification_standards_{{ por.id }}" data-field="specification_standards" data-por-id="{{ por.id }}" class="editable-field text-gray-900 font-semibold flex-1 mr-4 cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.specification_standards or 'Not specified' }}</span>
+                        <button data-copy-text="{{ por.specification_standards or 'Not specified' }}" class="copy-btn text-blue-600 hover:text-blue-800 transition-colors duration-200 flex-shrink-0">
                             <i class="fas fa-copy"></i>
                         </button>
                     </div>
@@ -559,28 +564,28 @@
                                 <td class="py-3 px-4 text-sm text-gray-900">1</td>
                                 <td class="py-3 px-4 text-sm text-gray-900">
                                     <div class="flex items-center justify-between">
-                                        <span id="job_contract_no_{{ por.id }}" onclick="makeEditable('job_contract_no_{{ por.id }}', 'job_contract_no_{{ por.id }}')" class="cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.job_contract_no or 'N/A')|title }}</span>
-                                        <button onclick="copyToClipboard('{{ por.job_contract_no or 'N/A' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200 ml-2">
+                                        <span id="job_contract_no_{{ por.id }}" data-field="job_contract_no" data-por-id="{{ por.id }}" class="editable-field cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.job_contract_no or 'N/A')|title }}</span>
+                                        <button data-copy-text="{{ por.job_contract_no or 'N/A' }}" class="copy-btn text-blue-600 hover:text-blue-800 transition-colors duration-200 ml-2">
                                             <i class="fas fa-copy text-xs"></i>
                                         </button>
                                     </div>
                                 </td>
                                 <td class="py-3 px-4 text-sm text-gray-900">
                                     <div class="flex items-center justify-between">
-                                        <span id="op_no_{{ por.id }}" onclick="makeEditable('op_no_{{ por.id }}', 'op_no_{{ por.id }}')" class="cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.op_no or 'N/A')|title }}</span>
-                                        <button onclick="copyToClipboard('{{ por.op_no or 'N/A' }}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200 ml-2">
+                                        <span id="op_no_{{ por.id }}" data-field="op_no" data-por-id="{{ por.id }}" class="editable-field cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ (por.op_no or 'N/A')|title }}</span>
+                                        <button data-copy-text="{{ por.op_no or 'N/A' }}" class="copy-btn text-blue-600 hover:text-blue-800 transition-colors duration-200 ml-2">
                                             <i class="fas fa-copy text-xs"></i>
                                         </button>
                                     </div>
                                 </td>
                                 <td class="py-3 px-4 text-sm text-gray-900">
-                                    <span id="desc_{{ por.id }}" onclick="makeEditable('desc_{{ por.id }}', 'description_{{ por.id }}')" class="cursor-pointer text-blue-600 hover:text-blue-800 underline" title="Click to edit">{{ (por.description or 'No description')|title }}</span>
+                                    <span id="desc_{{ por.id }}" data-field="description" data-por-id="{{ por.id }}" class="editable-field cursor-pointer text-blue-600 hover:text-blue-800 underline" title="Click to edit">{{ (por.description or 'No description')|title }}</span>
                                 </td>
                                 <td class="py-3 px-4 text-sm text-gray-900">
-                                    <span id="quantity_{{ por.id }}" onclick="makeEditable('quantity_{{ por.id }}', 'quantity_{{ por.id }}')" class="cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.quantity or 1 }}</span>
+                                    <span id="quantity_{{ por.id }}" data-field="quantity" data-por-id="{{ por.id }}" class="editable-field cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">{{ por.quantity or 1 }}</span>
                                 </td>
                                 <td class="py-3 px-4 text-sm text-gray-900">
-                                    <span id="price_each_{{ por.id }}" onclick="makeEditable('price_each_{{ por.id }}', 'price_each_{{ por.id }}')" class="cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">£{{ "%.2f"|format(por.price_each or 0) }}</span>
+                                    <span id="price_each_{{ por.id }}" data-field="price_each" data-por-id="{{ por.id }}" class="editable-field cursor-pointer hover:text-blue-600 hover:underline transition-colors duration-200" title="Click to edit">£{{ "%.2f"|format(por.price_each or 0) }}</span>
                                 </td>
                                 <td class="py-3 px-4 text-sm text-gray-900 font-semibold">£{{ "%.2f"|format((por.quantity or 1) * (por.price_each or 0)) }}</td>
                             </tr>
@@ -615,7 +620,7 @@
                             <p class="text-gray-600">or click to browse files</p>
                             <p class="text-sm text-blue-400 font-medium">💡 You can select multiple files and add more later!</p>
                             <input type="file" name="files" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm,.xltx,.xltm,.xlt,.xlm,.jpg,.jpeg,.png,.msg,.eml" style="display: none;" id="inlineFileInput" onchange="handleInlineFileSelect(this.files)">
-                            <button type="button" onclick="document.getElementById('inlineFileInput').click()" class="px-6 py-3 bg-blue-500 text-gray-900 font-semibold rounded-xl hover:bg-blue-600 transition-colors duration-200">
+                            <button type="button" data-target-input="inlineFileInput" class="browse-btn px-6 py-3 bg-blue-500 text-gray-900 font-semibold rounded-xl hover:bg-blue-600 transition-colors duration-200">
                                 Browse Files
                             </button>
                         </div>
@@ -627,7 +632,7 @@
                                 <h3 class="text-lg font-semibold text-gray-900">Selected Files:</h3>
                                 <span id="inlineFileCounter" class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">0</span>
                             </div>
-                            <button type="button" onclick="clearAllInlineFiles()" class="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors duration-200 flex items-center space-x-2">
+                            <button type="button" class="clear-all-btn px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors duration-200 flex items-center space-x-2">
                                 <i class="fas fa-trash"></i>
                                 <span>Clear All</span>
                             </button>
@@ -662,7 +667,7 @@
                                     <i class="fas fa-download mr-1"></i>
                                     Download
                                 </a>
-                                <button onclick="deleteFile({{ file.id }})" class="px-3 py-2 bg-red-500 text-gray-900 text-xs rounded-lg hover:bg-red-600 transition-colors duration-300">
+                                <button data-file-id="{{ file.id }}" class="delete-file-btn px-3 py-2 bg-red-500 text-gray-900 text-xs rounded-lg hover:bg-red-600 transition-colors duration-300">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -692,7 +697,7 @@
                         <span id="emailSubject" class="text-gray-900 font-semibold text-lg">
                             {{ (por.order_type or 'New Order')|title|replace('_', ' ') }} | {{ (por.supplier or 'Supplier')|title }} | {{ (por.ship_project_name or 'Project Name')|title }} | PO {{ por.id }}
                         </span>
-                        <button onclick="copyToClipboard(document.getElementById('emailSubject').textContent)" class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                        <button data-copy-target="emailSubject" class="copy-target-btn text-blue-600 hover:text-blue-800 transition-colors duration-200">
                             <i class="fas fa-copy"></i>
                         </button>
                     </div>
@@ -718,10 +723,10 @@
             </div>
             <textarea id="editTextarea" class="w-full p-4 border-2 border-gray-200/50 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" rows="4" placeholder="Enter value..."></textarea>
             <div class="flex justify-end space-x-3 mt-6">
-                <button onclick="closeEditModal()" class="px-6 py-3 bg-gray-100 text-gray-900 font-semibold rounded-xl hover:bg-gray-400 transition-colors duration-300">
+                <button class="close-modal-btn px-6 py-3 bg-gray-100 text-gray-900 font-semibold rounded-xl hover:bg-gray-400 transition-colors duration-300">
                     Cancel
                 </button>
-                <button onclick="saveEdit()" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-gray-900 font-semibold rounded-xl hover:shadow-lg transition-all duration-300">
+                <button class="save-edit-btn px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-gray-900 font-semibold rounded-xl hover:shadow-lg transition-all duration-300">
                     Save Changes
                 </button>
             </div>
@@ -732,6 +737,7 @@
         let currentEditId = null;
         let currentEditField = null;
 
+        // Copy to clipboard function
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(function() {
                 const feedback = document.getElementById('copyFeedback');
@@ -742,6 +748,7 @@
             });
         }
 
+        // Make editable function
         function makeEditable(elementId, fieldName) {
             const element = document.getElementById(elementId);
             const currentText = element.textContent;
@@ -754,6 +761,104 @@
             
             document.getElementById('editModal').classList.remove('hidden');
         }
+
+        // Initialize event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle navigation buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const url = this.dataset.navUrl;
+                    if (url) {
+                        window.location.href = url;
+                    }
+                });
+            });
+
+            // Handle copy buttons
+            document.querySelectorAll('.copy-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const text = this.dataset.copyText;
+                    if (text) {
+                        copyToClipboard(text);
+                    }
+                });
+            });
+
+            // Handle copy target buttons
+            document.querySelectorAll('.copy-target-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const targetId = this.dataset.copyTarget;
+                    if (targetId) {
+                        const targetElement = document.getElementById(targetId);
+                        if (targetElement) {
+                            copyToClipboard(targetElement.textContent);
+                        }
+                    }
+                });
+            });
+
+            // Handle browse buttons
+            document.querySelectorAll('.browse-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const inputId = this.dataset.targetInput;
+                    if (inputId) {
+                        const input = document.getElementById(inputId);
+                        if (input) {
+                            input.click();
+                        }
+                    }
+                });
+            });
+
+            // Handle clear all button
+            document.querySelectorAll('.clear-all-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    clearAllInlineFiles();
+                });
+            });
+
+            // Handle delete file buttons
+            document.querySelectorAll('.delete-file-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const fileId = this.dataset.fileId;
+                    if (fileId) {
+                        deleteFile(fileId);
+                    }
+                });
+            });
+
+            // Handle remove file buttons
+            document.querySelectorAll('.remove-file-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.fileIndex);
+                    if (!isNaN(index)) {
+                        removeInlineFile(index);
+                    }
+                });
+            });
+
+            // Handle editable fields
+            document.querySelectorAll('.editable-field').forEach(field => {
+                field.addEventListener('click', function() {
+                    const fieldId = this.id;
+                    const fieldName = this.dataset.field;
+                    makeEditable(fieldId, fieldName);
+                });
+            });
+
+            // Handle modal buttons
+            document.querySelectorAll('.close-modal-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    closeEditModal();
+                });
+            });
+
+            document.querySelectorAll('.save-edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    saveEdit();
+                });
+            });
+        });
 
         function closeEditModal() {
             document.getElementById('editModal').classList.add('hidden');
@@ -1076,7 +1181,7 @@
                             <option value="other" selected>Other</option>
                         </select>
                         <input type="text" name="descriptions" placeholder="Description (optional)" class="px-2 py-1 bg-gray-100 text-gray-900 text-xs rounded-md focus:ring-blue-500 focus:border-blue-500 flex-1 min-w-0">
-                        <button type="button" onclick="removeInlineFile(${index})" class="text-red-400 hover:text-red-600 transition-colors duration-200">
+                        <button type="button" data-file-index="${index}" class="remove-file-btn text-red-400 hover:text-red-600 transition-colors duration-200">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -1154,7 +1259,7 @@
             uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Uploading...';
             uploadBtn.disabled = true;
 
-            const porId = {{ por.id }}; // Get POR ID from Flask context
+            const porId = document.getElementById('porId').dataset.porId; // Get POR ID from data attribute
 
             fetch(`/attach-files/${porId}`, {
                 method: 'POST',
