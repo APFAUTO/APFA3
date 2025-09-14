@@ -1861,6 +1861,71 @@ def update_content_type():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@routes.route('/analytics')
+def analytics():
+    """Display analytics dashboard with POR statistics and charts."""
+    try:
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+        company_info = get_company_config(current_db)
+
+        # Analytics data
+        total_pors = db_session.query(db_manager.POR).count()
+        total_value = db_session.query(func.sum(db_manager.POR.order_total)).scalar() or 0
+        active_pors = db_session.query(db_manager.POR).filter(db_manager.POR.current_stage != 'filed').count()
+        completed_pors = db_session.query(db_manager.POR).filter(db_manager.POR.current_stage == 'filed').count()
+
+        # Status distribution
+        status_dist = db_session.query(db_manager.POR.current_stage, func.count(db_manager.POR.id)).group_by(db_manager.POR.current_stage).all()
+        status_labels = [row[0] for row in status_dist]
+        status_data = [row[1] for row in status_dist]
+
+        # Content type distribution
+        content_type_dist = db_session.query(db_manager.POR.content_type, func.count(db_manager.POR.id)).group_by(db_manager.POR.content_type).all()
+        content_type_labels = [row[0] for row in content_type_dist]
+        content_type_data = [row[1] for row in content_type_dist]
+
+        # Top suppliers
+        top_suppliers = db_session.query(db_manager.POR.supplier, func.sum(db_manager.POR.order_total).label('total_value')).group_by(db_manager.POR.supplier).order_by(func.sum(db_manager.POR.order_total).desc()).limit(5).all()
+
+        # Top requestors
+        top_requestors = db_session.query(db_manager.POR.requestor_name, func.count(db_manager.POR.id).label('por_count')).group_by(db_manager.POR.requestor_name).order_by(func.count(db_manager.POR.id).desc()).limit(5).all()
+
+        # Monthly data
+        monthly_data = db_session.query(func.strftime('%Y-%m', db_manager.POR.created_at), func.count(db_manager.POR.id), func.sum(db_manager.POR.order_total)).group_by(func.strftime('%Y-%m', db_manager.POR.created_at)).order_by(func.strftime('%Y-%m', db_manager.POR.created_at)).all()
+        monthly_labels = [row[0] for row in monthly_data]
+        monthly_counts = [row[1] for row in monthly_data]
+        monthly_values = [float(row[2]) if row[2] is not None else 0.0 for row in monthly_data]
+
+        db_session.close()
+
+        analytics_data = {
+            'company': current_db,
+            'company_info': company_info,
+            'total_pors': total_pors,
+            'total_value': total_value,
+            'active_pors': active_pors,
+            'completed_pors': completed_pors,
+            'status_labels': status_labels,
+            'status_data': status_data,
+            'content_type_labels': content_type_labels,
+            'content_type_data': content_type_data,
+            'top_suppliers': top_suppliers,
+            'top_requestors': top_requestors,
+            'monthly_labels': monthly_labels,
+            'monthly_counts': monthly_counts,
+            'monthly_values': monthly_values
+        }
+
+        return render_template('analytics.html', **analytics_data)
+        
+    except Exception as e:
+        logger.error(f"Error loading analytics: {str(e)}")
+        flash(f'Error loading analytics: {str(e)}', 'error')
+        return redirect(url_for('routes.dashboard'))
+
+
 @routes.route('/update_order_type', methods=['POST'])
 def update_order_type_route():
     """Update the order type of a POR."""

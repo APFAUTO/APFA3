@@ -92,7 +92,7 @@
                     <p class="text-gray-600 text-lg">Comprehensive analysis of your Purchase Order Requests</p>
                 </div>
                 <div class="flex space-x-3">
-                    <a href="/dashboard" class="px-6 py-3 bg-white text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center space-x-2 border border-gray-200">
+                    <a href="/dashboard" class="px-6 py-3 bg-white text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center space-x-2 border border-gray-200 dark-mode-secondary-button">
                         <i class="fas fa-arrow-left"></i>
                         <span>Back to Dashboard</span>
                     </a>
@@ -202,7 +202,7 @@
                                 </div>
                                 <span class="font-medium text-gray-900">{{ requestor.name or 'Unknown' }}</span>
                             </div>
-                            <span class="font-semibold text-gray-900">{{ requestor.count }} PORs</span>
+                            <span class="font-semibold text-gray-900">{{ requestor.por_count }} PORs</span>
                         </div>
                         {% endfor %}
                     </div>
@@ -224,6 +224,14 @@
         });
         
         function initializeCharts() {
+            const isDarkMode = document.body.classList.contains('dark-mode');
+
+            // Chart Colors
+            const primaryColor = isDarkMode ? '#60a5fa' : '#3B82F6';
+            const secondaryColor = isDarkMode ? '#34d399' : '#10B981';
+            const backgroundColor = isDarkMode ? 'rgba(96, 165, 250, 0.1)' : 'rgba(59, 130, 246, 0.1)';
+            const doughnutBackgroundColor = isDarkMode ? ['#1e3a8a', '#065f46', '#92400e', '#831843', '#581c87'] : ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+
             // Status Distribution Chart
             const statusCtx = document.getElementById('statusChart').getContext('2d');
             new Chart(statusCtx, {
@@ -232,9 +240,7 @@
                     labels: {{ status_labels | tojson }},
                     datasets: [{
                         data: {{ status_data | tojson }},
-                        backgroundColor: [
-                            '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'
-                        ]
+                        backgroundColor: doughnutBackgroundColor
                     }]
                 },
                 options: {
@@ -256,7 +262,7 @@
                     datasets: [{
                         label: 'Number of PORs',
                         data: {{ content_type_data | tojson }},
-                        backgroundColor: '#3B82F6'
+                        backgroundColor: primaryColor
                     }]
                 },
                 options: {
@@ -277,14 +283,14 @@
                     labels: {{ monthly_labels | tojson }},
                     datasets: [{
                         label: 'Number of PORs',
-                        data: {{ monthly_data | tojson }},
-                        borderColor: '#3B82F6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        data: {{ monthly_counts | tojson }},
+                        borderColor: primaryColor,
+                        backgroundColor: backgroundColor,
                         tension: 0.4
                     }, {
                         label: 'Total Value (£)',
                         data: {{ monthly_values | tojson }},
-                        borderColor: '#10B981',
+                        borderColor: secondaryColor,
                         backgroundColor: 'rgba(16, 185, 129, 0.1)',
                         tension: 0.4,
                         yAxisID: 'y1'
@@ -321,11 +327,11 @@
             const currentCompany = '{{ company }}';
             if (currentCompany === 'fdec') {
                 document.body.classList.add('dark-mode');
-                localStorage.setItem('darkMode', 'enabled');
+                localStorage.setItem('theme', 'dark');
                 localStorage.setItem('activeDatabase', 'FDEC');
             } else {
                 document.body.classList.remove('dark-mode');
-                localStorage.setItem('darkMode', 'disabled');
+                localStorage.setItem('theme', 'light');
                 localStorage.setItem('activeDatabase', 'A&P');
             }
         });
@@ -392,6 +398,12 @@
         
         .dark-mode .text-yellow-600 {
             color: #fbbf24 !important;
+        }
+
+        .dark-mode .dark-mode-secondary-button {
+            background-color: #334155 !important;
+            color: #e2e8f0 !important;
+            border-color: #475569 !important;
         }
     </style>
 </body>
