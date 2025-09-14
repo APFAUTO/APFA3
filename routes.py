@@ -197,7 +197,8 @@ def dashboard():
                              fdec_count=fdec_count,
                              recent_activity=recent_activity,
                              company=current_db,
-                             company_info=company_info)
+                             company_info=company_info,
+                             active_page='dashboard')
     except Exception as e:
         logger.error(f"Dashboard error: {str(e)}")
         # Get current database info for template
@@ -354,7 +355,7 @@ def upload():
                 # Get current database info for template
                 company_info = get_company_config(current_db)
                 
-                return render_template("modern_upload.html", current_po=current_po_value, company=current_db, company_info=company_info)
+                return render_template("modern_upload.html", current_po=current_po_value, company=current_db, company_info=company_info, active_page='upload')
             
             logger.info(f"File object: {file}")
             logger.info(f"File filename: {file.filename}")
@@ -391,7 +392,7 @@ def upload():
                 # Get current database info for template
                 company_info = get_company_config(current_db)
                 
-                return render_template("modern_upload.html", current_po=current_po_value, company=current_db, company_info=company_info)
+                return render_template("modern_upload.html", current_po=current_po_value, company=current_db, company_info=company_info, active_page='upload')
             
             success, message, data, line_items = process_uploaded_file(file)
             if success and data:
@@ -468,7 +469,7 @@ def upload():
     # Get current database info for template
     company_info = get_company_config(current_db)
     
-    return render_template("modern_upload.html", current_po=current_po_value, company=current_db, company_info=company_info)
+    return render_template("modern_upload.html", current_po=current_po_value, company=current_db, company_info=company_info, active_page='upload')
 
 
 @routes.route('/check-updates')
@@ -580,7 +581,8 @@ def view():
                                  current_po=current_po_value,
                                  timestamp=int(time.time()),
                                  company=current_db,
-                                 company_info=company_info)
+                                 company_info=company_info,
+                                 active_page='view')
         
         # Get the specific POR record
         por = db_session.query(db_manager.POR).filter_by(id=por_id).first()
@@ -1014,7 +1016,8 @@ def change_batch():
     return render_template("change_batch.html", 
                          current_po=current_po_value, # Pass current_po_value
                          company=current_db,
-                         company_info=company_info)
+                         company_info=company_info,
+                         active_page='change-batch')
 
 
 @routes.route('/check-batch-status')
@@ -1915,7 +1918,8 @@ def analytics():
             'top_requestors': top_requestors,
             'monthly_labels': monthly_labels,
             'monthly_counts': monthly_counts,
-            'monthly_values': monthly_values
+            'monthly_values': monthly_values,
+            'active_page': 'analytics'
         }
 
         return render_template('analytics.html', **analytics_data)
@@ -1957,3 +1961,17 @@ def update_order_type_route():
     except Exception as e:
         logger.error(f"Error updating order type: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@routes.route('/logs')
+def logs():
+    """Display the application logs."""
+    try:
+        with open('logs.txt', 'r', encoding='utf-8') as f:
+            logs = f.read()
+    except FileNotFoundError:
+        logs = "No logs found."
+    
+    current_db = get_current_database()
+    company_info = get_company_config(current_db)
+    
+    return render_template('logs.html', logs=logs, company=current_db, company_info=company_info, active_page='logs')

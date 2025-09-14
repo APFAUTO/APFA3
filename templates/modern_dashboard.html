@@ -266,87 +266,7 @@
     </div>
 
     <div class="relative z-10 flex min-h-screen">
-        <!-- Compact Sidebar -->
-        <aside class="w-20 bg-white/80 backdrop-blur-xl border-r border-gray-200/50 shadow-xl fixed h-full">
-            <div class="flex flex-col items-center py-6 space-y-8">
-                <!-- Logo -->
-                <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg cursor-pointer hover:scale-110 transition-transform duration-300" onclick="window.location.href='/dashboard'">
-                    <span class="text-white font-bold text-sm">{{ company_info.name[:3] }}</span>
-                </div>
-                
-                <!-- Navigation -->
-                <nav class="flex flex-col space-y-4">
-                    <a href="/dashboard" class="group relative block w-12 h-12">
-                        <div class="w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg transition-all duration-300 group-hover:scale-110 cursor-pointer">
-                            <i class="fas fa-home text-lg"></i>
-                        </div>
-                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none">
-                            Dashboard
-                        </span>
-                    </a>
-                    
-                    <a href="/upload" class="group relative block w-12 h-12">
-                        <div class="w-full h-full bg-gray-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110 cursor-pointer">
-                            <i class="fas fa-upload text-lg"></i>
-                        </div>
-                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none">
-                            Upload
-                        </span>
-                    </a>
-                    
-                    <a href="/view" class="group relative block w-12 h-12">
-                        <div class="w-full h-full bg-gray-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110 cursor-pointer">
-                            <i class="fas fa-eye text-lg"></i>
-                        </div>
-                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none">
-                            View PORs
-                        </span>
-                    </a>
-                    
-                    <a href="/search" class="group relative block w-12 h-12">
-                        <div class="w-full h-full bg-gray-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110 cursor-pointer">
-                            <i class="fas fa-search text-lg"></i>
-                        </div>
-                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none">
-                            Search
-                        </span>
-                    </a>
-                    
-                    <a href="/analytics" class="group relative block w-12 h-12">
-                        <div class="w-full h-full bg-gray-100 hover:bg-gradient-to-br hover:from-orange-500 hover:to-orange-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110 cursor-pointer">
-                            <i class="fas fa-chart-bar text-lg"></i>
-                        </div>
-                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none">
-                            Analytics
-                        </span>
-                    </a>
-                    
-                    <a href="/change-batch" class="group relative block w-12 h-12">
-                        <div class="w-full h-full bg-gray-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110 cursor-pointer">
-                            <i class="fas fa-exchange-alt text-lg"></i>
-                        </div>
-                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none">
-                            Batch Change
-                        </span>
-                    </a>
-                    
-                    <!-- Settings Cog -->
-                    <button onclick="openSettings()" class="group relative">
-                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-purple-500 hover:to-purple-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
-                            <i class="fas fa-cog text-lg"></i>
-                        </div>
-                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-                            Settings
-                        </span>
-                    </button>
-                </nav>
-                
-                <!-- Version -->
-                <div class="absolute bottom-6">
-                    <span class="text-xs text-gray-400 font-medium">v3.2.5</span>
-                </div>
-            </div>
-        </aside>
+        {% include '_sidebar.html' %}
 
         <!-- Main Content -->
         <main class="flex-1 p-8 ml-20">
@@ -817,6 +737,21 @@
                         </a>
                     </div>
                     <p class="text-sm text-gray-600 mt-3">Access detailed analytics and reporting tools</p>
+                </div>
+
+                <!-- Logs Access -->
+                <div class="bg-gray-50 rounded-xl p-6">
+                    <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <i class="fas fa-exclamation-triangle mr-2 text-red-600"></i>
+                        Application Logs
+                    </h4>
+                    <div class="space-y-3">
+                        <a href="/logs" class="block w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 text-center">
+                            <i class="fas fa-file-alt mr-2"></i>
+                            View Error Logs
+                        </a>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-3">View a list of all application errors</p>
                 </div>
             </div>
         </div>

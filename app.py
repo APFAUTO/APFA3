@@ -6,11 +6,27 @@ A Flask-based system for processing Purchase Order Requests (POR) from Excel fil
 
 import os
 import logging
+from logging.handlers import RotatingFileHandler
 from flask import Flask
 
 # Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# Console handler
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(log_formatter)
+console_handler.setLevel(logging.INFO)
+
+# File handler
+file_handler = RotatingFileHandler('logs.txt', maxBytes=10240, backupCount=10)
+file_handler.setFormatter(log_formatter)
+file_handler.setLevel(logging.ERROR)
+
+# Get root logger
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logger.addHandler(console_handler)
+logger.addHandler(file_handler)
 
 def create_app():
     # Flask app setup

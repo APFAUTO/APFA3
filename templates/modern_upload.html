@@ -148,75 +148,10 @@
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 min-h-screen font-inter">
     <div class="relative z-10 flex min-h-screen">
-        <!-- Compact Sidebar -->
-        <aside class="w-20 bg-white/80 backdrop-blur-xl border-r border-gray-200/50 shadow-xl">
-            <div class="flex flex-col items-center justify-between h-full py-6">
-                <!-- Logo -->
-                <div class="mb-8">
-                    <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-lg cursor-pointer hover:scale-110 transition-transform duration-300" onclick="window.location.href='/dashboard'">
-                        {{ company_info.name[:3] }}
-                    </div>
-                </div>
-                
-                <!-- Navigation -->
-                <nav class="flex-1 space-y-4">
-                    <a href="/" class="group relative">
-                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110">
-                            <i class="fas fa-upload text-lg"></i>
-                        </div>
-                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-                            Upload
-                        </span>
-                    </a>
-                    
-                    <a href="/view" class="group relative">
-                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
-                            <i class="fas fa-eye text-lg"></i>
-                        </div>
-                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-                            View PORs
-                        </span>
-                    </a>
-                    
-
-                    
-                    <a href="/analytics" class="group relative">
-                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-orange-500 hover:to-orange-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
-                            <i class="fas fa-chart-bar text-lg"></i>
-                        </div>
-                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-                            Analytics
-                        </span>
-                    </a>
-                    
-                    <a href="/change-batch" class="group relative">
-                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-blue-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
-                            <i class="fas fa-exchange-alt text-lg"></i>
-                        </div>
-                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-                            Batch Change
-                        </span>
-                    </a>
-                    
-                    <a href="/company-management" class="group relative">
-                        <div class="w-12 h-12 bg-gray-100 hover:bg-gradient-to-br hover:from-indigo-500 hover:to-indigo-600 hover:text-white rounded-xl flex items-center justify-center text-gray-600 transition-all duration-300 group-hover:scale-110">
-                            <i class="fas fa-building text-lg"></i>
-                        </div>
-                        <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-                            Company Mgmt
-                        </span>
-                    </a>
-                </nav>
-                
-                <!-- Version -->
-                <div class="absolute bottom-6">
-                    <span class="text-xs text-gray-400 font-medium">v3.2.5</span>
-                </div>
-            </div>
-        </aside>
+        {% include '_sidebar.html' %}
 
         <!-- Main Content -->
-        <main class="flex-1 p-8">
+        <main class="flex-1 p-8 ml-20">
             <!-- Header -->
             <div class="mb-8">
                 <div class="flex items-center justify-between mb-4">
