@@ -1962,6 +1962,23 @@ def update_order_type_route():
         logger.error(f"Error updating order type: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@routes.route('/settings')
+def settings():
+    """Display the settings page."""
+    try:
+        current_db = get_current_database()
+        company_info = get_company_config(current_db)
+        
+        return render_template('settings.html', 
+                             company=current_db, 
+                             company_info=company_info, 
+                             active_page='settings')
+    except Exception as e:
+        logger.error(f"Error loading settings page: {str(e)}")
+        flash(f'Error loading settings page: {str(e)}', 'error')
+        return redirect(url_for('routes.dashboard'))
+
+
 @routes.route('/logs')
 def logs():
     """Display the application logs."""

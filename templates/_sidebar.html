@@ -61,24 +61,20 @@
                         Batch Change
                     </span>
                 </a>
+            <a href="/settings" class="group relative block w-12 h-12">
+                    <div class="w-full h-full rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110 cursor-pointer {% if active_page == 'settings' %}{% if company == 'fdec' %}bg-gradient-to-br from-purple-500 to-purple-600 text-white{% else %}bg-purple-500 text-white{% endif %}{% else %}{% if company == 'fdec' %}bg-gray-100 text-gray-600 hover:bg-gradient-to-br hover:from-purple-500 hover:to-purple-600 hover:text-white{% else %}text-blue-200 hover:bg-purple-500 hover:text-white{% endif %}{% endif %}">
+                        <i class="fas fa-cog text-lg"></i>
+                    </div>
+                    <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none">
+                        Settings
+                    </span>
+                </a>
             </nav>
         </div>
         
-        <div>
-            <!-- Settings Cog -->
-            <button onclick="openSettings()" class="group relative">
-                <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110 cursor-pointer {% if company == 'fdec' %}bg-gray-100 text-gray-600 hover:bg-gradient-to-br hover:from-purple-500 hover:to-purple-600 hover:text-white{% else %}text-blue-200 hover:bg-purple-500 hover:text-white{% endif %}">
-                    <i class="fas fa-cog text-lg"></i>
-                </div>
-                <span class="absolute left-16 top-1/2 -translate-y-1/2 bg-gray-900 text-white px-3 py-1 rounded-lg text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-                    Settings
-                </span>
-            </button>
-
-            <!-- Version -->
-            <div class="mt-8">
-                <span class="text-xs {% if company == 'fdec' %}text-gray-400{% else %}text-blue-300{% endif %} font-medium">v3.2.5</span>
-            </div>
+        <!-- Version -->
+        <div class="pb-4">
+            <span class="text-xs {% if company == 'fdec' %}text-gray-400{% else %}text-blue-300{% endif %} font-medium">v3.2.5</span>
         </div>
     </div>
 </aside>
