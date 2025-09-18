@@ -88,3 +88,15 @@ Authentication database initialized successfully
 2025-09-17 21:20:44,158 - app - ERROR - Error loading admin dashboard: 'stats' is undefined
 2025-09-17 21:20:52,665 - app - ERROR - Error loading admin dashboard: 'stats' is undefined
 2025-09-18 21:13:31,711 - app - ERROR - Error loading admin dashboard: 'stats' is undefined
+2025-09-18 21:31:19,855 - app - ERROR - Error loading admin dashboard: 'stats' is undefined
+2025-09-18 21:36:38,087 - app - ERROR - Error loading admin dashboard: 'datetime' is undefined
+2025-09-18 21:36:56,077 - app - ERROR - Error loading admin dashboard: 'datetime' is undefined
+2025-09-18 21:40:01,483 - app - ERROR - Error loading admin dashboard: 'datetime' is undefined
+2025-09-18 21:40:53,728 - app - ERROR - Error loading admin dashboard: 'datetime' is undefined
+2025-09-18 21:40:57,619 - app - ERROR - Error loading admin dashboard: 'datetime' is undefined
+2025-09-18 21:40:59,639 - app - ERROR - Error loading admin dashboard: 'datetime' is undefined
+2025-09-18 21:41:01,715 - app - ERROR - Error loading admin dashboard: 'datetime' is undefined
+2025-09-18 21:43:24,401 - app - ERROR - Error loading admin dashboard: 'datetime' is undefined
+2025-09-18 21:43:33,566 - app - ERROR - Error loading admin dashboard: 'datetime' is undefined
+2025-09-18 21:43:39,910 - app - ERROR - Error loading admin dashboard: 'datetime' is undefined
+2025-09-18 21:43:45,256 - app - ERROR - Error loading admin dashboard: 'datetime' is undefined

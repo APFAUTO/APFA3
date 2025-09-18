@@ -5,8 +5,7 @@ Authentication routes for login, logout, and user management.
 import os
 from datetime import datetime
 from flask import Blueprint, request, render_template, flash, redirect, url_for, session, jsonify
-from werkzeug.security import check_password_hash
-from flask_login import login_user
+from flask_login import login_user, logout_user
 
 from auth.database import get_auth_session
 from auth.models import User, AuditLog
@@ -103,6 +102,9 @@ def logout():
     """Handle user logout"""
     user_id = session.get('user_id')
     username = session.get('username')
+    
+    # Use Flask-Login logout
+    logout_user()
     
     # Clear session
     session.clear()

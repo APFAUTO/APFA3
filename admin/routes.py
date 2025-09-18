@@ -3,8 +3,8 @@ Admin Routes for POR System
 Handles admin console functionality including dashboard, user management, permissions, audit logs, and settings.
 """
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
-from flask_login import login_required, current_user
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, session
+from flask_login import login_required
 from functools import wraps
 from datetime import datetime, timedelta
 import json
@@ -19,33 +19,67 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 def admin_required_view(f):
     """Decorator to require admin access for views"""
     @wraps(f)
-    @login_required # Use Flask-Login's login_required
     def decorated_function(*args, **kwargs):
-        if not current_user.is_admin:
-            flash('You do not have permission to access the admin console.', 'error')
-            return redirect(url_for('routes.dashboard'))
+        # Check if user is logged in
+        if 'user_id' not in session:
+            flash('Please log in to access the admin console.', 'error')
+            return redirect(url_for('auth.login'))
         
-        return f(*args, **kwargs)
+        # Get user from database
+        auth_session = get_auth_session()
+        try:
+            user = auth_session.query(User).get(session['user_id'])
+            if not user or not user.is_admin:
+                flash('You do not have permission to access the admin console.', 'error')
+                return redirect(url_for('auth.login'))
+            
+            return f(*args, **kwargs)
+        finally:
+            auth_session.close()
+    
     return decorated_function
+
+@admin_bp.route('/debug')
+def debug_access():
+    """Debug route to check admin access"""
+    auth_session = get_auth_session()
+    try:
+        user_id = session.get('user_id')
+        if not user_id:
+            return f"No user_id in session. Session keys: {list(session.keys())}"
+        
+        user = auth_session.query(User).get(user_id)
+        if not user:
+            return f"User {user_id} not found in database"
+        
+        return f"User: {user.username}, Admin: {user.is_admin}, Active: {user.is_active}, Session: {dict(session)}"
+    finally:
+        auth_session.close()
+
+@admin_bp.route('/test')
+@admin_required_view  
+def test_admin():
+    """Simple test route for admin access"""
+    return "<h1>Admin Test Page</h1><p>If you can see this, admin access is working!</p><a href='/admin'>Go to Dashboard</a>"
 
 @admin_bp.route('/')
 @admin_required_view
 def dashboard():
     """Admin dashboard with system statistics and recent activity"""
-    session = get_auth_session()
+    auth_session = get_auth_session()
     
     try:
         # Get system statistics
-        total_users = session.query(User).count()
-        active_users = session.query(User).filter(User.is_active == True).count()
-        admin_users = session.query(User).filter(User.is_admin == True).count()
+        total_users = auth_session.query(User).count()
+        active_users = auth_session.query(User).filter(User.is_active == True).count()
+        admin_users = auth_session.query(User).filter(User.is_admin == True).count()
         
         # Get recent audit logs
-        recent_logs = session.query(AuditLog).order_by(AuditLog.timestamp.desc()).limit(10).all()
+        recent_logs = auth_session.query(AuditLog).order_by(AuditLog.timestamp.desc()).limit(10).all()
         
         # Get user activity statistics
         last_7_days = datetime.utcnow() - timedelta(days=7)
-        recent_activity = session.query(AuditLog).filter(AuditLog.timestamp >= last_7_days).count()
+        recent_activity = auth_session.query(AuditLog).filter(AuditLog.timestamp >= last_7_days).count()
         
         # Get system status
         system_status = {
@@ -61,15 +95,17 @@ def dashboard():
                              admin_users=admin_users,
                              recent_logs=recent_logs,
                              recent_activity=recent_activity,
-                             system_status=system_status)
+                             system_status=system_status,
+                             current_datetime=datetime.utcnow())
     
     except Exception as e:
-        current_app.logger.error(f"Error loading admin dashboard: {str(e)}")
-        flash('Error loading dashboard. Please try again.', 'error')
-        return redirect(url_for('routes.dashboard'))
+        import traceback
+        error_details = traceback.format_exc()
+        current_app.logger.error(f"Error loading admin dashboard: {str(e)}\n{error_details}")
+        return f"<h1>Admin Dashboard Error</h1><p>Error: {str(e)}</p><pre>{error_details}</pre><a href='/auth/login'>Back to Login</a>"
     
     finally:
-        session.close()
+        auth_session.close()
 
 @admin_bp.route('/users')
 @admin_required_view
@@ -150,12 +186,12 @@ def edit_user(user_id):
             
             # Log the action
             audit_log = AuditLog(
-                user_id=current_user.id,
+                user_id=session.get('user_id'),
                 action='User Updated',
-                description=f'Updated user {user.username}',
+                details=f'Updated user {user.username}',
                 ip_address=request.remote_addr,
-                resource=f'User ID: {user_id}',
-                status='success'
+                resource_id=str(user_id),
+                success=True
             )
             session.add(audit_log)
             session.commit()
@@ -185,7 +221,7 @@ def toggle_user_status(user_id):
         if not user:
             return jsonify({'success': False, 'message': 'User not found.'})
         
-        if user.id == current_user.id:
+        if user.id == session.get('user_id'):
             return jsonify({'success': False, 'message': 'Cannot change your own status.'})
         
         user.is_active = not user.is_active
@@ -193,12 +229,12 @@ def toggle_user_status(user_id):
         
         # Log the action
         audit_log = AuditLog(
-            user_id=current_user.id,
+            user_id=session.get('user_id'),
             action='User Status Changed',
-            description=f'{"Activated" if user.is_active else "Deactivated"} user {user.username}',
+            details=f'{"Activated" if user.is_active else "Deactivated"} user {user.username}',
             ip_address=request.remote_addr,
-            resource=f'User ID: {user_id}',
-            status='success'
+            resource_id=str(user_id),
+            success=True
         )
         session.add(audit_log)
         session.commit()
@@ -264,12 +300,12 @@ def update_user_type_permissions():
         
         # Log the action
         audit_log = AuditLog(
-            user_id=current_user.id,
+            user_id=session.get('user_id'),
             action='User Type Permissions Updated',
-            description=f'Updated default permissions for {user_type} users',
+            details=f'Updated default permissions for {user_type} users',
             ip_address=request.remote_addr,
-            resource=f'User Type: {user_type}',
-            status='success'
+            resource_id=user_type,
+            success=True
         )
         session.add(audit_log)
         session.commit()
@@ -314,12 +350,12 @@ def update_user_permissions():
         
         # Log the action
         audit_log = AuditLog(
-            user_id=current_user.id,
-            action='User Permissions Updated',
-            description=f'Updated permissions for user {user.username}',
+            user_id=session.get('user_id'),
+            action='User Updated',
+            details=f'Updated user {user.username}',
             ip_address=request.remote_addr,
-            resource=f'User ID: {user_id}',
-            status='success'
+            resource_id=str(user_id),
+            success=True
         )
         session.add(audit_log)
         session.commit()
@@ -503,12 +539,12 @@ def update_settings():
         
         # Log the action
         audit_log = AuditLog(
-            user_id=current_user.id,
+            user_id=session.get('user_id'),
             action='Settings Updated',
-            description='System settings were updated',
+            details='System settings were updated',
             ip_address=request.remote_addr,
-            resource='System Settings',
-            status='success'
+            resource_id='system_settings',
+            success=True
         )
         session.add(audit_log)
         session.commit()
