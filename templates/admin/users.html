@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - POR Automator</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .admin-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .nav-item {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+        }
+        
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .nav-item.active {
+            background: rgba(59, 130, 246, 0.2);
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .user-row {
+            transition: all 0.3s ease;
+        }
+        
+        .user-row:hover {
+            background: rgba(59, 130, 246, 0.05);
+            transform: translateX(5px);
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .permission-tag {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white/10 backdrop-blur-md border-b border-white/20">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url_for('admin.dashboard') }}" class="text-white hover:text-gray-300">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+                    </a>
+                    <h1 class="text-xl font-bold text-white">User Management</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url_for('auth.profile') }}" class="text-white hover:text-gray-300">
+                        <i class="fas fa-user mr-2"></i>{{ current_user.full_name }}
+                    </a>
+                    <a href="{{ url_for('auth.logout') }}" class="text-red-400 hover:text-red-300">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Sidebar Navigation -->
+            <div class="lg:col-span-1">
+                <div class="admin-card rounded-2xl shadow-2xl p-6">
+                    <h3 class="text-lg font-bold text-gray-900 mb-6">
+                        <i class="fas fa-cogs mr-2"></i>Admin Menu
+                    </h3>
+                    <nav class="space-y-2">
+                        <a href="{{ url_for('admin.dashboard') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-tachometer-alt w-5"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="{{ url_for('admin.users') }}" class="nav-item active flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-users w-5"></i>
+                            <span>Users</span>
+                        </a>
+                        <a href="{{ url_for('admin.permissions') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-key w-5"></i>
+                            <span>Permissions</span>
+                        </a>
+                        <a href="{{ url_for('admin.audit_logs') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-history w-5"></i>
+                            <span>Audit Logs</span>
+                        </a>
+                        <a href="{{ url_for('admin.settings') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-cog w-5"></i>
+                            <span>Settings</span>
+                        </a>
+                        <hr class="my-4 border-gray-300">
+                        <a href="{{ url_for('routes.dashboard') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-arrow-left w-5"></i>
+                            <span>Back to App</span>
+                        </a>
+                    </nav>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="lg:col-span-3">
+                <!-- Header with Actions -->
+                <div class="admin-card rounded-2xl shadow-2xl p-8 mb-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-3xl font-bold text-gray-900 mb-2">User Management</h2>
+                            <p class="text-gray-600">Manage user accounts, permissions, and access levels</p>
+                        </div>
+                        <a href="{{ url_for('auth.register') }}" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105">
+                            <i class="fas fa-user-plus mr-2"></i>Add New User
+                        </a>
+                    </div>
+                    
+                    <!-- Search and Filter -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="md:col-span-2">
+                            <div class="relative">
+                                <input type="text" 
+                                       id="search-users" 
+                                       placeholder="Search users by name, username, or email..."
+                                       class="w-full px-4 py-3 pl-12 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <select id="filter-user-type" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">All User Types</option>
+                                <option value="user">Standard Users</option>
+                                <option value="buyer">Buyers</option>
+                                <option value="admin">Administrators</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Users Table -->
+                <div class="admin-card rounded-2xl shadow-2xl p-8">
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b border-gray-200">
+                                    <th class="text-left py-4 px-4 font-semibold text-gray-700">User</th>
+                                    <th class="text-left py-4 px-4 font-semibold text-gray-700">Contact</th>
+                                    <th class="text-left py-4 px-4 font-semibold text-gray-700">Type</th>
+                                    <th class="text-left py-4 px-4 font-semibold text-gray-700">Status</th>
+                                    <th class="text-left py-4 px-4 font-semibold text-gray-700">Last Login</th>
+                                    <th class="text-left py-4 px-4 font-semibold text-gray-700">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                {% for user in users %}
+                                <tr class="user-row border-b border-gray-100">
+                                    <td class="py-4 px-4">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="flex-shrink-0">
+                                                <div class="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full">
+                                                    <span class="text-white font-semibold">{{ user.first_name[0].upper() }}{{ user.last_name[0].upper() }}</span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p class="font-semibold text-gray-900">{{ user.full_name }}</p>
+                                                <p class="text-sm text-gray-500">@{{ user.username }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <p class="text-sm text-gray-900">{{ user.email }}</p>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <div class="flex items-center space-x-2">
+                                            {% if user.user_type == 'admin' %}
+                                                <span class="status-badge bg-purple-100 text-purple-800">
+                                                    <i class="fas fa-crown mr-1"></i>Admin
+                                                </span>
+                                            {% elif user.user_type == 'buyer' %}
+                                                <span class="status-badge bg-green-100 text-green-800">
+                                                    <i class="fas fa-shopping-cart mr-1"></i>Buyer
+                                                </span>
+                                            {% else %}
+                                                <span class="status-badge bg-blue-100 text-blue-800">
+                                                    <i class="fas fa-user mr-1"></i>User
+                                                </span>
+                                            {% endif %}
+                                            {% if user.is_admin %}
+                                                <span class="permission-tag">
+                                                    <i class="fas fa-shield-alt mr-1"></i>Full Access
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        {% if user.is_active %}
+                                            <span class="status-badge bg-green-100 text-green-800">
+                                                <i class="fas fa-circle mr-1"></i>Active
+                                            </span>
+                                        {% else %}
+                                            <span class="status-badge bg-red-100 text-red-800">
+                                                <i class="fas fa-circle mr-1"></i>Inactive
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <p class="text-sm text-gray-900">
+                                            {{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else 'Never' }}
+                                        </p>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <div class="flex items-center space-x-2">
+                                            <button onclick="editUser('{{ user.id }}')" class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button onclick="viewUser('{{ user.id }}')" class="text-green-600 hover:text-green-800 p-2 rounded-lg hover:bg-green-50">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            {% if user.id != current_user.id %}
+                                            <button onclick="toggleUserStatus('{{ user.id }}')" class="text-orange-600 hover:text-orange-800 p-2 rounded-lg hover:bg-orange-50">
+                                                <i class="fas fa-toggle-{% if user.is_active %}on{% else %}off{% endif %}"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Empty State -->
+                    {% if not users %}
+                    <div class="text-center py-12">
+                        <i class="fas fa-users text-gray-300 text-6xl mb-4"></i>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">No users found</h3>
+                        <p class="text-gray-500 mb-6">Get started by creating your first user account</p>
+                        <a href="{{ url_for('auth.register') }}" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300">
+                            <i class="fas fa-user-plus mr-2"></i>Add New User
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit User Modal -->
+    <div id="edit-user-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+            <h3 class="text-xl font-bold text-gray-900 mb-6">Edit User</h3>
+            <form id="edit-user-form">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">User Type</label>
+                        <select id="edit-user-type" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="user">Standard User</option>
+                            <option value="buyer">Buyer</option>
+                            <option value="admin">Administrator</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Admin Privileges</label>
+                        <label class="flex items-center space-x-3">
+                            <input type="checkbox" id="edit-is-admin" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <span class="text-sm text-gray-700">Grant admin access</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Account Status</label>
+                        <label class="flex items-center space-x-3">
+                            <input type="checkbox" id="edit-is-active" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <span class="text-sm text-gray-700">Account is active</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-4 mt-6">
+                    <button type="button" onclick="closeEditModal()" class="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        let currentEditingUserId = null;
+        
+        // Search functionality
+        document.getElementById('search-users').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#users-table-body tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+        
+        // Filter functionality
+        document.getElementById('filter-user-type').addEventListener('change', function(e) {
+            const filterValue = e.target.value;
+            const rows = document.querySelectorAll('#users-table-body tr');
+            
+            rows.forEach(row => {
+                if (filterValue === '') {
+                    row.style.display = '';
+                } else {
+                    const userTypeCell = row.cells[2];
+                    const hasUserType = userTypeCell.textContent.toLowerCase().includes(filterValue);
+                    row.style.display = hasUserType ? '' : 'none';
+                }
+            });
+        });
+        
+        function editUser(userId) {
+            currentEditingUserId = userId;
+            // Here you would fetch user data and populate the form
+            document.getElementById('edit-user-modal').classList.remove('hidden');
+            document.getElementById('edit-user-modal').classList.add('flex');
+        }
+        
+        function viewUser(userId) {
+            // Here you would navigate to user detail page or show a modal
+            alert('View user details for user ID: ' + userId);
+        }
+        
+        function toggleUserStatus(userId) {
+            if (confirm('Are you sure you want to toggle this user\'s status?')) {
+                // Here you would make an API call to toggle user status
+                alert('Toggle status for user ID: ' + userId);
+            }
+        }
+        
+        function closeEditModal() {
+            document.getElementById('edit-user-modal').classList.add('hidden');
+            document.getElementById('edit-user-modal').classList.remove('flex');
+            currentEditingUserId = null;
+        }
+        
+        // Handle form submission
+        document.getElementById('edit-user-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (currentEditingUserId) {
+                // Here you would make an API call to update the user
+                alert('Update user ID: ' + currentEditingUserId);
+                closeEditModal();
+            }
+        });
+        
+        // Close modal when clicking outside
+        document.getElementById('edit-user-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEditModal();
+            }
+        });
+    </script>
+</body>
+</html>

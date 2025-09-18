@@ -26,6 +26,7 @@ from utils import (
     undo_last_change,
     redo_last_change,
 )
+from auth.security import login_required
 from database_managers import get_database_manager
 from company_config import get_company_config
 
@@ -163,6 +164,7 @@ def debug_upload():
 
 
 @routes.route('/dashboard')
+@login_required
 def dashboard():
     """Display the main dashboard."""
     try:

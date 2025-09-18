@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Logs - POR Automator</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .admin-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .nav-item {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+        }
+        
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .nav-item.active {
+            background: rgba(59, 130, 246, 0.2);
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .log-entry {
+            transition: all 0.3s ease;
+        }
+        
+        .log-entry:hover {
+            background: rgba(59, 130, 246, 0.05);
+            transform: translateX(5px);
+        }
+        
+        .activity-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+        
+        .filter-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .filter-badge:hover {
+            transform: scale(1.05);
+        }
+        
+        .filter-badge.active {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white/10 backdrop-blur-md border-b border-white/20">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url_for('admin.dashboard') }}" class="text-white hover:text-gray-300">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+                    </a>
+                    <h1 class="text-xl font-bold text-white">Audit Logs</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url_for('auth.profile') }}" class="text-white hover:text-gray-300">
+                        <i class="fas fa-user mr-2"></i>{{ current_user.full_name }}
+                    </a>
+                    <a href="{{ url_for('auth.logout') }}" class="text-red-400 hover:text-red-300">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Sidebar Navigation -->
+            <div class="lg:col-span-1">
+                <div class="admin-card rounded-2xl shadow-2xl p-6">
+                    <h3 class="text-lg font-bold text-gray-900 mb-6">
+                        <i class="fas fa-cogs mr-2"></i>Admin Menu
+                    </h3>
+                    <nav class="space-y-2">
+                        <a href="{{ url_for('admin.dashboard') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-tachometer-alt w-5"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="{{ url_for('admin.users') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-users w-5"></i>
+                            <span>Users</span>
+                        </a>
+                        <a href="{{ url_for('admin.permissions') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-key w-5"></i>
+                            <span>Permissions</span>
+                        </a>
+                        <a href="{{ url_for('admin.audit_logs') }}" class="nav-item active flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-history w-5"></i>
+                            <span>Audit Logs</span>
+                        </a>
+                        <a href="{{ url_for('admin.settings') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-cog w-5"></i>
+                            <span>Settings</span>
+                        </a>
+                        <hr class="my-4 border-gray-300">
+                        <a href="{{ url_for('routes.dashboard') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-arrow-left w-5"></i>
+                            <span>Back to App</span>
+                        </a>
+                    </nav>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="lg:col-span-3">
+                <!-- Header -->
+                <div class="admin-card rounded-2xl shadow-2xl p-8 mb-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-3xl font-bold text-gray-900 mb-2">Audit Logs</h2>
+                            <p class="text-gray-600">Monitor system activity and user actions</p>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <button onclick="exportLogs()" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105">
+                                <i class="fas fa-download mr-2"></i>Export
+                            </button>
+                            <button onclick="refreshLogs()" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105">
+                                <i class="fas fa-sync-alt mr-2"></i>Refresh
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Filters -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                            <select id="date-filter" onchange="applyFilters()" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="today">Today</option>
+                                <option value="week" selected>Last 7 Days</option>
+                                <option value="month">Last 30 Days</option>
+                                <option value="quarter">Last 90 Days</option>
+                                <option value="all">All Time</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Activity Type</label>
+                            <select id="activity-filter" onchange="applyFilters()" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">All Activities</option>
+                                <option value="login">Login/Logout</option>
+                                <option value="user_management">User Management</option>
+                                <option value="permission_change">Permission Changes</option>
+                                <option value="data_access">Data Access</option>
+                                <option value="system_action">System Actions</option>
+                                <option value="security_event">Security Events</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">User</label>
+                            <select id="user-filter" onchange="applyFilters()" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">All Users</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                            <select id="status-filter" onchange="applyFilters()" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">All Status</option>
+                                <option value="success">Success</option>
+                                <option value="failed">Failed</option>
+                                <option value="warning">Warning</option>
+                                <option value="error">Error</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Filter Badges -->
+                    <div class="flex flex-wrap gap-2 mt-4">
+                        <span class="filter-badge active bg-blue-100 text-blue-800" onclick="setQuickFilter('all')">
+                            All ({{ total_logs }})
+                        </span>
+                        <span class="filter-badge bg-green-100 text-green-800" onclick="setQuickFilter('success')">
+                            Success ({{ success_count }})
+                        </span>
+                        <span class="filter-badge bg-red-100 text-red-800" onclick="setQuickFilter('failed')">
+                            Failed ({{ failed_count }})
+                        </span>
+                        <span class="filter-badge bg-yellow-100 text-yellow-800" onclick="setQuickFilter('warning')">
+                            Warnings ({{ warning_count }})
+                        </span>
+                        <span class="filter-badge bg-purple-100 text-purple-800" onclick="setQuickFilter('security')">
+                            Security ({{ security_count }})
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Audit Logs List -->
+                <div class="admin-card rounded-2xl shadow-2xl p-8">
+                    <div class="space-y-4" id="audit-logs-container">
+                        {% for log in audit_logs %}
+                        <div class="log-entry border-l-4 border-{{ log.color }}-500 bg-white rounded-lg p-4 shadow-sm">
+                            <div class="flex items-start space-x-4">
+                                <div class="activity-icon bg-{{ log.color }}-100 text-{{ log.color }}-600">
+                                    <i class="fas fa-{{ log.icon }}"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h4 class="text-lg font-semibold text-gray-900">{{ log.action }}</h4>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="filter-badge bg-{{ log.color }}-100 text-{{ log.color }}-800">
+                                                {{ log.status }}
+                                            </span>
+                                            <span class="text-sm text-gray-500">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                                        </div>
+                                    </div>
+                                    <p class="text-gray-700 mb-2">{{ log.description }}</p>
+                                    <div class="flex items-center justify-between text-sm">
+                                        <div class="flex items-center space-x-4">
+                                            <span class="text-gray-600">
+                                                <i class="fas fa-user mr-1"></i>
+                                                {{ log.user_full_name }} (@{{ log.username }})
+                                            </span>
+                                            <span class="text-gray-600">
+                                                <i class="fas fa-map-marker-alt mr-1"></i>
+                                                {{ log.ip_address }}
+                                            </span>
+                                            {% if log.resource %}
+                                            <span class="text-gray-600">
+                                                <i class="fas fa-link mr-1"></i>
+                                                {{ log.resource }}
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                        <button onclick="viewLogDetails('{{ log.id }}')" class="text-blue-600 hover:text-blue-800">
+                                            <i class="fas fa-eye"></i> Details
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        <!-- Empty State -->
+                        {% if not audit_logs %}
+                        <div class="text-center py-12">
+                            <i class="fas fa-history text-gray-300 text-6xl mb-4"></i>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">No audit logs found</h3>
+                            <p class="text-gray-500">No activity matches your current filter criteria</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if audit_logs and total_pages > 1 %}
+                    <div class="flex items-center justify-between mt-8">
+                        <div class="text-sm text-gray-700">
+                            Showing {{ (current_page - 1) * per_page + 1 }} to {{ min(current_page * per_page, total_logs) }} of {{ total_logs }} entries
+                        </div>
+                        <div class="flex space-x-2">
+                            {% if current_page > 1 %}
+                            <button onclick="goToPage('{{ current_page - 1 }}')" class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            {% endif %}
+                            
+                            {% for page in range(max(1, current_page - 2), min(total_pages + 1, current_page + 3)) %}
+                            <button onclick="goToPage('{{ page }}')" class="px-4 py-2 {% if page == current_page %}bg-blue-600 text-white{% else %}bg-white border border-gray-300 hover:bg-gray-50{% endif %} rounded-lg">
+                                {{ page }}
+                            </button>
+                            {% endfor %}
+                            
+                            {% if current_page < total_pages %}
+                            <button onclick="goToPage('{{ current_page + 1 }}')" class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Log Details Modal -->
+    <div id="log-details-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-gray-900">Log Entry Details</h3>
+                <button onclick="closeLogDetails()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="log-details-content">
+                <!-- Log details will be loaded here -->
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function applyFilters() {
+            // Get filter values
+            const dateFilter = document.getElementById('date-filter').value;
+            const activityFilter = document.getElementById('activity-filter').value;
+            const userFilter = document.getElementById('user-filter').value;
+            const statusFilter = document.getElementById('status-filter').value;
+            
+            // Build query string
+            const params = new URLSearchParams();
+            if (dateFilter) params.append('date_range', dateFilter);
+            if (activityFilter) params.append('activity_type', activityFilter);
+            if (userFilter) params.append('user_id', userFilter);
+            if (statusFilter) params.append('status', statusFilter);
+            
+            // Reload page with filters
+            window.location.search = params.toString();
+        }
+        
+        function setQuickFilter(filterType) {
+            // Update active badge
+            document.querySelectorAll('.filter-badge').forEach(badge => {
+                badge.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Set status filter based on quick filter
+            const statusFilter = document.getElementById('status-filter');
+            switch(filterType) {
+                case 'success':
+                    statusFilter.value = 'success';
+                    break;
+                case 'failed':
+                    statusFilter.value = 'failed';
+                    break;
+                case 'warning':
+                    statusFilter.value = 'warning';
+                    break;
+                case 'security':
+                    document.getElementById('activity-filter').value = 'security_event';
+                    break;
+                default:
+                    statusFilter.value = '';
+                    document.getElementById('activity-filter').value = '';
+            }
+            
+            applyFilters();
+        }
+        
+        function viewLogDetails(logId) {
+            // Show modal
+            document.getElementById('log-details-modal').classList.remove('hidden');
+            document.getElementById('log-details-modal').classList.add('flex');
+            
+            // Load log details (this would be an API call in a real application)
+            document.getElementById('log-details-content').innerHTML = `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Log ID</label>
+                            <p class="text-sm text-gray-900">#${logId}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Timestamp</label>
+                            <p class="text-sm text-gray-900">2024-01-15 14:30:25</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">User</label>
+                            <p class="text-sm text-gray-900">John Doe (john.doe)</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">IP Address</label>
+                            <p class="text-sm text-gray-900">192.168.1.100</p>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Action</label>
+                        <p class="text-sm text-gray-900">User Login</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <p class="text-sm text-gray-900">User successfully logged into the system</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">User Agent</label>
+                        <p class="text-sm text-gray-900 font-mono">Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Additional Data</label>
+                        <pre class="bg-gray-100 p-3 rounded text-xs overflow-x-auto">
+{
+  "login_method": "password",
+  "session_duration": "3600",
+  "device_type": "desktop"
+}
+                        </pre>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function closeLogDetails() {
+            document.getElementById('log-details-modal').classList.add('hidden');
+            document.getElementById('log-details-modal').classList.remove('flex');
+        }
+        
+        function exportLogs() {
+            // This would trigger a log export
+            const filters = {
+                date_range: document.getElementById('date-filter').value,
+                activity_type: document.getElementById('activity-filter').value,
+                user_id: document.getElementById('user-filter').value,
+                status: document.getElementById('status-filter').value
+            };
+            
+            alert(`Exporting audit logs with filters: ${JSON.stringify(filters, null, 2)}`);
+        }
+        
+        function refreshLogs() {
+            // Refresh the current view
+            window.location.reload();
+        }
+        
+        function goToPage(page) {
+            const params = new URLSearchParams(window.location.search);
+            params.set('page', page);
+            window.location.search = params.toString();
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('log-details-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeLogDetails();
+            }
+        });
+        
+        // Add smooth animations
+        document.addEventListener('DOMContentLoaded', function() {
+            const logEntries = document.querySelectorAll('.log-entry');
+            logEntries.forEach((entry, index) => {
+                entry.style.opacity = '0';
+                entry.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    entry.style.transition = 'all 0.5s ease';
+                    entry.style.opacity = '1';
+                    entry.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>

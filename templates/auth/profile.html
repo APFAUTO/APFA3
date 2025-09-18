@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - POR Automator</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .profile-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .permission-badge {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .admin-badge {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .action-btn {
+            transition: all 0.3s ease;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white/10 backdrop-blur-md border-b border-white/20">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url_for('main.dashboard') }}" class="text-white hover:text-gray-300">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+                    </a>
+                    <h1 class="text-xl font-bold text-white">User Profile</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-white">Welcome, {{ current_user.full_name }}</span>
+                    <a href="{{ url_for('auth.logout') }}" class="text-red-400 hover:text-red-300">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Profile Header -->
+            <div class="profile-card rounded-2xl shadow-2xl p-8 mb-8">
+                <div class="flex items-center space-x-6">
+                    <div class="flex-shrink-0">
+                        <div class="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-white text-3xl"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <h2 class="text-3xl font-bold text-gray-900 mb-2">{{ user.full_name }}</h2>
+                        <p class="text-gray-600 mb-4">{{ user.username }}</p>
+                        <div class="flex items-center space-x-4">
+                            <span class="permission-badge">
+                                <i class="fas fa-user-tag mr-1"></i>{{ user.user_type.title() }}
+                            </span>
+                            {% if user.is_admin %}
+                                <span class="admin-badge">
+                                    <i class="fas fa-crown mr-1"></i>Administrator
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <a href="{{ url_for('auth.change_password') }}" class="action-btn bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold">
+                            <i class="fas fa-key mr-2"></i>Change Password
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- User Information -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Account Details -->
+                <div class="profile-card rounded-2xl shadow-2xl p-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-6">
+                        <i class="fas fa-user-circle mr-2"></i>Account Details
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center py-3 border-b border-gray-200">
+                            <span class="text-gray-600">Username</span>
+                            <span class="font-semibold text-gray-900">{{ user.username }}</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center py-3 border-b border-gray-200">
+                            <span class="text-gray-600">Email</span>
+                            <span class="font-semibold text-gray-900">{{ user.email }}</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center py-3 border-b border-gray-200">
+                            <span class="text-gray-600">First Name</span>
+                            <span class="font-semibold text-gray-900">{{ user.first_name }}</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center py-3 border-b border-gray-200">
+                            <span class="text-gray-600">Last Name</span>
+                            <span class="font-semibold text-gray-900">{{ user.last_name }}</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center py-3 border-b border-gray-200">
+                            <span class="text-gray-600">Account Status</span>
+                            <span class="font-semibold {% if user.is_active %}text-green-600{% else %}text-red-600{% endif %}">
+                                {% if user.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center py-3">
+                            <span class="text-gray-600">Member Since</span>
+                            <span class="font-semibold text-gray-900">{{ user.created_at.strftime('%B %d, %Y') }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Permissions -->
+                <div class="profile-card rounded-2xl shadow-2xl p-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-6">
+                        <i class="fas fa-key mr-2"></i>Your Permissions
+                    </h3>
+                    
+                    <div class="space-y-6">
+                        {% for category, perms in permissions.items() %}
+                            {% if perms %}
+                                <div>
+                                    <h4 class="font-semibold text-gray-900 mb-3 capitalize">{{ category }}</h4>
+                                    <div class="space-y-2">
+                                        {% for perm in perms %}
+                                            <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                                <i class="fas fa-check-circle text-green-500 mr-3"></i>
+                                                <div>
+                                                    <p class="font-medium text-gray-900">{{ perm.name.replace('_', ' ').title() }}</p>
+                                                    <p class="text-sm text-gray-600">{{ perm.description }}</p>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if not permissions.upload and not permissions.view and not permissions.diagnostic and not permissions.admin %}
+                            <div class="text-center py-8">
+                                <i class="fas fa-exclamation-triangle text-yellow-500 text-3xl mb-4"></i>
+                                <p class="text-gray-600">No permissions assigned</p>
+                                <p class="text-sm text-gray-500">Please contact your administrator</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="profile-card rounded-2xl shadow-2xl p-8 mt-8">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">
+                    <i class="fas fa-history mr-2"></i>Recent Activity
+                </h3>
+                
+                <div class="space-y-4">
+                    <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-shrink-0">
+                            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-sign-in-alt text-green-600"></i>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="font-medium text-gray-900">Last Login</p>
+                            <p class="text-sm text-gray-600">
+                                {% if user.last_login %}
+                                    {{ user.last_login.strftime('%B %d, %Y at %I:%M %p') }}
+                                {% else %}
+                                    First time login
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-shrink-0">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user-plus text-blue-600"></i>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="font-medium text-gray-900">Account Created</p>
+                            <p class="text-sm text-gray-600">{{ user.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Add smooth animations
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.profile-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 200);
+            });
+        });
+    </script>
+</body>
+</html>

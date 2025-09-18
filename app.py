@@ -7,7 +7,8 @@ A Flask-based system for processing Purchase Order Requests (POR) from Excel fil
 import os
 import logging
 from logging.handlers import RotatingFileHandler
-from flask import Flask
+from flask import Flask, g
+from auth.database import initialize_auth_database
 
 # Setup logging
 log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -34,8 +35,18 @@ def create_app():
     app.config.update(
         UPLOAD_FOLDER="static/uploads",
         MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16MB
-        SECRET_KEY=os.environ.get('SECRET_KEY', 'a-very-secret-key')
+        SECRET_KEY='a-very-secret-key',  # Hardcoded for consistency
     )
+
+    from auth.__init__ import login_manager
+    login_manager.init_app(app)
+
+    @app.before_request
+    def setup_database():
+        if 'db_initialized' not in g:
+            if not os.path.exists('auth.db'):
+                initialize_auth_database()
+            g.db_initialized = True
 
     # Add cache-busting headers to all responses
     @app.after_request
@@ -48,7 +59,15 @@ def create_app():
 
     from routes import routes
     app.register_blueprint(routes)
-
+    
+    # Import and register auth blueprint
+    from auth.routes import auth_bp
+    app.register_blueprint(auth_bp)
+    
+    # Import and register admin blueprint
+    from admin.routes import admin_bp
+    app.register_blueprint(admin_bp)
+    
     return app
 
 if __name__ == '__main__':

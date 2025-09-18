@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permission Management - POR Automator</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .admin-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .nav-item {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+        }
+        
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .nav-item.active {
+            background: rgba(59, 130, 246, 0.2);
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .permission-card {
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .permission-card:hover {
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .permission-checkbox {
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid #d1d5db;
+            border-radius: 0.375rem;
+            transition: all 0.2s ease;
+        }
+        
+        .permission-checkbox:checked {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+        }
+        
+        .user-type-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white/10 backdrop-blur-md border-b border-white/20">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url_for('admin.dashboard') }}" class="text-white hover:text-gray-300">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+                    </a>
+                    <h1 class="text-xl font-bold text-white">Permission Management</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url_for('auth.profile') }}" class="text-white hover:text-gray-300">
+                        <i class="fas fa-user mr-2"></i>{{ current_user.full_name }}
+                    </a>
+                    <a href="{{ url_for('auth.logout') }}" class="text-red-400 hover:text-red-300">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Sidebar Navigation -->
+            <div class="lg:col-span-1">
+                <div class="admin-card rounded-2xl shadow-2xl p-6">
+                    <h3 class="text-lg font-bold text-gray-900 mb-6">
+                        <i class="fas fa-cogs mr-2"></i>Admin Menu
+                    </h3>
+                    <nav class="space-y-2">
+                        <a href="{{ url_for('admin.dashboard') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-tachometer-alt w-5"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="{{ url_for('admin.users') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-users w-5"></i>
+                            <span>Users</span>
+                        </a>
+                        <a href="{{ url_for('admin.permissions') }}" class="nav-item active flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-key w-5"></i>
+                            <span>Permissions</span>
+                        </a>
+                        <a href="{{ url_for('admin.audit_logs') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-history w-5"></i>
+                            <span>Audit Logs</span>
+                        </a>
+                        <a href="{{ url_for('admin.settings') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-cog w-5"></i>
+                            <span>Settings</span>
+                        </a>
+                        <hr class="my-4 border-gray-300">
+                        <a href="{{ url_for('routes.dashboard') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-arrow-left w-5"></i>
+                            <span>Back to App</span>
+                        </a>
+                    </nav>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="lg:col-span-3">
+                <!-- Header -->
+                <div class="admin-card rounded-2xl shadow-2xl p-8 mb-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-3xl font-bold text-gray-900 mb-2">Permission Management</h2>
+                            <p class="text-gray-600">Configure user permissions and access control</p>
+                        </div>
+                        <button onclick="savePermissions()" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105">
+                            <i class="fas fa-save mr-2"></i>Save Changes
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- User Type Permissions -->
+                <div class="admin-card rounded-2xl shadow-2xl p-8 mb-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-6">
+                        <i class="fas fa-users-cog mr-2"></i>User Type Permissions
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Standard User -->
+                        <div class="permission-card bg-white rounded-xl p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h4 class="text-lg font-semibold text-gray-900">Standard User</h4>
+                                <span class="user-type-badge bg-blue-100 text-blue-800">
+                                    <i class="fas fa-user mr-2"></i>Basic
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-4">Default user with basic access to view and search PORs</p>
+                            <div class="space-y-3">
+                                <label class="flex items-center space-x-3">
+                                    <input type="checkbox" checked disabled class="permission-checkbox">
+                                    <span class="text-sm text-gray-700">View Dashboard</span>
+                                </label>
+                                <label class="flex items-center space-x-3">
+                                    <input type="checkbox" checked disabled class="permission-checkbox">
+                                    <span class="text-sm text-gray-700">Search PORs</span>
+                                </label>
+                                <label class="flex items-center space-x-3">
+                                    <input type="checkbox" checked disabled class="permission-checkbox">
+                                    <span class="text-sm text-gray-700">View POR Details</span>
+                                </label>
+                                <label class="flex items-center space-x-3">
+                                    <input type="checkbox" disabled class="permission-checkbox">
+                                    <span class="text-sm text-gray-400">Upload PO Files</span>
+                                </label>
+                                <label class="flex items-center space-x-3">
+                                    <input type="checkbox" disabled class="permission-checkbox">
+                                    <span class="text-sm text-gray-400">Manage Batches</span>
+                                </label>
+                                <label class="flex items-center space-x-3">
+                                    <input type="checkbox" disabled class="permission-checkbox">
+                                    <span class="text-sm text-gray-400">User Management</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Buyer User -->
+                        <div class="permission-card bg-white rounded-xl p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h4 class="text-lg font-semibold text-gray-900">Buyer User</h4>
+                                <span class="user-type-badge bg-green-100 text-green-800">
+                                    <i class="fas fa-shopping-cart mr-2"></i>Enhanced
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-4">Buyer with PO upload and batch management capabilities</p>
+                            <div class="space-y-3">
+                                <label class="flex items-center space-x-3">
+                                    <input type="checkbox" checked disabled class="permission-checkbox">
+                                    <span class="text-sm text-gray-700">View Dashboard</span>
+                                </label>
+                                <label class="flex items-center space-x-3">
+                                    <input type="checkbox" checked disabled class="permission-checkbox">
+                                    <span class="text-sm text-gray-700">Search PORs</span>
+                                </label>
+                                <label class="flex items-center space-x-3">
+                                    <input type="checkbox" checked disabled class="permission-checkbox">
+                                    <span class="text-sm text-gray-700">View POR Details</span>
+                                </label>
+                                <label class="flex items-center space-x-3">
+                                    <input type="checkbox" checked disabled class="permission-checkbox">
+                                    <span class="text-sm text-gray-700">Upload PO Files</span>
+                                </label>
+                                <label class="flex items-center space-x-3">
+                                    <input type="checkbox" checked disabled class="permission-checkbox">
+                                    <span class="text-sm text-gray-700">Manage Batches</span>
+                                </label>
+                                <label class="flex items-center space-x-3">
+                                    <input type="checkbox" disabled class="permission-checkbox">
+                                    <span class="text-sm text-gray-400">User Management</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Admin User -->
+                        <div class="permission-card bg-white rounded-xl p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h4 class="text-lg font-semibold text-gray-900">Admin User</h4>
+                                <span class="user-type-badge bg-purple-100 text-purple-800">
+                                    <i class="fas fa-crown mr-2"></i>Full Access
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-4">Administrator with full system access and management capabilities</p>
+                            <div class="space-y-3">
+                                <label class="flex items-center space-x-3">
+                                    <input type="checkbox" checked disabled class="permission-checkbox">
+                                    <span class="text-sm text-gray-700">View Dashboard</span>
+                                </label>
+                                <label class="flex items-center space-x-3">
+                                    <input type="checkbox" checked disabled class="permission-checkbox">
+                                    <span class="text-sm text-gray-700">Search PORs</span>
+                                </label>
+                                <label class="flex items-center space-x-3">
+                                    <input type="checkbox" checked disabled class="permission-checkbox">
+                                    <span class="text-sm text-gray-700">View POR Details</span>
+                                </label>
+                                <label class="flex items-center space-x-3">
+                                    <input type="checkbox" checked disabled class="permission-checkbox">
+                                    <span class="text-sm text-gray-700">Upload PO Files</span>
+                                </label>
+                                <label class="flex items-center space-x-3">
+                                    <input type="checkbox" checked disabled class="permission-checkbox">
+                                    <span class="text-sm text-gray-700">Manage Batches</span>
+                                </label>
+                                <label class="flex items-center space-x-3">
+                                    <input type="checkbox" checked disabled class="permission-checkbox">
+                                    <span class="text-sm text-gray-700">User Management</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Individual User Permissions -->
+                <div class="admin-card rounded-2xl shadow-2xl p-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-6">
+                        <i class="fas fa-user-shield mr-2"></i>Individual User Permissions
+                    </h3>
+                    
+                    <!-- User Selection -->
+                    <div class="mb-6">
+                        <label for="user-select" class="block text-sm font-medium text-gray-700 mb-2">Select User</label>
+                        <select id="user-select" onchange="loadUserPermissions()" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Choose a user...</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.full_name }} (@{{ user.username }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Permission Grid -->
+                    <div id="permission-grid" class="hidden">
+                        <div class="bg-gray-50 rounded-lg p-6">
+                            <h4 class="text-lg font-semibold text-gray-900 mb-4">Custom Permissions for <span id="selected-user-name"></span></h4>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Core Permissions -->
+                                <div>
+                                    <h5 class="text-md font-medium text-gray-800 mb-3">Core Permissions</h5>
+                                    <div class="space-y-3">
+                                        <label class="flex items-center space-x-3">
+                                            <input type="checkbox" class="permission-checkbox" data-permission="dashboard_view">
+                                            <span class="text-sm text-gray-700">Dashboard View</span>
+                                        </label>
+                                        <label class="flex items-center space-x-3">
+                                            <input type="checkbox" class="permission-checkbox" data-permission="por_search">
+                                            <span class="text-sm text-gray-700">POR Search</span>
+                                        </label>
+                                        <label class="flex items-center space-x-3">
+                                            <input type="checkbox" class="permission-checkbox" data-permission="por_detail_view">
+                                            <span class="text-sm text-gray-700">POR Detail View</span>
+                                        </label>
+                                        <label class="flex items-center space-x-3">
+                                            <input type="checkbox" class="permission-checkbox" data-permission="diagnostic_views">
+                                            <span class="text-sm text-gray-700">Diagnostic Views</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <!-- Management Permissions -->
+                                <div>
+                                    <h5 class="text-md font-medium text-gray-800 mb-3">Management Permissions</h5>
+                                    <div class="space-y-3">
+                                        <label class="flex items-center space-x-3">
+                                            <input type="checkbox" class="permission-checkbox" data-permission="po_uploader">
+                                            <span class="text-sm text-gray-700">PO Uploader</span>
+                                        </label>
+                                        <label class="flex items-center space-x-3">
+                                            <input type="checkbox" class="permission-checkbox" data-permission="batch_management">
+                                            <span class="text-sm text-gray-700">Batch Management</span>
+                                        </label>
+                                        <label class="flex items-center space-x-3">
+                                            <input type="checkbox" class="permission-checkbox" data-permission="file_validation">
+                                            <span class="text-sm text-gray-700">File Validation</span>
+                                        </label>
+                                        <label class="flex items-center space-x-3">
+                                            <input type="checkbox" class="permission-checkbox" data-permission="user_management">
+                                            <span class="text-sm text-gray-700">User Management</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <!-- System Permissions -->
+                                <div>
+                                    <h5 class="text-md font-medium text-gray-800 mb-3">System Permissions</h5>
+                                    <div class="space-y-3">
+                                        <label class="flex items-center space-x-3">
+                                            <input type="checkbox" class="permission-checkbox" data-permission="system_settings">
+                                            <span class="text-sm text-gray-700">System Settings</span>
+                                        </label>
+                                        <label class="flex items-center space-x-3">
+                                            <input type="checkbox" class="permission-checkbox" data-permission="audit_logs">
+                                            <span class="text-sm text-gray-700">Audit Logs</span>
+                                        </label>
+                                        <label class="flex items-center space-x-3">
+                                            <input type="checkbox" class="permission-checkbox" data-permission="database_management">
+                                            <span class="text-sm text-gray-700">Database Management</span>
+                                        </label>
+                                        <label class="flex items-center space-x-3">
+                                            <input type="checkbox" class="permission-checkbox" data-permission="company_switching">
+                                            <span class="text-sm text-gray-700">Company Switching</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <!-- Admin Permissions -->
+                                <div>
+                                    <h5 class="text-md font-medium text-gray-800 mb-3">Admin Permissions</h5>
+                                    <div class="space-y-3">
+                                        <label class="flex items-center space-x-3">
+                                            <input type="checkbox" class="permission-checkbox" data-permission="admin_access">
+                                            <span class="text-sm text-gray-700">Admin Access</span>
+                                        </label>
+                                        <label class="flex items-center space-x-3">
+                                            <input type="checkbox" class="permission-checkbox" data-permission="permission_management">
+                                            <span class="text-sm text-gray-700">Permission Management</span>
+                                        </label>
+                                        <label class="flex items-center space-x-3">
+                                            <input type="checkbox" class="permission-checkbox" data-permission="user_creation">
+                                            <span class="text-sm text-gray-700">User Creation</span>
+                                        </label>
+                                        <label class="flex items-center space-x-3">
+                                            <input type="checkbox" class="permission-checkbox" data-permission="system_monitoring">
+                                            <span class="text-sm text-gray-700">System Monitoring</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6 flex justify-end space-x-4">
+                                <button onclick="resetUserPermissions()" class="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
+                                    <i class="fas fa-undo mr-2"></i>Reset to Default
+                                </button>
+                                <button onclick="saveUserPermissions()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-save mr-2"></i>Save User Permissions
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Empty State -->
+                    <div id="permission-empty-state" class="text-center py-12">
+                        <i class="fas fa-key text-gray-300 text-6xl mb-4"></i>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Select a User</h3>
+                        <p class="text-gray-500">Choose a user from the dropdown above to view and edit their individual permissions</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentUserId = null;
+        
+        function loadUserPermissions() {
+            const userSelect = document.getElementById('user-select');
+            const permissionGrid = document.getElementById('permission-grid');
+            const emptyState = document.getElementById('permission-empty-state');
+            const selectedUserName = document.getElementById('selected-user-name');
+            
+            if (userSelect.value) {
+                currentUserId = userSelect.value;
+                const selectedOption = userSelect.options[userSelect.selectedIndex];
+                selectedUserName.textContent = selectedOption.text.split(' (')[0];
+                
+                // Show permission grid, hide empty state
+                permissionGrid.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+                
+                // Here you would fetch the user's current permissions from the server
+                // For now, we'll just show the default state
+                loadPermissionsForUser(currentUserId);
+            } else {
+                currentUserId = null;
+                permissionGrid.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+            }
+        }
+        
+        function loadPermissionsForUser(userId) {
+            // This would be an API call to get user permissions
+            // For demo purposes, we'll set some default permissions
+            const checkboxes = document.querySelectorAll('.permission-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            // Simulate loading permissions based on user type
+            // In a real application, this would come from the server
+            setTimeout(() => {
+                // Set some example permissions
+                const defaultPermissions = ['dashboard_view', 'por_search', 'por_detail_view'];
+                defaultPermissions.forEach(permission => {
+                    const checkbox = document.querySelector(`[data-permission="${permission}"]`);
+                    if (checkbox) checkbox.checked = true;
+                });
+            }, 500);
+        }
+        
+        function saveUserPermissions() {
+            if (!currentUserId) return;
+            
+            const permissions = [];
+            const checkboxes = document.querySelectorAll('.permission-checkbox:checked');
+            checkboxes.forEach(checkbox => {
+                permissions.push(checkbox.dataset.permission);
+            });
+            
+            // Here you would make an API call to save the permissions
+            alert(`Saving permissions for user ${currentUserId}: ${permissions.join(', ')}`);
+        }
+        
+        function resetUserPermissions() {
+            if (!currentUserId) return;
+            
+            if (confirm('Are you sure you want to reset this user\'s permissions to their default user type permissions?')) {
+                loadPermissionsForUser(currentUserId);
+            }
+        }
+        
+        function savePermissions() {
+            // This would save all permission changes
+            alert('Saving all permission changes...');
+        }
+        
+        // Add smooth animations
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.permission-card, .admin-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>

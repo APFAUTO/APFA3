@@ -1,16 +1,90 @@
-upload:335 Uncaught TypeError: Cannot read properties of null (reading 'textContent')
-    at upload:335:71
-    at NodeList.forEach (<anonymous>)
-    at HTMLDocument.<anonymous> (upload:334:27) 
-
-    
-Upload Blocked!
-
-❌ Error loading record: Could not build url for endpoint 'attach_files' with values ['por_id']. Did you mean 'routes.attach_files' instead?
-
-(index):64 cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation
-(anonymous) @ (index):64
-:5000/update_timeline_stage:1  Failed to load resource: the server responded with a status of 500 (INTERNAL SERVER ERROR)
-view?id=11:773 Error: Error: Network response was not ok
-    at view?id=11:758:27
-(anonymous) @ view?id=11:773
+PS C:\Users\wesle\Documents\FIX1\3.5> python app.py
+Authentication database manager initialized: sqlite:///auth.db
+Initialized a&p database manager: a&p_por.db
+Initialized fdec database manager: fdec_por.db
+a&p database tables created successfully
+fdec database tables created successfully
+ * Serving Flask app 'app'
+ * Debug mode: on
+2025-09-17 21:18:35,481 - werkzeug - INFO - WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.70:5000
+2025-09-17 21:18:35,481 - werkzeug - INFO - Press CTRL+C to quit
+2025-09-17 21:18:35,489 - werkzeug - INFO -  * Restarting with watchdog (windowsapi)
+Authentication database manager initialized: sqlite:///auth.db
+Initialized a&p database manager: a&p_por.db
+Initialized fdec database manager: fdec_por.db
+a&p database tables created successfully
+fdec database tables created successfully
+2025-09-17 21:18:36,325 - werkzeug - WARNING -  * Debugger is active!
+2025-09-17 21:18:36,328 - werkzeug - INFO -  * Debugger PIN: 566-239-341
+Initializing authentication database...
+2025-09-17 21:18:37,999 - root - INFO - Initializing authentication database...
+2025-09-17 21:18:37,999 - root - INFO - Creating authentication tables...
+2025-09-17 21:18:38,061 - root - INFO - Authentication tables created successfully
+Authentication tables created successfully
+Created 14 default permissions
+Default admin user created successfully
+Username: admin
+Password: admin123
+Please change the password after first login
+2025-09-17 21:18:38,307 - root - INFO - Authentication database initialized successfully
+Authentication database initialized successfully
+2025-09-17 21:18:38,307 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:38] "GET / HTTP/1.1" 302 -
+2025-09-17 21:18:38,311 - database - INFO - [DEBUG] get_current_database() - Session value: None, Default: a&p, Returning: a&p
+2025-09-17 21:18:38,355 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:38] "GET /dashboard HTTP/1.1" 200 -
+2025-09-17 21:18:39,162 - database - INFO - [DEBUG] get_current_database() - Session value: None, Default: a&p, Returning: a&p
+2025-09-17 21:18:39,166 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:39] "GET /static/favicon.ico HTTP/1.1" 200 -
+2025-09-17 21:18:39,167 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:39] "GET /get_database_info HTTP/1.1" 200 -
+2025-09-17 21:18:39,297 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:39] "GET /static/favicon.ico HTTP/1.1" 200 -
+2025-09-17 21:18:41,611 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:41] "GET /auth/logout HTTP/1.1" 302 -
+2025-09-17 21:18:41,625 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:41] "GET /auth/login HTTP/1.1" 200 -
+2025-09-17 21:18:41,880 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:41] "GET /static/favicon.ico HTTP/1.1" 200 -
+2025-09-17 21:18:41,906 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:41] "GET /static/favicon.ico HTTP/1.1" 200 -
+2025-09-17 21:18:48,293 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:48] "POST /auth/login HTTP/1.1" 302 -
+2025-09-17 21:18:48,298 - database - INFO - [DEBUG] get_current_database() - Session value: None, Default: a&p, Returning: a&p
+2025-09-17 21:18:48,304 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:48] "GET /dashboard HTTP/1.1" 200 -
+2025-09-17 21:18:48,496 - database - INFO - [DEBUG] get_current_database() - Session value: None, Default: a&p, Returning: a&p
+2025-09-17 21:18:48,498 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:48] "GET /get_database_info HTTP/1.1" 200 -
+2025-09-17 21:18:48,499 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:48] "GET /static/favicon.ico HTTP/1.1" 200 -
+2025-09-17 21:18:48,548 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:48] "GET /static/favicon.ico HTTP/1.1" 200 -
+[2025-09-17 21:18:51,966] ERROR in routes: Error loading admin dashboard: 'stats' is undefined
+2025-09-17 21:18:51,966 - app - ERROR - Error loading admin dashboard: 'stats' is undefined
+2025-09-17 21:18:51,969 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:51] "GET /admin/ HTTP/1.1" 302 -
+2025-09-17 21:18:51,974 - database - INFO - [DEBUG] get_current_database() - Session value: None, Default: a&p, Returning: a&p
+2025-09-17 21:18:51,980 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:51] "GET /dashboard HTTP/1.1" 200 -
+2025-09-17 21:18:52,188 - database - INFO - [DEBUG] get_current_database() - Session value: None, Default: a&p, Returning: a&p
+2025-09-17 21:18:52,191 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:52] "GET /get_database_info HTTP/1.1" 200 -
+2025-09-17 21:18:52,191 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:52] "GET /static/favicon.ico HTTP/1.1" 200 -
+2025-09-17 21:18:52,236 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:52] "GET /static/favicon.ico HTTP/1.1" 200 -
+[2025-09-17 21:18:54,111] ERROR in routes: Error loading admin dashboard: 'stats' is undefined
+2025-09-17 21:18:54,111 - app - ERROR - Error loading admin dashboard: 'stats' is undefined
+2025-09-17 21:18:54,112 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:54] "GET /admin/ HTTP/1.1" 302 -
+2025-09-17 21:18:54,120 - database - INFO - [DEBUG] get_current_database() - Session value: None, Default: a&p, Returning: a&p
+2025-09-17 21:18:54,126 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:54] "GET /dashboard HTTP/1.1" 200 -
+2025-09-17 21:18:54,335 - database - INFO - [DEBUG] get_current_database() - Session value: None, Default: a&p, Returning: a&p
+2025-09-17 21:18:54,337 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:54] "GET /get_database_info HTTP/1.1" 200 -
+2025-09-17 21:18:54,338 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:54] "GET /static/favicon.ico HTTP/1.1" 200 -
+2025-09-17 21:18:54,386 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:54] "GET /static/favicon.ico HTTP/1.1" 200 -
+[2025-09-17 21:18:55,420] ERROR in routes: Error loading admin dashboard: 'stats' is undefined
+2025-09-17 21:18:55,420 - app - ERROR - Error loading admin dashboard: 'stats' is undefined
+2025-09-17 21:18:55,421 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:55] "GET /admin/ HTTP/1.1" 302 -
+2025-09-17 21:18:55,428 - database - INFO - [DEBUG] get_current_database() - Session value: None, Default: a&p, Returning: a&p
+2025-09-17 21:18:55,433 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:55] "GET /dashboard HTTP/1.1" 200 -
+2025-09-17 21:18:55,715 - database - INFO - [DEBUG] get_current_database() - Session value: None, Default: a&p, Returning: a&p
+2025-09-17 21:18:55,718 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:55] "GET /get_database_info HTTP/1.1" 200 -
+2025-09-17 21:18:55,718 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:55] "GET /static/favicon.ico HTTP/1.1" 200 -
+2025-09-17 21:18:55,757 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:55] "GET /static/favicon.ico HTTP/1.1" 200 -
+2025-09-17 21:18:56,527 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:56] "GET /auth/logout HTTP/1.1" 302 -
+2025-09-17 21:18:56,535 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:56] "GET /auth/login HTTP/1.1" 200 -
+2025-09-17 21:18:56,732 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:56] "GET /static/favicon.ico HTTP/1.1" 200 -
+2025-09-17 21:18:56,758 - werkzeug - INFO - 127.0.0.1 - - [17/Sep/2025 21:18:56] "GET /static/favicon.ico HTTP/1.1" 200 -2025-09-17 21:20:39,549 - app - ERROR - Error loading admin dashboard: 'stats' is undefined
+2025-09-17 21:20:40,638 - app - ERROR - Error loading admin dashboard: 'stats' is undefined
+2025-09-17 21:20:41,654 - app - ERROR - Error loading admin dashboard: 'stats' is undefined
+2025-09-17 21:20:42,641 - app - ERROR - Error loading admin dashboard: 'stats' is undefined
+2025-09-17 21:20:43,171 - app - ERROR - Error loading admin dashboard: 'stats' is undefined
+2025-09-17 21:20:43,642 - app - ERROR - Error loading admin dashboard: 'stats' is undefined
+2025-09-17 21:20:44,158 - app - ERROR - Error loading admin dashboard: 'stats' is undefined
+2025-09-17 21:20:52,665 - app - ERROR - Error loading admin dashboard: 'stats' is undefined
+2025-09-18 21:13:31,711 - app - ERROR - Error loading admin dashboard: 'stats' is undefined

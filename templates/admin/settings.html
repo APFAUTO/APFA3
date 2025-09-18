@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Settings - POR Automator</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .admin-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .nav-item {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+        }
+        
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .nav-item.active {
+            background: rgba(59, 130, 246, 0.2);
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .settings-section {
+            transition: all 0.3s ease;
+        }
+        
+        .settings-section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: #3b82f6;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+        
+        .tab-button {
+            transition: all 0.3s ease;
+        }
+        
+        .tab-button.active {
+            background: rgba(59, 130, 246, 0.1);
+            border-bottom: 3px solid #3b82f6;
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white/10 backdrop-blur-md border-b border-white/20">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url_for('admin.dashboard') }}" class="text-white hover:text-gray-300">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+                    </a>
+                    <h1 class="text-xl font-bold text-white">System Settings</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url_for('auth.profile') }}" class="text-white hover:text-gray-300">
+                        <i class="fas fa-user mr-2"></i>{{ current_user.full_name }}
+                    </a>
+                    <a href="{{ url_for('auth.logout') }}" class="text-red-400 hover:text-red-300">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Sidebar Navigation -->
+            <div class="lg:col-span-1">
+                <div class="admin-card rounded-2xl shadow-2xl p-6">
+                    <h3 class="text-lg font-bold text-gray-900 mb-6">
+                        <i class="fas fa-cogs mr-2"></i>Admin Menu
+                    </h3>
+                    <nav class="space-y-2">
+                        <a href="{{ url_for('admin.dashboard') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-tachometer-alt w-5"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="{{ url_for('admin.users') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-users w-5"></i>
+                            <span>Users</span>
+                        </a>
+                        <a href="{{ url_for('admin.permissions') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-key w-5"></i>
+                            <span>Permissions</span>
+                        </a>
+                        <a href="{{ url_for('admin.audit_logs') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-history w-5"></i>
+                            <span>Audit Logs</span>
+                        </a>
+                        <a href="{{ url_for('admin.settings') }}" class="nav-item active flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-cog w-5"></i>
+                            <span>Settings</span>
+                        </a>
+                        <hr class="my-4 border-gray-300">
+                        <a href="{{ url_for('routes.dashboard') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                            <i class="fas fa-arrow-left w-5"></i>
+                            <span>Back to App</span>
+                        </a>
+                    </nav>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="lg:col-span-3">
+                <!-- Header -->
+                <div class="admin-card rounded-2xl shadow-2xl p-8 mb-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-3xl font-bold text-gray-900 mb-2">System Settings</h2>
+                            <p class="text-gray-600">Configure system-wide settings and preferences</p>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <button onclick="resetSettings()" class="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
+                                <i class="fas fa-undo mr-2"></i>Reset to Default
+                            </button>
+                            <button onclick="saveSettings()" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105">
+                                <i class="fas fa-save mr-2"></i>Save Settings
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Settings Tabs -->
+                    <div class="flex space-x-1 border-b border-gray-200">
+                        <button onclick="switchTab('general')" class="tab-button active px-6 py-3 text-sm font-medium text-gray-700 hover:text-gray-900 focus:outline-none" id="tab-general">
+                            <i class="fas fa-cog mr-2"></i>General
+                        </button>
+                        <button onclick="switchTab('security')" class="tab-button px-6 py-3 text-sm font-medium text-gray-700 hover:text-gray-900 focus:outline-none" id="tab-security">
+                            <i class="fas fa-shield-alt mr-2"></i>Security
+                        </button>
+                        <button onclick="switchTab('database')" class="tab-button px-6 py-3 text-sm font-medium text-gray-700 hover:text-gray-900 focus:outline-none" id="tab-database">
+                            <i class="fas fa-database mr-2"></i>Database
+                        </button>
+                        <button onclick="switchTab('email')" class="tab-button px-6 py-3 text-sm font-medium text-gray-700 hover:text-gray-900 focus:outline-none" id="tab-email">
+                            <i class="fas fa-envelope mr-2"></i>Email
+                        </button>
+                        <button onclick="switchTab('advanced')" class="tab-button px-6 py-3 text-sm font-medium text-gray-700 hover:text-gray-900 focus:outline-none" id="tab-advanced">
+                            <i class="fas fa-cogs mr-2"></i>Advanced
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Settings Content -->
+                <form id="settings-form">
+                    <!-- General Settings -->
+                    <div id="content-general" class="settings-content">
+                        <div class="admin-card rounded-2xl shadow-2xl p-8 mb-8">
+                            <h3 class="text-xl font-bold text-gray-900 mb-6">
+                                <i class="fas fa-cog mr-2"></i>General Settings
+                            </h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="site-name" class="block text-sm font-medium text-gray-700 mb-2">Site Name</label>
+                                    <input type="text" id="site-name" name="site_name" value="POR Automator" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div>
+                                    <label for="site-url" class="block text-sm font-medium text-gray-700 mb-2">Site URL</label>
+                                    <input type="url" id="site-url" name="site_url" value="http://localhost:5000" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div>
+                                    <label for="admin-email" class="block text-sm font-medium text-gray-700 mb-2">Admin Email</label>
+                                    <input type="email" id="admin-email" name="admin_email" value="admin@porautomator.com" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div>
+                                    <label for="timezone" class="block text-sm font-medium text-gray-700 mb-2">Timezone</label>
+                                    <select id="timezone" name="timezone" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="UTC">UTC</option>
+                                        <option value="America/New_York" selected>Eastern Time</option>
+                                        <option value="America/Chicago">Central Time</option>
+                                        <option value="America/Denver">Mountain Time</option>
+                                        <option value="America/Los_Angeles">Pacific Time</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="md:col-span-2">
+                                    <label class="flex items-center justify-between">
+                                        <span class="text-sm font-medium text-gray-700">Enable Maintenance Mode</span>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" name="maintenance_mode" id="maintenance-mode">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </label>
+                                    <p class="text-xs text-gray-500 mt-1">When enabled, only administrators can access the system</p>
+                                </div>
+                                
+                                <div class="md:col-span-2">
+                                    <label for="maintenance-message" class="block text-sm font-medium text-gray-700 mb-2">Maintenance Message</label>
+                                    <textarea id="maintenance-message" name="maintenance_message" rows="3" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Message to show users during maintenance">System is currently undergoing maintenance. Please check back later.</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Security Settings -->
+                    <div id="content-security" class="settings-content hidden">
+                        <div class="admin-card rounded-2xl shadow-2xl p-8 mb-8">
+                            <h3 class="text-xl font-bold text-gray-900 mb-6">
+                                <i class="fas fa-shield-alt mr-2"></i>Security Settings
+                            </h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="flex items-center justify-between">
+                                        <span class="text-sm font-medium text-gray-700">Enable Two-Factor Authentication</span>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" name="two_factor_auth" id="two-factor-auth">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </label>
+                                    <p class="text-xs text-gray-500 mt-1">Require 2FA for all administrator accounts</p>
+                                </div>
+                                
+                                <div>
+                                    <label class="flex items-center justify-between">
+                                        <span class="text-sm font-medium text-gray-700">Session Timeout</span>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" name="session_timeout" id="session-timeout" checked>
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </label>
+                                    <p class="text-xs text-gray-500 mt-1">Automatically log out inactive users</p>
+                                </div>
+                                
+                                <div>
+                                    <label for="session-duration" class="block text-sm font-medium text-gray-700 mb-2">Session Duration (minutes)</label>
+                                    <input type="number" id="session-duration" name="session_duration" value="60" min="15" max="480" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div>
+                                    <label for="max-login-attempts" class="block text-sm font-medium text-gray-700 mb-2">Max Login Attempts</label>
+                                    <input type="number" id="max-login-attempts" name="max_login_attempts" value="5" min="3" max="10" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div>
+                                    <label for="lockout-duration" class="block text-sm font-medium text-gray-700 mb-2">Lockout Duration (minutes)</label>
+                                    <input type="number" id="lockout-duration" name="lockout_duration" value="15" min="5" max="60" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="flex items-center justify-between">
+                                        <span class="text-sm font-medium text-gray-700">Enable IP Whitelist</span>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" name="ip_whitelist" id="ip-whitelist">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </label>
+                                    <p class="text-xs text-gray-500 mt-1">Restrict access to specific IP addresses</p>
+                                </div>
+                                
+                                <div class="md:col-span-2">
+                                    <label for="allowed-ips" class="block text-sm font-medium text-gray-700 mb-2">Allowed IP Addresses</label>
+                                    <textarea id="allowed-ips" name="allowed_ips" rows="3" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter IP addresses, one per line">192.168.1.0/24
+10.0.0.0/8</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Database Settings -->
+                    <div id="content-database" class="settings-content hidden">
+                        <div class="admin-card rounded-2xl shadow-2xl p-8 mb-8">
+                            <h3 class="text-xl font-bold text-gray-900 mb-6">
+                                <i class="fas fa-database mr-2"></i>Database Settings
+                            </h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="flex items-center justify-between">
+                                        <span class="text-sm font-medium text-gray-700">Enable Database Backups</span>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" name="database_backups" id="database-backups" checked>
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </label>
+                                    <p class="text-xs text-gray-500 mt-1">Automatically backup databases daily</p>
+                                </div>
+                                
+                                <div>
+                                    <label class="flex items-center justify-between">
+                                        <span class="text-sm font-medium text-gray-700">Enable Query Logging</span>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" name="query_logging" id="query-logging">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </label>
+                                    <p class="text-xs text-gray-500 mt-1">Log all database queries for debugging</p>
+                                </div>
+                                
+                                <div>
+                                    <label for="backup-retention" class="block text-sm font-medium text-gray-700 mb-2">Backup Retention (days)</label>
+                                    <input type="number" id="backup-retention" name="backup_retention" value="30" min="7" max="365" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div>
+                                    <label for="connection-pool" class="block text-sm font-medium text-gray-700 mb-2">Connection Pool Size</label>
+                                    <input type="number" id="connection-pool" name="connection_pool" value="10" min="5" max="50" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div class="md:col-span-2">
+                                    <label class="flex items-center justify-between">
+                                        <span class="text-sm font-medium text-gray-700">Enable Database Optimization</span>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" name="db_optimization" id="db-optimization" checked>
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </label>
+                                    <p class="text-xs text-gray-500 mt-1">Automatically optimize database performance</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Email Settings -->
+                    <div id="content-email" class="settings-content hidden">
+                        <div class="admin-card rounded-2xl shadow-2xl p-8 mb-8">
+                            <h3 class="text-xl font-bold text-gray-900 mb-6">
+                                <i class="fas fa-envelope mr-2"></i>Email Settings
+                            </h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="flex items-center justify-between">
+                                        <span class="text-sm font-medium text-gray-700">Enable Email Notifications</span>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" name="email_notifications" id="email-notifications" checked>
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </label>
+                                    <p class="text-xs text-gray-500 mt-1">Send system notifications via email</p>
+                                </div>
+                                
+                                <div>
+                                    <label for="email-provider" class="block text-sm font-medium text-gray-700 mb-2">Email Provider</label>
+                                    <select id="email-provider" name="email_provider" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="smtp">SMTP</option>
+                                        <option value="sendgrid">SendGrid</option>
+                                        <option value="ses">Amazon SES</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label for="smtp-server" class="block text-sm font-medium text-gray-700 mb-2">SMTP Server</label>
+                                    <input type="text" id="smtp-server" name="smtp_server" value="smtp.gmail.com" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div>
+                                    <label for="smtp-port" class="block text-sm font-medium text-gray-700 mb-2">SMTP Port</label>
+                                    <input type="number" id="smtp-port" name="smtp_port" value="587" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div>
+                                    <label for="smtp-username" class="block text-sm font-medium text-gray-700 mb-2">SMTP Username</label>
+                                    <input type="text" id="smtp-username" name="smtp_username" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div>
+                                    <label for="smtp-password" class="block text-sm font-medium text-gray-700 mb-2">SMTP Password</label>
+                                    <input type="password" id="smtp-password" name="smtp_password" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="flex items-center justify-between">
+                                        <span class="text-sm font-medium text-gray-700">Use TLS</span>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" name="smtp_tls" id="smtp-tls" checked>
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </label>
+                                    <p class="text-xs text-gray-500 mt-1">Enable TLS encryption for SMTP</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Advanced Settings -->
+                    <div id="content-advanced" class="settings-content hidden">
+                        <div class="admin-card rounded-2xl shadow-2xl p-8 mb-8">
+                            <h3 class="text-xl font-bold text-gray-900 mb-6">
+                                <i class="fas fa-cogs mr-2"></i>Advanced Settings
+                            </h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="flex items-center justify-between">
+                                        <span class="text-sm font-medium text-gray-700">Debug Mode</span>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" name="debug_mode" id="debug-mode">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </label>
+                                    <p class="text-xs text-gray-500 mt-1">Enable debug mode for development</p>
+                                </div>
+                                
+                                <div>
+                                    <label class="flex items-center justify-between">
+                                        <span class="text-sm font-medium text-gray-700">Enable API Access</span>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" name="api_access" id="api-access">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </label>
+                                    <p class="text-xs text-gray-500 mt-1">Enable REST API for external integrations</p>
+                                </div>
+                                
+                                <div>
+                                    <label for="log-level" class="block text-sm font-medium text-gray-700 mb-2">Log Level</label>
+                                    <select id="log-level" name="log_level" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="DEBUG">Debug</option>
+                                        <option value="INFO" selected>Info</option>
+                                        <option value="WARNING">Warning</option>
+                                        <option value="ERROR">Error</option>
+                                        <option value="CRITICAL">Critical</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label for="max-file-size" class="block text-sm font-medium text-gray-700 mb-2">Max File Size (MB)</label>
+                                    <input type="number" id="max-file-size" name="max_file_size" value="16" min="1" max="100" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div>
+                                    <label for="allowed-file-types" class="block text-sm font-medium text-gray-700 mb-2">Allowed File Types</label>
+                                    <input type="text" id="allowed-file-types" name="allowed_file_types" value=".xlsx,.xls" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                
+                                <div>
+                                    <label for="cache-timeout" class="block text-sm font-medium text-gray-700 mb-2">Cache Timeout (minutes)</label>
+                                    <input type="number" id="cache-timeout" name="cache_timeout" value="60" min="5" max="1440" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                                <h4 class="text-sm font-medium text-red-800 mb-2">
+                                    <i class="fas fa-exclamation-triangle mr-2"></i>Danger Zone
+                                </h4>
+                                <div class="space-y-3">
+                                    <button type="button" onclick="clearCache()" class="w-full text-left px-4 py-2 bg-white border border-red-300 text-red-700 rounded-lg hover:bg-red-50">
+                                        <i class="fas fa-broom mr-2"></i>Clear System Cache
+                                    </button>
+                                    <button type="button" onclick="resetSystem()" class="w-full text-left px-4 py-2 bg-white border border-red-300 text-red-700 rounded-lg hover:bg-red-50">
+                                        <i class="fas fa-power-off mr-2"></i>Reset System to Factory Defaults
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function switchTab(tabName) {
+            // Hide all content sections
+            document.querySelectorAll('.settings-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab-button').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected content section
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            
+            // Add active class to selected tab
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        }
+        
+        function saveSettings() {
+            const formData = new FormData(document.getElementById('settings-form'));
+            const settings = {};
+            
+            // Convert FormData to object
+            for (let [key, value] of formData.entries()) {
+                if (settings[key]) {
+                    if (Array.isArray(settings[key])) {
+                        settings[key].push(value);
+                    } else {
+                        settings[key] = [settings[key], value];
+                    }
+                } else {
+                    settings[key] = value;
+                }
+            }
+            
+            // Handle checkboxes
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                settings[checkbox.name] = checkbox.checked;
+            });
+            
+            console.log('Saving settings:', settings);
+            alert('Settings saved successfully!');
+        }
+        
+        function resetSettings() {
+            if (confirm('Are you sure you want to reset all settings to their default values? This action cannot be undone.')) {
+                document.getElementById('settings-form').reset();
+                alert('Settings have been reset to default values.');
+            }
+        }
+        
+        function clearCache() {
+            if (confirm('Are you sure you want to clear the system cache? This may temporarily affect performance.')) {
+                alert('System cache cleared successfully.');
+            }
+        }
+        
+        function resetSystem() {
+            if (confirm('WARNING: This will reset the entire system to factory defaults. All custom settings will be lost. This action cannot be undone.\n\nType "RESET" to confirm:')) {
+                const confirmation = prompt('Type "RESET" to confirm system reset:');
+                if (confirmation === 'RESET') {
+                    alert('System reset initiated. This may take a few minutes...');
+                } else {
+                    alert('System reset cancelled.');
+                }
+            }
+        }
+        
+        // Add smooth animations
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.settings-section, .admin-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>
