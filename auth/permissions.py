@@ -171,54 +171,72 @@ class PermissionManager:
         return users
     
     def grant_user_type_permissions(self, user_id, user_type):
-        """Grant default permissions based on user type"""
-        from auth.models import Permission, UserPermission
+        """Grant default permissions based on user type from database configuration"""
+        from auth.models import Permission, UserPermission, UserTypeDefaultPermission
         
-        # Define default permissions for each user type
-        default_permissions = {
-            'admin': [
-                'po_uploader', 'batch_management', 'file_validation',
-                'dashboard_view', 'por_search', 'por_detail', 'analytics_view',
-                'diagnostic_view', 'system_logs', 'performance_metrics',
-                'user_management', 'permission_management', 'system_settings', 'audit_logs'
-            ],
-            'buyer': [
-                'po_uploader', 'batch_management', 'file_validation',
-                'dashboard_view', 'por_search', 'por_detail'
-            ],
-            'user': [
-                'dashboard_view', 'por_search', 'por_detail'
-            ]
-        }
-        
-        if user_type not in default_permissions:
+        if user_type not in ['admin', 'buyer', 'user']:
             return False, f"Unknown user type: {user_type}"
         
-        # Get all permissions for this user type
-        permissions_to_grant = self.auth_session.query(Permission).filter(
-            Permission.name.in_(default_permissions[user_type]),
-            Permission.is_active == True
-        ).all()
-        
-        # Grant permissions
-        for permission in permissions_to_grant:
-            existing = self.auth_session.query(UserPermission).filter(
-                UserPermission.user_id == user_id,
-                UserPermission.permission_id == permission.id
+        try:
+            # Get default permissions for this user type from database
+            type_defaults = self.auth_session.query(UserTypeDefaultPermission).filter(
+                UserTypeDefaultPermission.user_type == user_type
+            ).all()
+            
+            # If no defaults found, use fallback defaults
+            if not type_defaults:
+                fallback_permissions = {
+                    'admin': ['dashboard_view', 'por_search', 'por_detail', 'po_uploader', 'batch_management', 'user_management', 'system_settings'],
+                    'buyer': ['dashboard_view', 'por_search', 'por_detail', 'po_uploader', 'batch_management'],
+                    'user': ['dashboard_view', 'por_search', 'por_detail']
+                }
+                
+                permissions_to_grant = self.auth_session.query(Permission).filter(
+                    Permission.name.in_(fallback_permissions[user_type]),
+                    Permission.is_active == True
+                ).all()
+            else:
+                # Use configured defaults
+                permission_ids = [td.permission_id for td in type_defaults]
+                permissions_to_grant = self.auth_session.query(Permission).filter(
+                    Permission.id.in_(permission_ids),
+                    Permission.is_active == True
+                ).all()
+            
+            # Always ensure dashboard_view is included
+            dashboard_permission = self.auth_session.query(Permission).filter(
+                Permission.name == 'dashboard_view',
+                Permission.is_active == True
             ).first()
             
-            if not existing:
-                new_permission = UserPermission(
-                    user_id=user_id,
-                    permission_id=permission.id,
-                    granted_by=user_id  # Self-granted based on user type
-                )
-                self.auth_session.add(new_permission)
-            else:
-                existing.is_active = True
-        
-        self.auth_session.commit()
-        return True, f"Default {user_type} permissions granted"
+            if dashboard_permission and dashboard_permission not in permissions_to_grant:
+                permissions_to_grant.append(dashboard_permission)
+            
+            # Grant permissions
+            granted_count = 0
+            for permission in permissions_to_grant:
+                existing = self.auth_session.query(UserPermission).filter(
+                    UserPermission.user_id == user_id,
+                    UserPermission.permission_id == permission.id
+                ).first()
+                
+                if not existing:
+                    new_permission = UserPermission(
+                        user_id=user_id,
+                        permission_id=permission.id,
+                        granted_by=user_id  # Self-granted based on user type
+                    )
+                    self.auth_session.add(new_permission)
+                    granted_count += 1
+                else:
+                    existing.is_active = True
+            
+            self.auth_session.commit()
+            return True, f"Default {user_type} permissions granted ({granted_count} permissions)"
+            
+        except Exception as e:
+            self.auth_session.rollback()
+            return False, f"Error granting permissions: {str(e)}"
     
     def check_multiple_permissions(self, user_id, permission_names):
         """Check if user has all specified permissions"""

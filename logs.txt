@@ -100,3 +100,10 @@ Authentication database initialized successfully
 2025-09-18 21:43:33,566 - app - ERROR - Error loading admin dashboard: 'datetime' is undefined
 2025-09-18 21:43:39,910 - app - ERROR - Error loading admin dashboard: 'datetime' is undefined
 2025-09-18 21:43:45,256 - app - ERROR - Error loading admin dashboard: 'datetime' is undefined
+2025-09-19 18:49:44,409 - app - ERROR - Error loading audit logs: type object 'AuditLog' has no attribute 'status'
+2025-09-19 18:49:47,588 - app - ERROR - Error loading audit logs: type object 'AuditLog' has no attribute 'status'
+2025-09-19 19:03:20,670 - app - ERROR - Error updating user type defaults: (sqlite3.OperationalError) no such table: user_type_default_permissions
+[SQL: DELETE FROM user_type_default_permissions WHERE user_type_default_permissions.user_type = ?]
+[parameters: ('user',)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-09-19 19:07:24,287 - app - ERROR - Error loading audit logs: type object 'AuditLog' has no attribute 'status'

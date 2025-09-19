@@ -9,7 +9,7 @@ from functools import wraps
 from datetime import datetime, timedelta
 import json
 
-from auth.models import get_auth_session, User, Permission, UserPermission, UserSetting, AuditLog
+from auth.models import get_auth_session, User, Permission, UserPermission, UserSetting, AuditLog, UserTypeDefaultPermission
 from auth.security import admin_required
 
 
@@ -32,6 +32,27 @@ def admin_required_view(f):
             if not user or not user.is_admin:
                 flash('You do not have permission to access the admin console.', 'error')
                 return redirect(url_for('auth.login'))
+            
+            return f(*args, **kwargs)
+        finally:
+            auth_session.close()
+    
+    return decorated_function
+
+def admin_required_api(f):
+    """Decorator to require admin access for API endpoints (returns JSON)"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Check if user is logged in
+        if 'user_id' not in session:
+            return jsonify({'success': False, 'message': 'Please log in to access the admin console.'})
+        
+        # Get user from database
+        auth_session = get_auth_session()
+        try:
+            user = auth_session.query(User).get(session['user_id'])
+            if not user or not user.is_admin:
+                return jsonify({'success': False, 'message': 'You do not have permission to access the admin console.'})
             
             return f(*args, **kwargs)
         finally:
@@ -322,7 +343,7 @@ def update_user_type_permissions():
         session.close()
 
 @admin_bp.route('/permissions/update_user', methods=['POST'])
-@admin_required_view
+@admin_required_api
 def update_user_permissions():
     """Update individual user permissions"""
     session = get_auth_session()
@@ -338,6 +359,10 @@ def update_user_permissions():
         
         # Remove existing permissions
         session.query(UserPermission).filter(UserPermission.user_id == user_id).delete()
+        
+        # Always include dashboard_view as it's mandatory
+        if 'dashboard_view' not in selected_permissions:
+            selected_permissions.append('dashboard_view')
         
         # Add new permissions
         for perm_name in selected_permissions:
@@ -360,13 +385,11 @@ def update_user_permissions():
         session.add(audit_log)
         session.commit()
         
-        flash(f'Permissions for {user.username} updated successfully.', 'success')
-        return redirect(url_for('admin.permissions'))
+        return jsonify({'success': True, 'message': f'Permissions for {user.username} updated successfully.'})
     
     except Exception as e:
         current_app.logger.error(f"Error updating user permissions: {str(e)}")
-        flash('Error updating permissions. Please try again.', 'error')
-        return redirect(url_for('admin.permissions'))
+        return jsonify({'success': False, 'message': 'Error updating permissions. Please try again.'})
     
     finally:
         session.close()
@@ -410,7 +433,10 @@ def audit_logs():
             query = query.filter(AuditLog.user_id == user_id)
         
         if status:
-            query = query.filter(AuditLog.status == status)
+            if status == 'success':
+                query = query.filter(AuditLog.success == True)
+            elif status == 'failed':
+                query = query.filter(AuditLog.success == False)
         
         # Get paginated results
         logs = query.order_by(AuditLog.timestamp.desc()).offset((page - 1) * per_page).limit(per_page).all()
@@ -418,28 +444,22 @@ def audit_logs():
         total_pages = (total_logs + per_page - 1) // per_page
         
         # Get statistics
-        success_count = session.query(AuditLog).filter(AuditLog.status == 'success').count()
-        failed_count = session.query(AuditLog).filter(AuditLog.status == 'failed').count()
-        warning_count = session.query(AuditLog).filter(AuditLog.status == 'warning').count()
-        security_count = session.query(AuditLog).filter(AuditLog.action.contains('security')).count()
+        success_count = session.query(AuditLog).filter(AuditLog.success == True).count()
+        failed_count = session.query(AuditLog).filter(AuditLog.success == False).count()
+        warning_count = 0  # No warning status in current model
+        security_count = session.query(AuditLog).filter(AuditLog.action.contains('Login')).count()
         
         # Get all users for filter dropdown
         users = session.query(User).all()
         
         # Add color and icon information to logs
         for log in logs:
-            if log.status == 'success':
+            if log.success:
                 log.color = 'green'
                 log.icon = 'check-circle'
-            elif log.status == 'failed':
+            else:
                 log.color = 'red'
                 log.icon = 'times-circle'
-            elif log.status == 'warning':
-                log.color = 'yellow'
-                log.icon = 'exclamation-triangle'
-            else:
-                log.color = 'blue'
-                log.icon = 'info-circle'
         
         return render_template('admin/audit_logs.html',
                              audit_logs=logs,
@@ -594,6 +614,73 @@ def api_get_user(user_id):
     finally:
         session.close()
 
+@admin_bp.route('/users/<int:user_id>/delete', methods=['POST'])
+@admin_required_view
+def delete_user(user_id):
+    """Delete a user"""
+    auth_session = get_auth_session()
+    
+    try:
+        user = auth_session.query(User).filter(User.id == user_id).first()
+        
+        if not user:
+            return jsonify({'success': False, 'message': 'User not found.'})
+        
+        # Prevent deleting yourself
+        if user.id == session.get('user_id'):
+            return jsonify({'success': False, 'message': 'Cannot delete your own account.'})
+        
+        # Delete user permissions first
+        auth_session.query(UserPermission).filter(UserPermission.user_id == user_id).delete()
+        
+        # Delete the user
+        auth_session.delete(user)
+        auth_session.commit()
+        
+        # Log the action
+        audit_log = AuditLog(
+            user_id=session.get('user_id'),
+            action='User Deleted',
+            details=f'Deleted user {user.username}',
+            ip_address=request.remote_addr,
+            resource_id=str(user_id),
+            success=True
+        )
+        auth_session.add(audit_log)
+        auth_session.commit()
+        
+        return jsonify({'success': True, 'message': 'User deleted successfully.'})
+    
+    except Exception as e:
+        current_app.logger.error(f"Error deleting user {user_id}: {str(e)}")
+        return jsonify({'success': False, 'message': 'Error deleting user.'})
+    
+    finally:
+        auth_session.close()
+
+@admin_bp.route('/api/users/<int:user_id>/permissions', methods=['GET'])
+@admin_required_view
+def api_get_user_permissions(user_id):
+    """Get user permissions via API"""
+    auth_session = get_auth_session()
+    
+    try:
+        user_permissions = auth_session.query(UserPermission).filter(UserPermission.user_id == user_id).all()
+        permissions = [up.permission.name for up in user_permissions]
+        
+        # Always include dashboard_view as it's mandatory
+        if 'dashboard_view' not in permissions:
+            permissions.append('dashboard_view')
+        
+        return jsonify({'success': True, 'permissions': permissions})
+    
+    except Exception as e:
+        current_app.logger.error(f"API error getting user permissions {user_id}: {str(e)}")
+        return jsonify({'success': False, 'message': 'Error retrieving user permissions.'})
+    
+    finally:
+        auth_session.close()
+
 @admin_bp.route('/api/system/stats', methods=['GET'])
 @admin_required_view
 def api_system_stats():
@@ -629,3 +716,232 @@ def api_system_stats():
     
     finally:
         session.close()
+
+@admin_bp.route('/user-type-defaults', methods=['GET'])
+@admin_required_api
+def get_user_type_defaults():
+    """Get user type default permissions"""
+    auth_session = get_auth_session()
+    
+    try:
+        # First, ensure the table exists
+        from auth.models import Base, auth_engine
+        Base.metadata.create_all(auth_engine)
+        
+        defaults = {}
+        user_types = ['user', 'buyer', 'admin']
+        
+        for user_type in user_types:
+            try:
+                type_defaults = auth_session.query(UserTypeDefaultPermission).filter(
+                    UserTypeDefaultPermission.user_type == user_type
+                ).all()
+                
+                current_app.logger.info(f"Found {len(type_defaults)} defaults for {user_type}")
+                
+                permissions = []
+                for td in type_defaults:
+                    permission = auth_session.query(Permission).get(td.permission_id)
+                    if permission:
+                        permissions.append(permission.name)
+                        current_app.logger.info(f"  - {permission.name}")
+                
+                # Always include dashboard_view
+                if 'dashboard_view' not in permissions:
+                    permissions.append('dashboard_view')
+                
+                defaults[user_type] = permissions
+                current_app.logger.info(f"Final permissions for {user_type}: {permissions}")
+                
+            except Exception as inner_e:
+                current_app.logger.error(f"Error processing {user_type}: {str(inner_e)}")
+                # Fallback to just dashboard_view
+                defaults[user_type] = ['dashboard_view']
+        
+        current_app.logger.info(f"Returning defaults: {defaults}")
+        return jsonify({'success': True, 'defaults': defaults})
+    
+    except Exception as e:
+        current_app.logger.error(f"Error getting user type defaults: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'message': f'Error retrieving user type defaults: {str(e)}'})
+    
+    finally:
+        auth_session.close()
+
+@admin_bp.route('/user-type-defaults/update', methods=['POST'])
+@admin_required_api
+def update_user_type_defaults():
+    """Update user type default permissions"""
+    auth_session = get_auth_session()
+    
+    try:
+        # First, ensure the table exists
+        from auth.models import Base, auth_engine
+        Base.metadata.create_all(auth_engine)
+        
+        user_type = request.form.get('user_type')
+        selected_permissions = request.form.getlist('permissions')
+        
+        current_app.logger.info(f"Updating {user_type} defaults with permissions: {selected_permissions}")
+        
+        if not user_type or user_type not in ['user', 'buyer', 'admin']:
+            return jsonify({'success': False, 'message': 'Invalid user type.'})
+        
+        # Always include dashboard_view
+        if 'dashboard_view' not in selected_permissions:
+            selected_permissions.append('dashboard_view')
+        
+        # Remove existing defaults for this user type
+        deleted_count = auth_session.query(UserTypeDefaultPermission).filter(
+            UserTypeDefaultPermission.user_type == user_type
+        ).delete()
+        current_app.logger.info(f"Deleted {deleted_count} existing defaults for {user_type}")
+        
+        # Add new defaults
+        added_count = 0
+        for perm_name in selected_permissions:
+            permission = auth_session.query(Permission).filter(Permission.name == perm_name).first()
+            if permission:
+                default_perm = UserTypeDefaultPermission(
+                    user_type=user_type,
+                    permission_id=permission.id
+                )
+                auth_session.add(default_perm)
+                added_count += 1
+            else:
+                current_app.logger.warning(f"Permission '{perm_name}' not found")
+        
+        current_app.logger.info(f"Added {added_count} new defaults for {user_type}")
+        
+        # Commit the changes
+        auth_session.commit()
+        current_app.logger.info(f"Successfully committed changes for {user_type}")
+        
+        # Verify the changes were saved
+        verify_count = auth_session.query(UserTypeDefaultPermission).filter(
+            UserTypeDefaultPermission.user_type == user_type
+        ).count()
+        current_app.logger.info(f"Verification: {user_type} now has {verify_count} default permissions")
+        
+        # Log the action
+        audit_log = AuditLog(
+            user_id=session.get('user_id'),
+            action='User Type Defaults Updated',
+            details=f'Updated default permissions for {user_type} users: {", ".join(selected_permissions)}',
+            ip_address=request.remote_addr,
+            resource_id=user_type,
+            success=True
+        )
+        auth_session.add(audit_log)
+        auth_session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Default permissions for {user_type} users updated successfully.',
+            'permissions_count': verify_count,
+            'permissions': selected_permissions
+        })
+    
+    except Exception as e:
+        auth_session.rollback()
+        current_app.logger.error(f"Error updating user type defaults: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'message': f'Error updating user type defaults: {str(e)}'})
+    
+    finally:
+        auth_session.close()
+
+@admin_bp.route('/debug/user-type-defaults')
+@admin_required_api
+def debug_user_type_defaults():
+    """Debug route to check current user type defaults in database"""
+    auth_session = get_auth_session()
+    
+    try:
+        result = {}
+        user_types = ['user', 'buyer', 'admin']
+        
+        for user_type in user_types:
+            defaults = auth_session.query(UserTypeDefaultPermission).filter(
+                UserTypeDefaultPermission.user_type == user_type
+            ).all()
+            
+            permissions = []
+            for default in defaults:
+                permission = auth_session.query(Permission).get(default.permission_id)
+                if permission:
+                    permissions.append(permission.name)
+            
+            result[user_type] = {
+                'count': len(defaults),
+                'permissions': permissions
+            }
+        
+        return jsonify({'success': True, 'data': result})
+    
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+    
+    finally:
+        auth_session.close()
+
+@admin_bp.route('/test-db-save')
+@admin_required_api
+def test_db_save():
+    """Test route to verify database saving works"""
+    auth_session = get_auth_session()
+    
+    try:
+        # Clear existing test data
+        auth_session.query(UserTypeDefaultPermission).filter(
+            UserTypeDefaultPermission.user_type == 'buyer'
+        ).delete()
+        
+        # Get dashboard_view permission
+        dashboard_perm = auth_session.query(Permission).filter(
+            Permission.name == 'dashboard_view'
+        ).first()
+        
+        po_uploader_perm = auth_session.query(Permission).filter(
+            Permission.name == 'po_uploader'
+        ).first()
+        
+        if dashboard_perm and po_uploader_perm:
+            # Add test permissions
+            test_perm1 = UserTypeDefaultPermission(
+                user_type='buyer',
+                permission_id=dashboard_perm.id
+            )
+            test_perm2 = UserTypeDefaultPermission(
+                user_type='buyer',
+                permission_id=po_uploader_perm.id
+            )
+            
+            auth_session.add(test_perm1)
+            auth_session.add(test_perm2)
+            auth_session.commit()
+            
+            # Verify they were saved
+            saved_count = auth_session.query(UserTypeDefaultPermission).filter(
+                UserTypeDefaultPermission.user_type == 'buyer'
+            ).count()
+            
+            return jsonify({
+                'success': True,
+                'message': f'Test successful! Saved {saved_count} permissions for buyer',
+                'dashboard_perm_id': dashboard_perm.id,
+                'po_uploader_perm_id': po_uploader_perm.id
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Required permissions not found',
+                'dashboard_found': dashboard_perm is not None,
+                'po_uploader_found': po_uploader_perm is not None
+            })
+    
+    except Exception as e:
+        auth_session.rollback()
+        return jsonify({'success': False, 'error': str(e)})
+    
+    finally:
+        auth_session.close()

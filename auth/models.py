@@ -144,6 +144,27 @@ class UserSetting(Base):
     def __repr__(self):
         return f"<UserSetting {self.user_id}:{self.setting_key}>"
 
+class UserTypeDefaultPermission(Base):
+    """Default permissions for user types"""
+    __tablename__ = "user_type_default_permissions"
+    
+    # Primary key
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    
+    # User type and permission
+    user_type = Column(String(20), nullable=False)  # 'admin', 'buyer', 'user'
+    permission_id = Column(Integer, ForeignKey('permissions.id'), nullable=False)
+    
+    # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    permission = relationship("Permission")
+    
+    def __repr__(self):
+        return f"<UserTypeDefaultPermission {self.user_type}:{self.permission_id}>"
+
 class AuditLog(Base):
     """Audit log for tracking user actions and system events"""
     __tablename__ = "audit_logs"

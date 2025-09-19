@@ -45,16 +45,21 @@
         .nav-item {
             transition: all 0.3s ease;
             border-radius: 12px;
+            color: #374151 !important;
+            text-decoration: none;
         }
         
         .nav-item:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(59, 130, 246, 0.1);
+            color: #1d4ed8 !important;
             transform: translateX(5px);
         }
         
         .nav-item.active {
-            background: rgba(59, 130, 246, 0.2);
+            background: rgba(59, 130, 246, 0.15);
+            color: #1d4ed8 !important;
             border-left: 4px solid #3b82f6;
+            font-weight: 600;
         }
         
         .permission-card {
@@ -121,28 +126,28 @@
                         <i class="fas fa-cogs mr-2"></i>Admin Menu
                     </h3>
                     <nav class="space-y-2">
-                        <a href="{{ url_for('admin.dashboard') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                        <a href="{{ url_for('admin.dashboard') }}" class="nav-item flex items-center space-x-3 px-4 py-3">
                             <i class="fas fa-tachometer-alt w-5"></i>
                             <span>Dashboard</span>
                         </a>
-                        <a href="{{ url_for('admin.users') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                        <a href="{{ url_for('admin.users') }}" class="nav-item flex items-center space-x-3 px-4 py-3">
                             <i class="fas fa-users w-5"></i>
                             <span>Users</span>
                         </a>
-                        <a href="{{ url_for('admin.permissions') }}" class="nav-item active flex items-center space-x-3 px-4 py-3 text-white">
+                        <a href="{{ url_for('admin.permissions') }}" class="nav-item active flex items-center space-x-3 px-4 py-3">
                             <i class="fas fa-key w-5"></i>
                             <span>Permissions</span>
                         </a>
-                        <a href="{{ url_for('admin.audit_logs') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                        <a href="{{ url_for('admin.audit_logs') }}" class="nav-item flex items-center space-x-3 px-4 py-3">
                             <i class="fas fa-history w-5"></i>
                             <span>Audit Logs</span>
                         </a>
-                        <a href="{{ url_for('admin.settings') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                        <a href="{{ url_for('admin.settings') }}" class="nav-item flex items-center space-x-3 px-4 py-3">
                             <i class="fas fa-cog w-5"></i>
                             <span>Settings</span>
                         </a>
                         <hr class="my-4 border-gray-300">
-                        <a href="{{ url_for('routes.dashboard') }}" class="nav-item flex items-center space-x-3 px-4 py-3 text-white">
+                        <a href="{{ url_for('routes.dashboard') }}" class="nav-item flex items-center space-x-3 px-4 py-3">
                             <i class="fas fa-arrow-left w-5"></i>
                             <span>Back to App</span>
                         </a>
@@ -165,122 +170,115 @@
                     </div>
                 </div>
                 
-                <!-- User Type Permissions -->
+                <!-- User Type Default Permissions -->
                 <div class="admin-card rounded-2xl shadow-2xl p-8 mb-8">
-                    <h3 class="text-xl font-bold text-gray-900 mb-6">
-                        <i class="fas fa-users-cog mr-2"></i>User Type Permissions
-                    </h3>
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900">
+                                <i class="fas fa-users-cog mr-2"></i>User Type Default Permissions
+                            </h3>
+                            <p class="text-gray-600">Configure default permissions for each user type</p>
+                        </div>
+                        <div class="flex space-x-3">
+                            <button onclick="saveUserTypeDefaults()" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105">
+                                <i class="fas fa-save mr-2"></i>Save Defaults
+                            </button>
+                            <button onclick="debugUserTypeDefaults()" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105">
+                                <i class="fas fa-bug mr-2"></i>Debug DB
+                            </button>
+                            <button onclick="testDbSave()" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105">
+                                <i class="fas fa-flask mr-2"></i>Test Save
+                            </button>
+                        </div>
+                    </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <!-- Standard User -->
-                        <div class="permission-card bg-white rounded-xl p-6">
+                        <div class="permission-card bg-white rounded-xl p-6 border-2 border-transparent hover:border-blue-200">
                             <div class="flex items-center justify-between mb-4">
                                 <h4 class="text-lg font-semibold text-gray-900">Standard User</h4>
                                 <span class="user-type-badge bg-blue-100 text-blue-800">
                                     <i class="fas fa-user mr-2"></i>Basic
                                 </span>
                             </div>
-                            <p class="text-sm text-gray-600 mb-4">Default user with basic access to view and search PORs</p>
-                            <div class="space-y-3">
-                                <label class="flex items-center space-x-3">
-                                    <input type="checkbox" checked disabled class="permission-checkbox">
-                                    <span class="text-sm text-gray-700">View Dashboard</span>
-                                </label>
-                                <label class="flex items-center space-x-3">
-                                    <input type="checkbox" checked disabled class="permission-checkbox">
-                                    <span class="text-sm text-gray-700">Search PORs</span>
-                                </label>
-                                <label class="flex items-center space-x-3">
-                                    <input type="checkbox" checked disabled class="permission-checkbox">
-                                    <span class="text-sm text-gray-700">View POR Details</span>
-                                </label>
-                                <label class="flex items-center space-x-3">
-                                    <input type="checkbox" disabled class="permission-checkbox">
-                                    <span class="text-sm text-gray-400">Upload PO Files</span>
-                                </label>
-                                <label class="flex items-center space-x-3">
-                                    <input type="checkbox" disabled class="permission-checkbox">
-                                    <span class="text-sm text-gray-400">Manage Batches</span>
-                                </label>
-                                <label class="flex items-center space-x-3">
-                                    <input type="checkbox" disabled class="permission-checkbox">
-                                    <span class="text-sm text-gray-400">User Management</span>
-                                </label>
-                            </div>
+                            <p class="text-sm text-gray-600 mb-4">Default permissions for standard users</p>
+                            <form id="user-type-form" data-user-type="user">
+                                <div class="space-y-3">
+                                    {% for permission in permissions %}
+                                    <label class="flex items-center space-x-3">
+                                        <input type="checkbox" 
+                                               name="user_permissions" 
+                                               value="{{ permission.name }}" 
+                                               class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                               {% if permission.name == 'dashboard_view' %}checked disabled{% endif %}
+                                               data-user-type="user">
+                                        <span class="text-sm {% if permission.name == 'dashboard_view' %}text-gray-500{% else %}text-gray-700{% endif %}">
+                                            {{ permission.description or permission.name.replace('_', ' ').title() }}
+                                            {% if permission.name == 'dashboard_view' %}<span class="text-xs">(Required)</span>{% endif %}
+                                        </span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </form>
                         </div>
                         
                         <!-- Buyer User -->
-                        <div class="permission-card bg-white rounded-xl p-6">
+                        <div class="permission-card bg-white rounded-xl p-6 border-2 border-transparent hover:border-green-200">
                             <div class="flex items-center justify-between mb-4">
                                 <h4 class="text-lg font-semibold text-gray-900">Buyer User</h4>
                                 <span class="user-type-badge bg-green-100 text-green-800">
                                     <i class="fas fa-shopping-cart mr-2"></i>Enhanced
                                 </span>
                             </div>
-                            <p class="text-sm text-gray-600 mb-4">Buyer with PO upload and batch management capabilities</p>
-                            <div class="space-y-3">
-                                <label class="flex items-center space-x-3">
-                                    <input type="checkbox" checked disabled class="permission-checkbox">
-                                    <span class="text-sm text-gray-700">View Dashboard</span>
-                                </label>
-                                <label class="flex items-center space-x-3">
-                                    <input type="checkbox" checked disabled class="permission-checkbox">
-                                    <span class="text-sm text-gray-700">Search PORs</span>
-                                </label>
-                                <label class="flex items-center space-x-3">
-                                    <input type="checkbox" checked disabled class="permission-checkbox">
-                                    <span class="text-sm text-gray-700">View POR Details</span>
-                                </label>
-                                <label class="flex items-center space-x-3">
-                                    <input type="checkbox" checked disabled class="permission-checkbox">
-                                    <span class="text-sm text-gray-700">Upload PO Files</span>
-                                </label>
-                                <label class="flex items-center space-x-3">
-                                    <input type="checkbox" checked disabled class="permission-checkbox">
-                                    <span class="text-sm text-gray-700">Manage Batches</span>
-                                </label>
-                                <label class="flex items-center space-x-3">
-                                    <input type="checkbox" disabled class="permission-checkbox">
-                                    <span class="text-sm text-gray-400">User Management</span>
-                                </label>
-                            </div>
+                            <p class="text-sm text-gray-600 mb-4">Default permissions for buyer users</p>
+                            <form id="buyer-type-form" data-user-type="buyer">
+                                <div class="space-y-3">
+                                    {% for permission in permissions %}
+                                    <label class="flex items-center space-x-3">
+                                        <input type="checkbox" 
+                                               name="buyer_permissions" 
+                                               value="{{ permission.name }}" 
+                                               class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                                               {% if permission.name == 'dashboard_view' %}checked disabled{% endif %}
+                                               data-user-type="buyer">
+                                        <span class="text-sm {% if permission.name == 'dashboard_view' %}text-gray-500{% else %}text-gray-700{% endif %}">
+                                            {{ permission.description or permission.name.replace('_', ' ').title() }}
+                                            {% if permission.name == 'dashboard_view' %}<span class="text-xs">(Required)</span>{% endif %}
+                                        </span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </form>
                         </div>
                         
                         <!-- Admin User -->
-                        <div class="permission-card bg-white rounded-xl p-6">
+                        <div class="permission-card bg-white rounded-xl p-6 border-2 border-transparent hover:border-purple-200">
                             <div class="flex items-center justify-between mb-4">
                                 <h4 class="text-lg font-semibold text-gray-900">Admin User</h4>
                                 <span class="user-type-badge bg-purple-100 text-purple-800">
                                     <i class="fas fa-crown mr-2"></i>Full Access
                                 </span>
                             </div>
-                            <p class="text-sm text-gray-600 mb-4">Administrator with full system access and management capabilities</p>
-                            <div class="space-y-3">
-                                <label class="flex items-center space-x-3">
-                                    <input type="checkbox" checked disabled class="permission-checkbox">
-                                    <span class="text-sm text-gray-700">View Dashboard</span>
-                                </label>
-                                <label class="flex items-center space-x-3">
-                                    <input type="checkbox" checked disabled class="permission-checkbox">
-                                    <span class="text-sm text-gray-700">Search PORs</span>
-                                </label>
-                                <label class="flex items-center space-x-3">
-                                    <input type="checkbox" checked disabled class="permission-checkbox">
-                                    <span class="text-sm text-gray-700">View POR Details</span>
-                                </label>
-                                <label class="flex items-center space-x-3">
-                                    <input type="checkbox" checked disabled class="permission-checkbox">
-                                    <span class="text-sm text-gray-700">Upload PO Files</span>
-                                </label>
-                                <label class="flex items-center space-x-3">
-                                    <input type="checkbox" checked disabled class="permission-checkbox">
-                                    <span class="text-sm text-gray-700">Manage Batches</span>
-                                </label>
-                                <label class="flex items-center space-x-3">
-                                    <input type="checkbox" checked disabled class="permission-checkbox">
-                                    <span class="text-sm text-gray-700">User Management</span>
-                                </label>
-                            </div>
+                            <p class="text-sm text-gray-600 mb-4">Default permissions for admin users</p>
+                            <form id="admin-type-form" data-user-type="admin">
+                                <div class="space-y-3">
+                                    {% for permission in permissions %}
+                                    <label class="flex items-center space-x-3">
+                                        <input type="checkbox" 
+                                               name="admin_permissions" 
+                                               value="{{ permission.name }}" 
+                                               class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                                               checked
+                                               {% if permission.name == 'dashboard_view' %}disabled{% endif %}
+                                               data-user-type="admin">
+                                        <span class="text-sm {% if permission.name == 'dashboard_view' %}text-gray-500{% else %}text-gray-700{% endif %}">
+                                            {{ permission.description or permission.name.replace('_', ' ').title() }}
+                                            {% if permission.name == 'dashboard_view' %}<span class="text-xs">(Required)</span>{% endif %}
+                                        </span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -493,12 +491,199 @@
         }
         
         function savePermissions() {
-            // This would save all permission changes
-            alert('Saving all permission changes...');
+            // Save individual user permissions
+            const userId = document.getElementById('user-select').value;
+            if (!userId) {
+                alert('Please select a user first.');
+                return;
+            }
+            
+            const checkboxes = document.querySelectorAll('#permissions-checkboxes input[type="checkbox"]:checked');
+            const permissions = Array.from(checkboxes).map(cb => cb.value);
+            
+            console.log(`Saving permissions for user ${userId}:`, permissions);
+            
+            fetch('/admin/permissions/update_user', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `user_id=${userId}&${permissions.map(p => `permissions=${p}`).join('&')}`
+            })
+            .then(response => {
+                console.log('Permission save response:', response.status, response.statusText);
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            })
+            .then(data => {
+                console.log('Permission save data:', data);
+                if (data.success) {
+                    const successDiv = document.createElement('div');
+                    successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+                    successDiv.innerHTML = '<i class="fas fa-check mr-2"></i>User permissions saved successfully!';
+                    document.body.appendChild(successDiv);
+                    
+                    setTimeout(() => {
+                        successDiv.remove();
+                    }, 3000);
+                    
+                    // Reload the user's permissions to verify they were saved
+                    loadPermissionsForUser(userId);
+                } else {
+                    throw new Error(data.message || 'Unknown error');
+                }
+            })
+            .catch(error => {
+                console.error('Error saving permissions:', error);
+                alert(`Error saving permissions: ${error.message}`);
+            });
+        }
+        
+        function saveUserTypeDefaults() {
+            const userTypes = ['user', 'buyer', 'admin'];
+            let savedCount = 0;
+            let totalTypes = userTypes.length;
+            
+            console.log('Starting to save user type defaults...');
+            
+            userTypes.forEach(userType => {
+                const checkboxes = document.querySelectorAll(`input[data-user-type="${userType}"]:checked:not(:disabled)`);
+                const permissions = Array.from(checkboxes).map(cb => cb.value);
+                
+                // Always include dashboard_view
+                if (!permissions.includes('dashboard_view')) {
+                    permissions.push('dashboard_view');
+                }
+                
+                console.log(`Saving ${userType} permissions:`, permissions);
+                
+                fetch('/admin/user-type-defaults/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `user_type=${userType}&${permissions.map(p => `permissions=${p}`).join('&')}`
+                })
+                .then(response => {
+                    console.log(`Response for ${userType}:`, response.status, response.statusText);
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        // Try to get the response text to see what's being returned
+                        return response.text().then(text => {
+                            console.error(`Error response for ${userType}:`, text);
+                            throw new Error(`HTTP ${response.status}: ${response.statusText} - ${text.substring(0, 100)}`);
+                        });
+                    }
+                })
+                .then(data => {
+                    console.log(`Success for ${userType}:`, data);
+                    savedCount++;
+                    
+                    if (savedCount === totalTypes) {
+                        // Show success message when all are saved
+                        const successDiv = document.createElement('div');
+                        successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+                        successDiv.innerHTML = '<i class="fas fa-check mr-2"></i>User type defaults saved successfully!';
+                        document.body.appendChild(successDiv);
+                        
+                        setTimeout(() => {
+                            successDiv.remove();
+                        }, 3000);
+                        
+                        // Reload the defaults to verify they were saved
+                        setTimeout(() => {
+                            loadUserTypeDefaults();
+                        }, 500);
+                    }
+                })
+                .catch(error => {
+                    console.error(`Error saving ${userType} defaults:`, error);
+                    alert(`Error saving ${userType} defaults: ${error.message}`);
+                });
+            });
+        }
+        
+        function debugUserTypeDefaults() {
+            fetch('/admin/debug/user-type-defaults')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Database state:', data);
+                    if (data.success) {
+                        let message = 'Current Database State:\n\n';
+                        Object.keys(data.data).forEach(userType => {
+                            const info = data.data[userType];
+                            message += `${userType.toUpperCase()}: ${info.count} permissions\n`;
+                            message += `  - ${info.permissions.join(', ')}\n\n`;
+                        });
+                        alert(message);
+                    } else {
+                        alert('Error checking database: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Debug error:', error);
+                    alert('Error checking database: ' + error);
+                });
+        }
+        
+        function testDbSave() {
+            fetch('/admin/test-db-save')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Test result:', data);
+                    alert(JSON.stringify(data, null, 2));
+                })
+                .catch(error => {
+                    console.error('Test error:', error);
+                    alert('Test error: ' + error);
+                });
+        }
+        
+        // Load current user type defaults on page load
+        function loadUserTypeDefaults() {
+            console.log('Loading user type defaults...');
+            fetch('/admin/user-type-defaults')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Received data:', data);
+                    if (data.success) {
+                        // Set checkboxes based on current defaults
+                        Object.keys(data.defaults).forEach(userType => {
+                            const permissions = data.defaults[userType];
+                            const checkboxes = document.querySelectorAll(`input[data-user-type="${userType}"]`);
+                            
+                            console.log(`Setting ${userType} permissions:`, permissions);
+                            console.log(`Found ${checkboxes.length} checkboxes for ${userType}`);
+                            
+                            checkboxes.forEach(checkbox => {
+                                const shouldCheck = permissions.includes(checkbox.value);
+                                console.log(`  ${checkbox.value}: ${shouldCheck ? 'CHECKED' : 'unchecked'}`);
+                                
+                                if (checkbox.value === 'dashboard_view') {
+                                    checkbox.checked = true; // Always checked
+                                } else {
+                                    checkbox.checked = shouldCheck;
+                                }
+                            });
+                        });
+                    } else {
+                        console.error('Failed to load defaults:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading user type defaults:', error);
+                });
         }
         
         // Add smooth animations
         document.addEventListener('DOMContentLoaded', function() {
+            // Load user type defaults
+            loadUserTypeDefaults();
+            
             const cards = document.querySelectorAll('.permission-card, .admin-card');
             cards.forEach((card, index) => {
                 card.style.opacity = '0';
