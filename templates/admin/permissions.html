@@ -381,20 +381,26 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
+                        console.log('Loading permissions for user:', data.user.username);
+                        console.log('Permissions data:', data.permissions);
+                        
                         // Clear all checkboxes first
-                        const checkboxes = document.querySelectorAll('#permissions-checkboxes input[type="checkbox"]');
+                        const checkboxes = document.querySelectorAll('.permission-checkbox');
                         checkboxes.forEach(checkbox => {
                             checkbox.checked = false;
                         });
                         
                         // Set checkboxes based on user's current permissions
                         checkboxes.forEach(checkbox => {
-                            const permissionName = checkbox.value;
+                            const permissionName = checkbox.getAttribute('data-permission');
                             const hasPermission = data.permissions.find(p => p.name === permissionName && p.has_permission);
                             if (hasPermission) {
                                 checkbox.checked = true;
+                                console.log(`Setting ${permissionName} to checked`);
                             }
                         });
+                    } else {
+                        console.error('Failed to load permissions:', data.message);
                     }
                 })
                 .catch(error => {
