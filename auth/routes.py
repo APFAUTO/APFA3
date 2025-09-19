@@ -4,7 +4,7 @@ Authentication routes for login, logout, and user management.
 
 import os
 from datetime import datetime
-from flask import Blueprint, request, render_template, flash, redirect, url_for, session, jsonify
+from flask import Blueprint, request, render_template, flash, redirect, url_for, session, jsonify, current_app
 from flask_login import login_user, logout_user
 
 from auth.database import get_auth_session
@@ -232,11 +232,17 @@ def register():
             flash('Invalid email format.', 'error')
             return render_template('auth/register.html')
         
+        # Validate user type
+        if user_type not in ['user', 'admin']:
+            flash('Invalid user type.', 'error')
+            return render_template('auth/register.html')
+        
         auth_session = get_auth_session()
         security_manager = SecurityManager(auth_session)
-        permission_manager = PermissionManager(auth_session)
         
         try:
+            current_app.logger.info(f"Starting user creation for username: {username}, user_type: {user_type}, is_admin: {is_admin}")
+            
             # Check if username already exists
             existing_user = auth_session.query(User).filter(User.username == username).first()
             if existing_user:
@@ -256,6 +262,7 @@ def register():
                 return render_template('auth/register.html')
             
             # Create new user
+            current_app.logger.info(f"Creating User object for {username}")
             new_user = User(
                 username=username,
                 email=email,
@@ -267,13 +274,13 @@ def register():
                 is_active=True
             )
             
+            current_app.logger.info(f"Adding user to session and flushing")
             auth_session.add(new_user)
             auth_session.flush()  # Get the user ID
+            current_app.logger.info(f"User created with ID: {new_user.id}")
             
-            # Grant default permissions based on user type
-            success, message = permission_manager.grant_user_type_permissions(new_user.id, user_type)
-            if not success:
-                flash(f'Error granting permissions: {message}', 'error')
+            # No default permissions - admin will set them explicitly
+            current_app.logger.info(f"Created user {username} with no default permissions - admin must set permissions manually")
             
             auth_session.commit()
             
@@ -289,7 +296,8 @@ def register():
             
         except Exception as e:
             auth_session.rollback()
-            flash('An error occurred while creating user.', 'error')
+            current_app.logger.error(f"User creation error: {str(e)}", exc_info=True)
+            flash(f'An error occurred while creating user: {str(e)}', 'error')
             print(f"User creation error: {e}")
         finally:
             auth_session.close()

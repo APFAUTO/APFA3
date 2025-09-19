@@ -345,54 +345,107 @@ def update_user_type_permissions():
 @admin_bp.route('/permissions/update_user', methods=['POST'])
 @admin_required_api
 def update_user_permissions():
-    """Update individual user permissions"""
-    session = get_auth_session()
+    """Update individual user permissions - COMPLETE REWRITE"""
+    db_session = get_auth_session()
     
     try:
+        # Get form data
         user_id = request.form.get('user_id', type=int)
         selected_permissions = request.form.getlist('permissions')
         
-        user = session.query(User).filter(User.id == user_id).first()
+        current_app.logger.info(f"=== NEW PERMISSION UPDATE LOGIC ===")
+        current_app.logger.info(f"User ID: {user_id}")
+        current_app.logger.info(f"Selected permissions: {selected_permissions}")
+        
+        # Validate user exists
+        user = db_session.query(User).filter(User.id == user_id).first()
         if not user:
-            flash('User not found.', 'error')
-            return redirect(url_for('admin.permissions'))
+            return jsonify({'success': False, 'message': 'User not found.'})
         
-        # Remove existing permissions
-        session.query(UserPermission).filter(UserPermission.user_id == user_id).delete()
+        current_app.logger.info(f"Found user: {user.username}")
         
-        # Always include dashboard_view as it's mandatory
-        if 'dashboard_view' not in selected_permissions:
-            selected_permissions.append('dashboard_view')
+        # Get all available permissions from database
+        all_permissions = db_session.query(Permission).all()
+        permission_map = {p.name: p for p in all_permissions}
+        current_app.logger.info(f"Available permissions: {list(permission_map.keys())}")
+        
+        # Get current user permissions
+        current_perms = db_session.query(UserPermission).filter(
+            UserPermission.user_id == user_id
+        ).all()
+        current_perm_names = {up.permission.name for up in current_perms}
+        current_app.logger.info(f"Current permissions: {current_perm_names}")
+        
+        # Calculate what to add and remove
+        requested_set = set(selected_permissions)
+        to_add = requested_set - current_perm_names
+        to_remove = current_perm_names - requested_set
+        
+        current_app.logger.info(f"Permissions to add: {to_add}")
+        current_app.logger.info(f"Permissions to remove: {to_remove}")
+        
+        # Remove permissions that are no longer wanted
+        if to_remove:
+            removed_count = db_session.query(UserPermission).filter(
+                UserPermission.user_id == user_id,
+                UserPermission.permission_id.in_([permission_map[p].id for p in to_remove if p in permission_map])
+            ).delete(synchronize_session=False)
+            current_app.logger.info(f"Removed {removed_count} permissions")
         
         # Add new permissions
-        for perm_name in selected_permissions:
-            permission = session.query(Permission).filter(Permission.name == perm_name).first()
-            if permission:
-                user_permission = UserPermission(user_id=user_id, permission_id=permission.id)
-                session.add(user_permission)
+        added_count = 0
+        for perm_name in to_add:
+            if perm_name in permission_map:
+                user_permission = UserPermission(
+                    user_id=user_id,
+                    permission_id=permission_map[perm_name].id,
+                    granted_by=session.get('user_id') or 1,
+                    is_active=True
+                )
+                db_session.add(user_permission)
+                added_count += 1
+                current_app.logger.info(f"Added permission: {perm_name}")
         
-        session.commit()
+        # Commit changes
+        db_session.commit()
+        current_app.logger.info(f"Committed changes: added {added_count}, removed {len(to_remove)}")
+        
+        # Verify final state
+        final_perms = db_session.query(UserPermission).join(Permission).filter(
+            UserPermission.user_id == user_id,
+            UserPermission.is_active == True
+        ).all()
+        final_perm_names = [up.permission.name for up in final_perms]
+        
+        current_app.logger.info(f"=== FINAL VERIFICATION ===")
+        current_app.logger.info(f"Requested: {sorted(selected_permissions)}")
+        current_app.logger.info(f"Final in DB: {sorted(final_perm_names)}")
+        current_app.logger.info(f"Match: {set(selected_permissions) == set(final_perm_names)}")
         
         # Log the action
         audit_log = AuditLog(
             user_id=session.get('user_id'),
-            action='User Updated',
-            details=f'Updated user {user.username}',
+            action='User Permissions Updated',
+            details=f'Updated permissions for {user.username}: {selected_permissions}',
             ip_address=request.remote_addr,
             resource_id=str(user_id),
             success=True
         )
-        session.add(audit_log)
-        session.commit()
+        db_session.add(audit_log)
+        db_session.commit()
         
-        return jsonify({'success': True, 'message': f'Permissions for {user.username} updated successfully.'})
+        return jsonify({
+            'success': True, 
+            'message': f'Permissions updated successfully for {user.username}.',
+            'saved_permissions': final_perm_names
+        })
     
     except Exception as e:
-        current_app.logger.error(f"Error updating user permissions: {str(e)}")
-        return jsonify({'success': False, 'message': 'Error updating permissions. Please try again.'})
+        current_app.logger.error(f"Error in new permission logic: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'})
     
     finally:
-        session.close()
+        db_session.close()
 
 @admin_bp.route('/audit_logs')
 @admin_required_view
@@ -457,9 +510,26 @@ def audit_logs():
             if log.success:
                 log.color = 'green'
                 log.icon = 'check-circle'
+                log.status = 'Success'
             else:
                 log.color = 'red'
                 log.icon = 'times-circle'
+                log.status = 'Failed'
+            
+            # Add missing fields that template expects
+            log.description = log.details or 'No details available'
+            log.resource = log.resource_id or ''
+            
+            # Get user information
+            if log.user:
+                log.user_full_name = log.user.full_name
+                log.username = log.user.username
+            else:
+                log.user_full_name = 'Unknown User'
+                log.username = 'unknown'
+        
+        # Get current user for template
+        current_user = session.query(User).get(session.get('user_id'))
         
         return render_template('admin/audit_logs.html',
                              audit_logs=logs,
@@ -474,11 +544,13 @@ def audit_logs():
                              date_range=date_range,
                              activity_type=activity_type,
                              user_id=user_id,
-                             status=status)
+                             status=status,
+                             per_page=per_page,
+                             current_user=current_user)
     
     except Exception as e:
-        current_app.logger.error(f"Error loading audit logs: {str(e)}")
-        flash('Error loading audit logs. Please try again.', 'error')
+        current_app.logger.error(f"Error loading audit logs: {str(e)}", exc_info=True)
+        flash(f'Error loading audit logs: {str(e)}', 'error')
         return redirect(url_for('admin.dashboard'))
     
     finally:
@@ -665,13 +737,20 @@ def api_get_user_permissions(user_id):
     auth_session = get_auth_session()
     
     try:
+        current_app.logger.info(f"=== API GET PERMISSIONS DEBUG ===")
+        current_app.logger.info(f"Getting permissions for user {user_id}")
+        
         user_permissions = auth_session.query(UserPermission).filter(UserPermission.user_id == user_id).all()
         permissions = [up.permission.name for up in user_permissions]
+        
+        current_app.logger.info(f"Found {len(user_permissions)} permissions in database: {permissions}")
         
         # Always include dashboard_view as it's mandatory
         if 'dashboard_view' not in permissions:
             permissions.append('dashboard_view')
+            current_app.logger.info(f"Added mandatory dashboard_view permission")
         
+        current_app.logger.info(f"Final permissions to return: {permissions}")
         return jsonify({'success': True, 'permissions': permissions})
     
     except Exception as e:
@@ -942,6 +1021,374 @@ def test_db_save():
     except Exception as e:
         auth_session.rollback()
         return jsonify({'success': False, 'error': str(e)})
+    
+    finally:
+        auth_session.close()
+
+@admin_bp.route('/test-audit-logs')
+@admin_required_api
+def test_audit_logs():
+    """Test route to check audit logs functionality"""
+    auth_session = get_auth_session()
+    
+    try:
+        # Create a test audit log entry
+        test_log = AuditLog(
+            user_id=session.get('user_id'),
+            action='Test Action',
+            details='This is a test audit log entry',
+            ip_address=request.remote_addr,
+            resource_id='test',
+            success=True
+        )
+        auth_session.add(test_log)
+        auth_session.commit()
+        
+        # Try to query audit logs
+        logs = auth_session.query(AuditLog).limit(5).all()
+        
+        result = []
+        for log in logs:
+            log_data = {
+                'id': log.id,
+                'action': log.action,
+                'details': log.details,
+                'user_id': log.user_id,
+                'timestamp': log.timestamp.isoformat() if log.timestamp else None,
+                'success': log.success,
+                'user_exists': log.user is not None
+            }
+            if log.user:
+                log_data['user_full_name'] = log.user.full_name
+                log_data['username'] = log.user.username
+            result.append(log_data)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Audit logs test successful',
+            'logs_count': len(logs),
+            'logs': result
+        })
+    
+    except Exception as e:
+        auth_session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Audit logs test failed'
+        })
+    
+    finally:
+        auth_session.close()
+
+@admin_bp.route('/force-init-defaults')
+@admin_required_api
+def force_init_defaults():
+    """Force initialization of user type defaults"""
+    from auth.models import auth_engine
+    auth_session = get_auth_session()
+    
+    try:
+        # First, create the table using SQLAlchemy metadata
+        from auth.models import Base, auth_engine
+        from sqlalchemy import text
+        
+        # Create all tables to ensure user_type_default_permissions exists
+        Base.metadata.create_all(auth_engine)
+        current_app.logger.info("Ensured all tables exist")
+        
+        # Clear existing defaults using ORM
+        deleted_count = auth_session.query(UserTypeDefaultPermission).delete()
+        current_app.logger.info(f"Deleted {deleted_count} existing defaults")
+        
+        # Get all permissions
+        permissions = auth_session.query(Permission).all()
+        permission_dict = {p.name: p.id for p in permissions}
+        current_app.logger.info(f"Found {len(permissions)} permissions")
+        
+        defaults = {
+            'user': ['dashboard_view', 'por_search', 'por_detail'],
+            'buyer': ['dashboard_view', 'por_search', 'por_detail', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view'],
+            'admin': ['dashboard_view', 'por_search', 'por_detail', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view', 'system_logs', 'database_access', 'user_management', 'system_settings']
+        }
+        
+        total_added = 0
+        for user_type, perm_names in defaults.items():
+            for perm_name in perm_names:
+                if perm_name in permission_dict:
+                    # Use ORM to create the records
+                    default_perm = UserTypeDefaultPermission(
+                        user_type=user_type,
+                        permission_id=permission_dict[perm_name]
+                    )
+                    auth_session.add(default_perm)
+                    total_added += 1
+                    current_app.logger.info(f"Added {user_type} -> {perm_name}")
+        
+        auth_session.commit()
+        current_app.logger.info(f"Committed {total_added} new defaults")
+        
+        # Verify what was created using ORM
+        verification = {}
+        for user_type in ['user', 'buyer', 'admin']:
+            count = auth_session.query(UserTypeDefaultPermission).filter(
+                UserTypeDefaultPermission.user_type == user_type
+            ).count()
+            verification[user_type] = count
+        
+        return jsonify({
+            'success': True,
+            'message': f'Force initialized {total_added} user type defaults',
+            'verification': verification,
+            'available_permissions': list(permission_dict.keys())
+        })
+    
+    except Exception as e:
+        auth_session.rollback()
+        current_app.logger.error(f"Error in force_init_defaults: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Failed to force initialize defaults'
+        })
+    
+    finally:
+        auth_session.close()
+
+@admin_bp.route('/test-user-permissions/<user_type>')
+@admin_required_api
+def test_user_permissions(user_type):
+    """Test what permissions would be granted to a new user of given type"""
+    auth_session = get_auth_session()
+    
+    try:
+        from auth.permissions import PermissionManager
+        permission_manager = PermissionManager(auth_session)
+        
+        # Test what permissions would be granted
+        success, message = permission_manager.grant_user_type_permissions(999999, user_type)  # Use fake user ID
+        
+        # Get what permissions actually exist for this user type in defaults table
+        try:
+            from auth.models import UserTypeDefaultPermission, Permission
+            type_defaults = auth_session.query(UserTypeDefaultPermission).filter(
+                UserTypeDefaultPermission.user_type == user_type
+            ).all()
+            
+            db_permissions = []
+            for td in type_defaults:
+                permission = auth_session.query(Permission).get(td.permission_id)
+                if permission:
+                    db_permissions.append(permission.name)
+        except Exception as e:
+            db_permissions = f"Error: {str(e)}"
+        
+        return jsonify({
+            'success': True,
+            'user_type': user_type,
+            'grant_result': {'success': success, 'message': message},
+            'db_permissions': db_permissions,
+            'table_exists': isinstance(db_permissions, list)
+        })
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'user_type': user_type
+        })
+    
+    finally:
+        auth_session.close()
+
+@admin_bp.route('/update-existing-users')
+@admin_required_api
+def update_existing_users():
+    """Update all existing users to match their user type's current default permissions"""
+    auth_session = get_auth_session()
+    
+    try:
+        from auth.permissions import PermissionManager
+        permission_manager = PermissionManager(auth_session)
+        
+        # Get all users
+        users = auth_session.query(User).all()
+        updated_users = []
+        errors = []
+        
+        for user in users:
+            try:
+                # Clear existing permissions for this user
+                deleted_count = auth_session.query(UserPermission).filter(
+                    UserPermission.user_id == user.id
+                ).delete()
+                
+                # Grant new permissions based on current user type defaults
+                success, message = permission_manager.grant_user_type_permissions(user.id, user.user_type)
+                
+                if success:
+                    updated_users.append({
+                        'id': user.id,
+                        'username': user.username,
+                        'user_type': user.user_type,
+                        'deleted_permissions': deleted_count,
+                        'message': message
+                    })
+                    current_app.logger.info(f"Updated user {user.username} ({user.user_type}): {message}")
+                else:
+                    errors.append({
+                        'id': user.id,
+                        'username': user.username,
+                        'user_type': user.user_type,
+                        'error': message
+                    })
+                    current_app.logger.error(f"Failed to update user {user.username}: {message}")
+                    
+            except Exception as user_error:
+                errors.append({
+                    'id': user.id,
+                    'username': user.username,
+                    'user_type': user.user_type,
+                    'error': str(user_error)
+                })
+                current_app.logger.error(f"Error updating user {user.username}: {str(user_error)}")
+        
+        auth_session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Updated {len(updated_users)} users, {len(errors)} errors',
+            'updated_users': updated_users,
+            'errors': errors,
+            'total_users': len(users)
+        })
+    
+    except Exception as e:
+        auth_session.rollback()
+        current_app.logger.error(f"Error in update_existing_users: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Failed to update existing users'
+        })
+    
+    finally:
+        auth_session.close()
+
+@admin_bp.route('/users/<int:user_id>/permissions', methods=['GET'])
+@admin_required_api
+def get_user_permissions(user_id):
+    """Get permissions for a specific user"""
+    auth_session = get_auth_session()
+    
+    try:
+        # Get user
+        user = auth_session.query(User).get(user_id)
+        if not user:
+            return jsonify({'success': False, 'message': 'User not found'})
+        
+        # Get user's current permissions
+        user_permissions = auth_session.query(UserPermission).filter(
+            UserPermission.user_id == user_id,
+            UserPermission.is_active == True
+        ).all()
+        
+        # Get all available permissions
+        all_permissions = auth_session.query(Permission).filter(
+            Permission.is_active == True
+        ).all()
+        
+        # Create permission list with current status
+        permissions_data = []
+        user_permission_ids = {up.permission_id for up in user_permissions}
+        
+        for permission in all_permissions:
+            permissions_data.append({
+                'id': permission.id,
+                'name': permission.name,
+                'description': permission.description or permission.name.replace('_', ' ').title(),
+                'has_permission': permission.id in user_permission_ids
+            })
+        
+        return jsonify({
+            'success': True,
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'full_name': user.full_name,
+                'user_type': user.user_type
+            },
+            'permissions': permissions_data
+        })
+    
+    except Exception as e:
+        current_app.logger.error(f"Error getting user permissions: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'message': f'Error getting user permissions: {str(e)}'})
+    
+    finally:
+        auth_session.close()
+
+@admin_bp.route('/users/<int:user_id>/permissions/debug', methods=['GET'])
+@admin_required_api
+def debug_user_permissions(user_id):
+    """Debug route to see exactly what permissions a user has in the database"""
+    auth_session = get_auth_session()
+    
+    try:
+        # Get user
+        user = auth_session.query(User).get(user_id)
+        if not user:
+            return jsonify({'success': False, 'message': 'User not found'})
+        
+        # Get ALL user permissions (including inactive)
+        all_user_permissions = auth_session.query(UserPermission).filter(
+            UserPermission.user_id == user_id
+        ).all()
+        
+        # Get active user permissions
+        active_user_permissions = auth_session.query(UserPermission).filter(
+            UserPermission.user_id == user_id,
+            UserPermission.is_active == True
+        ).all()
+        
+        # Get permission details
+        all_perms_data = []
+        for up in all_user_permissions:
+            permission = auth_session.query(Permission).get(up.permission_id)
+            all_perms_data.append({
+                'id': up.id,
+                'permission_name': permission.name if permission else 'UNKNOWN',
+                'permission_id': up.permission_id,
+                'is_active': up.is_active,
+                'granted_at': up.granted_at.isoformat() if up.granted_at else None,
+                'granted_by': up.granted_by
+            })
+        
+        active_perms_data = []
+        for up in active_user_permissions:
+            permission = auth_session.query(Permission).get(up.permission_id)
+            active_perms_data.append({
+                'permission_name': permission.name if permission else 'UNKNOWN',
+                'permission_id': up.permission_id
+            })
+        
+        return jsonify({
+            'success': True,
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'full_name': user.full_name,
+                'user_type': user.user_type
+            },
+            'total_permission_records': len(all_user_permissions),
+            'active_permission_records': len(active_user_permissions),
+            'all_permissions': all_perms_data,
+            'active_permissions': active_perms_data
+        })
+    
+    except Exception as e:
+        current_app.logger.error(f"Error debugging user permissions: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'})
     
     finally:
         auth_session.close()

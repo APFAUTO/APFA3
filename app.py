@@ -32,6 +32,13 @@ logger.addHandler(file_handler)
 def create_app():
     # Flask app setup
     app = Flask(__name__)
+    app.secret_key = os.environ.get('SECRET_KEY', 'dev-key-change-in-production')
+    
+    # Force template reloading
+    app.config['TEMPLATES_AUTO_RELOAD'] = True
+    app.jinja_env.auto_reload = True
+    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+    
     app.config.update(
         UPLOAD_FOLDER="static/uploads",
         MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16MB

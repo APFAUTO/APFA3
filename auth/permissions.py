@@ -178,16 +178,23 @@ class PermissionManager:
             return False, f"Unknown user type: {user_type}"
         
         try:
-            # Get default permissions for this user type from database
-            type_defaults = self.auth_session.query(UserTypeDefaultPermission).filter(
-                UserTypeDefaultPermission.user_type == user_type
-            ).all()
+            # Try to get default permissions for this user type from database
+            type_defaults = []
+            try:
+                type_defaults = self.auth_session.query(UserTypeDefaultPermission).filter(
+                    UserTypeDefaultPermission.user_type == user_type
+                ).all()
+                print(f"🔍 Found {len(type_defaults)} database defaults for {user_type}")
+            except Exception as db_error:
+                print(f"⚠️ Database table error: {str(db_error)}")
+                print(f"💡 Using fallback defaults for {user_type}")
             
-            # If no defaults found, use fallback defaults
+            # If no defaults found or table doesn't exist, use fallback defaults
             if not type_defaults:
+                print(f"⚠️ No database defaults found for {user_type}, using fallback")
                 fallback_permissions = {
-                    'admin': ['dashboard_view', 'por_search', 'por_detail', 'po_uploader', 'batch_management', 'user_management', 'system_settings'],
-                    'buyer': ['dashboard_view', 'por_search', 'por_detail', 'po_uploader', 'batch_management'],
+                    'admin': ['dashboard_view', 'por_search', 'por_detail', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view', 'system_logs', 'database_access', 'user_management', 'system_settings'],
+                    'buyer': ['dashboard_view', 'por_search', 'por_detail', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view'],
                     'user': ['dashboard_view', 'por_search', 'por_detail']
                 }
                 
@@ -195,6 +202,7 @@ class PermissionManager:
                     Permission.name.in_(fallback_permissions[user_type]),
                     Permission.is_active == True
                 ).all()
+                print(f"📝 Using fallback permissions: {[p.name for p in permissions_to_grant]}")
             else:
                 # Use configured defaults
                 permission_ids = [td.permission_id for td in type_defaults]
@@ -202,6 +210,7 @@ class PermissionManager:
                     Permission.id.in_(permission_ids),
                     Permission.is_active == True
                 ).all()
+                print(f"✅ Using database defaults: {[p.name for p in permissions_to_grant]}")
             
             # Always ensure dashboard_view is included
             dashboard_permission = self.auth_session.query(Permission).filter(
@@ -214,6 +223,7 @@ class PermissionManager:
             
             # Grant permissions
             granted_count = 0
+            print(f"🎯 Granting {len(permissions_to_grant)} permissions to user {user_id}")
             for permission in permissions_to_grant:
                 existing = self.auth_session.query(UserPermission).filter(
                     UserPermission.user_id == user_id,
@@ -228,10 +238,13 @@ class PermissionManager:
                     )
                     self.auth_session.add(new_permission)
                     granted_count += 1
+                    print(f"  ✅ Granted: {permission.name}")
                 else:
                     existing.is_active = True
+                    print(f"  🔄 Reactivated: {permission.name}")
             
             self.auth_session.commit()
+            print(f"💾 Committed {granted_count} new permissions for user {user_id}")
             return True, f"Default {user_type} permissions granted ({granted_count} permissions)"
             
         except Exception as e:

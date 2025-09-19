@@ -164,9 +164,6 @@
                             <h2 class="text-3xl font-bold text-gray-900 mb-2">Permission Management</h2>
                             <p class="text-gray-600">Configure user permissions and access control</p>
                         </div>
-                        <button onclick="savePermissions()" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105">
-                            <i class="fas fa-save mr-2"></i>Save Changes
-                        </button>
                     </div>
                 </div>
                 
@@ -174,111 +171,40 @@
                 <div class="admin-card rounded-2xl shadow-2xl p-8 mb-8">
                     <div class="flex items-center justify-between mb-6">
                         <div>
-                            <h3 class="text-xl font-bold text-gray-900">
-                                <i class="fas fa-users-cog mr-2"></i>User Type Default Permissions
+                            <h3 class="text-2xl font-bold text-gray-900">
+                                <i class="fas fa-info-circle mr-3"></i>Simplified Permission System
                             </h3>
-                            <p class="text-gray-600">Configure default permissions for each user type</p>
-                        </div>
-                        <div class="flex space-x-3">
-                            <button onclick="saveUserTypeDefaults()" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105">
-                                <i class="fas fa-save mr-2"></i>Save Defaults
-                            </button>
-                            <button onclick="debugUserTypeDefaults()" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105">
-                                <i class="fas fa-bug mr-2"></i>Debug DB
-                            </button>
-                            <button onclick="testDbSave()" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105">
-                                <i class="fas fa-flask mr-2"></i>Test Save
-                            </button>
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <!-- Standard User -->
-                        <div class="permission-card bg-white rounded-xl p-6 border-2 border-transparent hover:border-blue-200">
-                            <div class="flex items-center justify-between mb-4">
-                                <h4 class="text-lg font-semibold text-gray-900">Standard User</h4>
-                                <span class="user-type-badge bg-blue-100 text-blue-800">
-                                    <i class="fas fa-user mr-2"></i>Basic
-                                </span>
+                    <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-lightbulb text-blue-400"></i>
                             </div>
-                            <p class="text-sm text-gray-600 mb-4">Default permissions for standard users</p>
-                            <form id="user-type-form" data-user-type="user">
-                                <div class="space-y-3">
-                                    {% for permission in permissions %}
-                                    <label class="flex items-center space-x-3">
-                                        <input type="checkbox" 
-                                               name="user_permissions" 
-                                               value="{{ permission.name }}" 
-                                               class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                               {% if permission.name == 'dashboard_view' %}checked disabled{% endif %}
-                                               data-user-type="user">
-                                        <span class="text-sm {% if permission.name == 'dashboard_view' %}text-gray-500{% else %}text-gray-700{% endif %}">
-                                            {{ permission.description or permission.name.replace('_', ' ').title() }}
-                                            {% if permission.name == 'dashboard_view' %}<span class="text-xs">(Required)</span>{% endif %}
-                                        </span>
-                                    </label>
-                                    {% endfor %}
-                                </div>
-                            </form>
+                            <div class="ml-3">
+                                <p class="text-sm text-blue-700">
+                                    <strong>New Approach:</strong> Users are created with <strong>no default permissions</strong>. 
+                                    Admins must explicitly assign permissions to each user based on their needs. 
+                                    This provides maximum control and security.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-gray-900 mb-2">
+                                <i class="fas fa-user mr-2 text-blue-500"></i>Standard Users
+                            </h4>
+                            <p class="text-sm text-gray-600">Created with no permissions. Admin assigns specific permissions as needed.</p>
                         </div>
                         
-                        <!-- Buyer User -->
-                        <div class="permission-card bg-white rounded-xl p-6 border-2 border-transparent hover:border-green-200">
-                            <div class="flex items-center justify-between mb-4">
-                                <h4 class="text-lg font-semibold text-gray-900">Buyer User</h4>
-                                <span class="user-type-badge bg-green-100 text-green-800">
-                                    <i class="fas fa-shopping-cart mr-2"></i>Enhanced
-                                </span>
-                            </div>
-                            <p class="text-sm text-gray-600 mb-4">Default permissions for buyer users</p>
-                            <form id="buyer-type-form" data-user-type="buyer">
-                                <div class="space-y-3">
-                                    {% for permission in permissions %}
-                                    <label class="flex items-center space-x-3">
-                                        <input type="checkbox" 
-                                               name="buyer_permissions" 
-                                               value="{{ permission.name }}" 
-                                               class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                                               {% if permission.name == 'dashboard_view' %}checked disabled{% endif %}
-                                               data-user-type="buyer">
-                                        <span class="text-sm {% if permission.name == 'dashboard_view' %}text-gray-500{% else %}text-gray-700{% endif %}">
-                                            {{ permission.description or permission.name.replace('_', ' ').title() }}
-                                            {% if permission.name == 'dashboard_view' %}<span class="text-xs">(Required)</span>{% endif %}
-                                        </span>
-                                    </label>
-                                    {% endfor %}
-                                </div>
-                            </form>
-                        </div>
-                        
-                        <!-- Admin User -->
-                        <div class="permission-card bg-white rounded-xl p-6 border-2 border-transparent hover:border-purple-200">
-                            <div class="flex items-center justify-between mb-4">
-                                <h4 class="text-lg font-semibold text-gray-900">Admin User</h4>
-                                <span class="user-type-badge bg-purple-100 text-purple-800">
-                                    <i class="fas fa-crown mr-2"></i>Full Access
-                                </span>
-                            </div>
-                            <p class="text-sm text-gray-600 mb-4">Default permissions for admin users</p>
-                            <form id="admin-type-form" data-user-type="admin">
-                                <div class="space-y-3">
-                                    {% for permission in permissions %}
-                                    <label class="flex items-center space-x-3">
-                                        <input type="checkbox" 
-                                               name="admin_permissions" 
-                                               value="{{ permission.name }}" 
-                                               class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                                               checked
-                                               {% if permission.name == 'dashboard_view' %}disabled{% endif %}
-                                               data-user-type="admin">
-                                        <span class="text-sm {% if permission.name == 'dashboard_view' %}text-gray-500{% else %}text-gray-700{% endif %}">
-                                            {{ permission.description or permission.name.replace('_', ' ').title() }}
-                                            {% if permission.name == 'dashboard_view' %}<span class="text-xs">(Required)</span>{% endif %}
-                                        </span>
-                                    </label>
-                                    {% endfor %}
-                                </div>
-                            </form>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-gray-900 mb-2">
+                                <i class="fas fa-crown mr-2 text-purple-500"></i>Administrators
+                            </h4>
+                            <p class="text-sm text-gray-600">Have access to all permissions and can manage other users' permissions.</p>
                         </div>
                     </div>
                 </div>
@@ -403,7 +329,7 @@
                                 <button onclick="resetUserPermissions()" class="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
                                     <i class="fas fa-undo mr-2"></i>Reset to Default
                                 </button>
-                                <button onclick="saveUserPermissions()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                <button onclick="saveUserPermissions()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                                     <i class="fas fa-save mr-2"></i>Save User Permissions
                                 </button>
                             </div>
@@ -422,6 +348,7 @@
     </div>
     
     <script>
+        // Cache buster: v2.1 - Professional notifications implemented
         let currentUserId = null;
         
         function loadUserPermissions() {
@@ -450,36 +377,72 @@
         }
         
         function loadPermissionsForUser(userId) {
-            // This would be an API call to get user permissions
-            // For demo purposes, we'll set some default permissions
-            const checkboxes = document.querySelectorAll('.permission-checkbox');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = false;
-            });
-            
-            // Simulate loading permissions based on user type
-            // In a real application, this would come from the server
-            setTimeout(() => {
-                // Set some example permissions
-                const defaultPermissions = ['dashboard_view', 'por_search', 'por_detail_view'];
-                defaultPermissions.forEach(permission => {
-                    const checkbox = document.querySelector(`[data-permission="${permission}"]`);
-                    if (checkbox) checkbox.checked = true;
+            fetch(`/admin/users/${userId}/permissions`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Clear all checkboxes first
+                        const checkboxes = document.querySelectorAll('#permissions-checkboxes input[type="checkbox"]');
+                        checkboxes.forEach(checkbox => {
+                            checkbox.checked = false;
+                        });
+                        
+                        // Set checkboxes based on user's current permissions
+                        checkboxes.forEach(checkbox => {
+                            const permissionName = checkbox.value;
+                            const hasPermission = data.permissions.find(p => p.name === permissionName && p.has_permission);
+                            if (hasPermission) {
+                                checkbox.checked = true;
+                            }
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Load error:', error);
                 });
-            }, 500);
         }
         
         function saveUserPermissions() {
-            if (!currentUserId) return;
+            if (!currentUserId) {
+                alert('No user selected');
+                return;
+            }
             
             const permissions = [];
             const checkboxes = document.querySelectorAll('.permission-checkbox:checked');
             checkboxes.forEach(checkbox => {
-                permissions.push(checkbox.dataset.permission);
+                permissions.push(checkbox.getAttribute('data-permission'));
             });
             
-            // Here you would make an API call to save the permissions
-            alert(`Saving permissions for user ${currentUserId}: ${permissions.join(', ')}`);
+            console.log('Saving permissions:', permissions);
+            
+            const formData = new FormData();
+            formData.append('user_id', currentUserId);
+            permissions.forEach(perm => {
+                formData.append('permissions', perm);
+            });
+            
+            fetch('/admin/permissions/update_user', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                if (data.success) {
+                    showNotification('success', 'Permissions Saved', 'User permissions have been updated successfully');
+                    loadPermissionsForUser(currentUserId);
+                } else {
+                    showNotification('error', 'Save Failed', 'Failed to save permissions: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Save error:', error);
+                showNotification('error', 'Save Error', 'Error saving permissions: ' + error.message);
+            });
         }
         
         function resetUserPermissions() {
@@ -491,24 +454,23 @@
         }
         
         function savePermissions() {
-            // Save individual user permissions
             const userId = document.getElementById('user-select').value;
             if (!userId) {
-                alert('Please select a user first.');
                 return;
             }
             
             const checkboxes = document.querySelectorAll('#permissions-checkboxes input[type="checkbox"]:checked');
             const permissions = Array.from(checkboxes).map(cb => cb.value);
             
-            console.log(`Saving permissions for user ${userId}:`, permissions);
+            const formData = new FormData();
+            formData.append('user_id', userId);
+            permissions.forEach(perm => {
+                formData.append('permissions', perm);
+            });
             
             fetch('/admin/permissions/update_user', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `user_id=${userId}&${permissions.map(p => `permissions=${p}`).join('&')}`
+                body: formData
             })
             .then(response => {
                 console.log('Permission save response:', response.status, response.statusText);
@@ -519,26 +481,14 @@
                 }
             })
             .then(data => {
-                console.log('Permission save data:', data);
                 if (data.success) {
-                    const successDiv = document.createElement('div');
-                    successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-                    successDiv.innerHTML = '<i class="fas fa-check mr-2"></i>User permissions saved successfully!';
-                    document.body.appendChild(successDiv);
-                    
-                    setTimeout(() => {
-                        successDiv.remove();
-                    }, 3000);
-                    
-                    // Reload the user's permissions to verify they were saved
+                    // Simple success - just reload to show saved state
                     loadPermissionsForUser(userId);
-                } else {
-                    throw new Error(data.message || 'Unknown error');
                 }
             })
             .catch(error => {
-                console.error('Error saving permissions:', error);
-                alert(`Error saving permissions: ${error.message}`);
+                // Simple error handling
+                console.error('Save error:', error);
             });
         }
         
@@ -643,47 +593,76 @@
                 });
         }
         
-        // Load current user type defaults on page load
-        function loadUserTypeDefaults() {
-            console.log('Loading user type defaults...');
-            fetch('/admin/user-type-defaults')
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Received data:', data);
-                    if (data.success) {
-                        // Set checkboxes based on current defaults
-                        Object.keys(data.defaults).forEach(userType => {
-                            const permissions = data.defaults[userType];
-                            const checkboxes = document.querySelectorAll(`input[data-user-type="${userType}"]`);
+        function forceInitDefaults() {
+            if (confirm('This will recreate the user type defaults table and reset all defaults. Continue?')) {
+                fetch('/admin/force-init-defaults')
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Force init result:', data);
+                        alert(JSON.stringify(data, null, 2));
+                        if (data.success) {
+                            // Reload the defaults after successful initialization
+                            loadUserTypeDefaults();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Force init error:', error);
+                        alert('Force init error: ' + error);
+                    });
+            }
+        }
+        
+        function updateExistingUsers() {
+            if (confirm('This will update ALL existing users to match their user type\'s current default permissions. This will replace their current permissions. Continue?')) {
+                fetch('/admin/update-existing-users')
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Update existing users result:', data);
+                        
+                        if (data.success) {
+                            let message = `Successfully updated ${data.updated_users.length} users!\n\n`;
                             
-                            console.log(`Setting ${userType} permissions:`, permissions);
-                            console.log(`Found ${checkboxes.length} checkboxes for ${userType}`);
-                            
-                            checkboxes.forEach(checkbox => {
-                                const shouldCheck = permissions.includes(checkbox.value);
-                                console.log(`  ${checkbox.value}: ${shouldCheck ? 'CHECKED' : 'unchecked'}`);
-                                
-                                if (checkbox.value === 'dashboard_view') {
-                                    checkbox.checked = true; // Always checked
-                                } else {
-                                    checkbox.checked = shouldCheck;
+                            // Show summary by user type
+                            const userTypes = {};
+                            data.updated_users.forEach(user => {
+                                if (!userTypes[user.user_type]) {
+                                    userTypes[user.user_type] = [];
                                 }
+                                userTypes[user.user_type].push(user.username);
                             });
-                        });
-                    } else {
-                        console.error('Failed to load defaults:', data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading user type defaults:', error);
-                });
+                            
+                            Object.keys(userTypes).forEach(userType => {
+                                message += `${userType.toUpperCase()}: ${userTypes[user.user_type].join(', ')}\n`;
+                            });
+                            
+                            if (data.errors.length > 0) {
+                                message += `\n${data.errors.length} errors occurred:\n`;
+                                data.errors.forEach(error => {
+                                    message += `- ${error.username}: ${error.error}\n`;
+                                });
+                            }
+                            
+                            showNotification('success', 'Users Updated Successfully', message);
+                        } else {
+                            showNotification('error', 'Failed to Update Users', data.message || 'Unknown error occurred');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Update users error:', error);
+                        showNotification('error', 'Update Error', `Failed to update users: ${error.message}`);
+                    });
+            }
         }
         
         // Add smooth animations
         document.addEventListener('DOMContentLoaded', function() {
-            // Load user type defaults
-            loadUserTypeDefaults();
-            
+            // Test notification system
+            console.log('🔧 Testing notification system...');
+            if (typeof showNotification === 'function') {
+                console.log('✅ showNotification function is available');
+            } else {
+                console.error('❌ showNotification function is NOT available');
+            }
             const cards = document.querySelectorAll('.permission-card, .admin-card');
             cards.forEach((card, index) => {
                 card.style.opacity = '0';
@@ -695,6 +674,78 @@
                 }, index * 100);
             });
         });
+        
+        // Professional notification system
+        function showNotification(type, title, message) {
+            // Remove any existing notifications
+            const existingNotifications = document.querySelectorAll('.app-notification');
+            existingNotifications.forEach(n => n.remove());
+            
+            // Create notification container
+            const notification = document.createElement('div');
+            notification.className = `app-notification fixed top-4 right-4 max-w-md rounded-lg shadow-2xl z-50 transform transition-all duration-300 ease-in-out`;
+            
+            // Set colors based on type
+            let bgColor, borderColor, iconColor, icon;
+            if (type === 'success') {
+                bgColor = 'bg-green-50';
+                borderColor = 'border-green-200';
+                iconColor = 'text-green-600';
+                icon = 'fa-check-circle';
+            } else if (type === 'error') {
+                bgColor = 'bg-red-50';
+                borderColor = 'border-red-200';
+                iconColor = 'text-red-600';
+                icon = 'fa-exclamation-circle';
+            } else {
+                bgColor = 'bg-blue-50';
+                borderColor = 'border-blue-200';
+                iconColor = 'text-blue-600';
+                icon = 'fa-info-circle';
+            }
+            
+            notification.className += ` ${bgColor} ${borderColor} border-2`;
+            
+            notification.innerHTML = `
+                <div class="p-4">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <i class="fas ${icon} ${iconColor} text-xl"></i>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <h3 class="text-sm font-semibold text-gray-900">${title}</h3>
+                            <p class="mt-1 text-sm text-gray-700">${message}</p>
+                        </div>
+                        <div class="ml-4 flex-shrink-0">
+                            <button onclick="this.parentElement.parentElement.parentElement.parentElement.remove()" 
+                                    class="text-gray-400 hover:text-gray-600 focus:outline-none">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add to page with animation
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+                notification.style.opacity = '1';
+            }, 10);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 300);
+            }, 5000);
+        }
     </script>
 </body>
 </html>
