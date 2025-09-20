@@ -1797,3 +1797,79 @@ def logs():
     company_info = get_company_config(current_db)
     
     return render_template('logs.html', logs=logs, company=current_db, company_info=company_info, active_page='logs')
+
+
+@routes.route('/api/delete_por/<int:por_id>', methods=['DELETE'])
+@login_required
+@permission_required('delete_por')
+def delete_por_api(por_id):
+    """API endpoint to delete a POR."""
+    try:
+        current_db = get_current_database()
+        db_manager = get_database_manager(current_db)
+        db_session = db_manager.get_session()
+        
+        # Get the POR to delete
+        por = db_session.query(db_manager.POR).filter(db_manager.POR.id == por_id).first()
+        
+        if not por:
+            return jsonify({
+                'success': False,
+                'message': 'POR not found'
+            }), 404
+        
+        # Store POR info for audit logging
+        por_info = {
+            'id': por.id,
+            'po_number': por.po_number,
+            'project': por.ship_project_name,
+            'requestor': por.requestor_name
+        }
+        
+        # Delete associated files first
+        if por.attached_files:
+            for file in por.attached_files:
+                try:
+                    file_path = os.path.join(current_db, 'uploads', file.stored_filename)
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                except Exception as e:
+                    logger.error(f"Error deleting file {file.stored_filename}: {e}")
+        
+        # Delete the POR from database
+        db_session.delete(por)
+        db_session.commit()
+        
+        # Log the deletion
+        logger.info(f"POR deleted: {por_info['id']} - {por_info['po_number']} by user {session.get('username')}")
+        
+        # Add to audit log if available
+        try:
+            from models import AuditLog
+            audit_log = AuditLog(
+                user_id=session.get('user_id'),
+                username=session.get('username'),
+                action='delete_por',
+                details=f"Deleted POR {por_info['id']}: {por_info['po_number']}",
+                success=True,
+                timestamp=datetime.now(timezone.utc)
+            )
+            db_session.add(audit_log)
+            db_session.commit()
+        except Exception as e:
+            logger.error(f"Error creating audit log: {e}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'POR deleted successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error deleting POR {por_id}: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Error deleting POR: {str(e)}'
+        }), 500
+    finally:
+        if 'db_session' in locals():
+            db_session.close()

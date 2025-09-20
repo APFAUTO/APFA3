@@ -330,6 +330,7 @@ def extract_line_items_by_map(ws: Worksheet) -> List[Dict[str, Any]]:
 def get_order_total_by_map(ws: Worksheet) -> float:
     """
     Find order total according to the parsing map.
+    Reads directly from cell H29 (row 29, column 8).
     
     Args:
         ws: Worksheet to search
@@ -338,7 +339,23 @@ def get_order_total_by_map(ws: Worksheet) -> float:
         Order total as float, 0.0 if not found
     """
     try:
-        # Look for "ORDER TOTAL" in the description column (C) around row 26
+        # Read directly from cell H29 (row 29, column 8)
+        cell_value = ws.cell(row=29, column=8).value
+        
+        if cell_value is not None:
+            # Convert to float, handling different formats
+            if isinstance(cell_value, (int, float)):
+                return float(cell_value)
+            elif isinstance(cell_value, str):
+                # Handle currency strings and commas
+                cleaned = re.sub(r'[£$,]', '', str(cell_value).strip())
+                cleaned = re.sub(r',', '', cleaned)
+                try:
+                    return float(cleaned)
+                except ValueError:
+                    pass
+        
+        # Fallback: Look for "ORDER TOTAL" in the description column (C) around row 26
         for row in range(20, 30):  # Search around expected location
             try:
                 cell_value = ws.cell(row=row, column=3).value  # Column C

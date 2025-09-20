@@ -330,7 +330,12 @@
             tableBody.innerHTML = pagePORs.map(por => `
                 <tr class="hover:bg-gray-50 transition-colors duration-200">
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm text-gray-900">${por.po_number}</div>
+                        <div class="flex items-center space-x-2">
+                            <div class="text-sm text-gray-900 por-number" data-por-number="${por.po_number}">${por.po_number}</div>
+                            <button onclick="copyPONumber('${por.po_number}')" class="text-blue-600 hover:text-blue-800 transition-colors duration-200 copy-po-btn" title="Copy PO number">
+                                <i class="fas fa-copy text-xs"></i>
+                            </button>
+                        </div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="text-sm text-gray-900">${por.project}</div>
@@ -409,6 +414,31 @@
             }
         }
 
+        function updatePaginationInfo() {
+            // Update total pages based on current PORs count
+            totalPages = allPORs.length > 0 ? Math.ceil(allPORs.length / pageSize) : 1;
+            
+            // Adjust current page if it's now beyond the total pages
+            if (currentPage > totalPages) {
+                currentPage = totalPages;
+            }
+            
+            // Update the display
+            updateResultCount();
+            updatePaginationButtons();
+            
+            // If we're on a page that no longer has data, reload
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = startIndex + pageSize;
+            const currentPagePORs = allPORs.slice(startIndex, endIndex);
+            
+            if (currentPagePORs.length === 0 && allPORs.length > 0) {
+                // Go to previous page if current page is empty
+                currentPage = Math.max(1, currentPage - 1);
+                loadPORs();
+            }
+        }
+
         function goToPage(page) {
             currentPage = page;
             loadPORs();
@@ -449,10 +479,212 @@
 
 
         function deletePOR(porId) {
-            if (confirm('Are you sure you want to delete this POR?')) {
-                // Implement delete functionality
-                alert('Delete functionality will be implemented here');
+            // Create modal for typed confirmation
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: white; padding: 30px; border-radius: 10px; max-width: 400px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                    <h3 style="margin: 0 0 20px 0; color: #dc3545; font-size: 20px; font-weight: bold;">⚠️ Confirm Deletion</h3>
+                    <p style="margin: 0 0 20px 0; color: #666; line-height: 1.5;">This action cannot be undone. This will permanently delete the POR and all associated files.</p>
+                    <p style="margin: 0 0 15px 0; color: #333; font-weight: bold;">Type <span style="color: #dc3545; font-family: monospace;">DELETE</span> to confirm:</p>
+                    <input type="text" id="deleteConfirmInput" placeholder="Type DELETE here" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; margin-bottom: 20px; text-transform: uppercase;">
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button onclick="this.closest('.delete-modal').remove()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">Cancel</button>
+                        <button id="confirmDeleteBtn" disabled style="padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; opacity: 0.5;">Delete POR</button>
+                    </div>
+                </div>
+            `;
+            
+            modal.className = 'delete-modal';
+            document.body.appendChild(modal);
+            
+            const input = modal.querySelector('#deleteConfirmInput');
+            const confirmBtn = modal.querySelector('#confirmDeleteBtn');
+            
+            // Focus on input
+            input.focus();
+            
+            // Enable/disable confirm button based on input
+            input.addEventListener('input', function() {
+                if (this.value.trim().toUpperCase() === 'DELETE') {
+                    confirmBtn.disabled = false;
+                    confirmBtn.style.opacity = '1';
+                    confirmBtn.style.cursor = 'pointer';
+                } else {
+                    confirmBtn.disabled = true;
+                    confirmBtn.style.opacity = '0.5';
+                    confirmBtn.style.cursor = 'not-allowed';
+                }
+            });
+            
+            // Handle Enter key
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !confirmBtn.disabled) {
+                    performDelete(porId, modal);
+                }
+            });
+            
+            // Handle confirm button click
+            confirmBtn.addEventListener('click', function() {
+                if (!this.disabled) {
+                    performDelete(porId, modal);
+                }
+            });
+            
+            // Close modal on outside click
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+        
+        function performDelete(porId, modal) {
+            // Show loading state
+            const confirmBtn = modal.querySelector('#confirmDeleteBtn');
+            const originalText = confirmBtn.textContent;
+            confirmBtn.textContent = 'Deleting...';
+            confirmBtn.disabled = true;
+            
+            // Make API call to delete POR
+            fetch(`/api/delete_por/${porId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Refresh the page instantly
+                    window.location.reload();
+                } else {
+                    showNotification('error', 'Delete Failed', data.message || 'Failed to delete POR.');
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting POR:', error);
+                showNotification('error', 'Delete Failed', 'An error occurred while deleting the POR.');
+            })
+            .finally(() => {
+                modal.remove();
+            });
+        }
+        
+        function showNotification(type, title, message) {
+            const notification = document.createElement('div');
+            const bgColor = type === 'success' ? '#28a745' : '#dc3545';
+            const icon = type === 'success' ? '✅' : '❌';
+            
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${bgColor};
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 10001;
+                max-width: 300px;
+                animation: slideIn 0.3s ease;
+            `;
+            
+            notification.innerHTML = `
+                <div style="display: flex; align-items: flex-start; gap: 10px;">
+                    <span style="font-size: 18px;">${icon}</span>
+                    <div>
+                        <div style="font-weight: bold; margin-bottom: 5px;">${title}</div>
+                        <div style="font-size: 14px; opacity: 0.9;">${message}</div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto remove after 4 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 300);
+            }, 4000);
+        }
+        
+        // Add CSS animations for notifications
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
             }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Copy PO Number functionality
+        function copyPONumber(poNumber) {
+            if (navigator.clipboard && window.isSecureContext) {
+                // Use modern clipboard API
+                navigator.clipboard.writeText(poNumber).then(() => {
+                    showCopyFeedback(event.target, 'Copied!');
+                }).catch(err => {
+                    console.error('Failed to copy text: ', err);
+                    fallbackCopyToClipboard(poNumber, event.target);
+                });
+            } else {
+                // Fallback for older browsers
+                fallbackCopyToClipboard(poNumber, event.target);
+            }
+        }
+
+        function fallbackCopyToClipboard(text, targetElement) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showCopyFeedback(targetElement, 'Copied!');
+            } catch (err) {
+                console.error('Fallback: Oops, unable to copy', err);
+                showCopyFeedback(targetElement, 'Failed!');
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        function showCopyFeedback(element, message) {
+            const originalHTML = element.innerHTML;
+            element.innerHTML = '<i class="fas fa-check text-green-600"></i>';
+            element.title = message;
+            
+            setTimeout(() => {
+                element.innerHTML = originalHTML;
+                element.title = 'Copy PO number';
+            }, 2000);
         }
     </script>
         <style>
