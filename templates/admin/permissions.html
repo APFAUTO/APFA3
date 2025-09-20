@@ -325,10 +325,15 @@
                                 </div>
                             </div>
                             
-                            <div class="mt-6 flex justify-end space-x-4">
-                                <button onclick="resetUserPermissions()" class="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
-                                    <i class="fas fa-undo mr-2"></i>Reset to Default
-                                </button>
+                            <div class="mt-6 flex flex-wrap justify-between items-center gap-4">
+                                <div class="flex space-x-4">
+                                    <button onclick="tickAllPermissions()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                        <i class="fas fa-check-square mr-2"></i>Tick All
+                                    </button>
+                                    <button onclick="clearUserPermissions()" class="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
+                                        <i class="fas fa-times mr-2"></i>Clear Settings
+                                    </button>
+                                </div>
                                 <button onclick="saveUserPermissions()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                                     <i class="fas fa-save mr-2"></i>Save User Permissions
                                 </button>
@@ -377,28 +382,42 @@
         }
         
         function loadPermissionsForUser(userId) {
+            console.log('=== LOAD PERMISSIONS DEBUG ===');
+            console.log('Loading permissions for user ID:', userId);
+            
             fetch(`/admin/users/${userId}/permissions`)
-                .then(response => response.json())
+                .then(response => {
+                    console.log('Load response status:', response.status);
+                    return response.json();
+                })
                 .then(data => {
+                    console.log('Load response data:', data);
+                    
                     if (data.success) {
                         console.log('Loading permissions for user:', data.user.username);
                         console.log('Permissions data:', data.permissions);
                         
                         // Clear all checkboxes first
                         const checkboxes = document.querySelectorAll('.permission-checkbox');
+                        console.log('Found', checkboxes.length, 'checkboxes');
+                        
                         checkboxes.forEach(checkbox => {
                             checkbox.checked = false;
                         });
                         
                         // Set checkboxes based on user's current permissions
+                        let checkedCount = 0;
                         checkboxes.forEach(checkbox => {
                             const permissionName = checkbox.getAttribute('data-permission');
                             const hasPermission = data.permissions.find(p => p.name === permissionName && p.has_permission);
                             if (hasPermission) {
                                 checkbox.checked = true;
+                                checkedCount++;
                                 console.log(`Setting ${permissionName} to checked`);
                             }
                         });
+                        
+                        console.log(`Final state: ${checkedCount} permissions checked out of ${checkboxes.length}`);
                     } else {
                         console.error('Failed to load permissions:', data.message);
                     }
@@ -414,19 +433,38 @@
                 return;
             }
             
+            // Get the currently checked permissions
             const permissions = [];
             const checkboxes = document.querySelectorAll('.permission-checkbox:checked');
             checkboxes.forEach(checkbox => {
-                permissions.push(checkbox.getAttribute('data-permission'));
+                const permName = checkbox.getAttribute('data-permission');
+                permissions.push(permName);
+                console.log(`Found checked permission: ${permName}`);
             });
             
-            console.log('Saving permissions:', permissions);
+            console.log('=== SAVE DEBUG ===');
+            console.log('User ID:', currentUserId);
+            console.log('Permissions to save:', permissions);
+            console.log('Number of permissions:', permissions.length);
+            
+            if (permissions.length === 0) {
+                if (!confirm('You are about to save with NO permissions selected. This will remove all access for this user. Continue?')) {
+                    return;
+                }
+            }
             
             const formData = new FormData();
             formData.append('user_id', currentUserId);
             permissions.forEach(perm => {
                 formData.append('permissions', perm);
+                console.log(`Added to FormData: ${perm}`);
             });
+            
+            // Debug: Check FormData contents
+            console.log('FormData contents:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`  ${key}: ${value}`);
+            }
             
             fetch('/admin/permissions/update_user', {
                 method: 'POST',
@@ -437,11 +475,22 @@
                 return response.json();
             })
             .then(data => {
-                console.log('Response data:', data);
+                console.log('=== RESPONSE DEBUG ===');
+                console.log('Full response data:', data);
+                console.log('Success status:', data.success);
+                console.log('Message:', data.message);
+                
                 if (data.success) {
+                    // Show success notification - DON'T TOUCH THE CHECKBOXES
                     showNotification('success', 'Permissions Saved', 'User permissions have been updated successfully');
-                    loadPermissionsForUser(currentUserId);
+                    console.log('Save successful - leaving checkboxes as they are');
+                    
+                    // Log what the server confirms was saved for debugging
+                    if (data.saved_permissions) {
+                        console.log('Server confirms these permissions are saved:', data.saved_permissions);
+                    }
                 } else {
+                    console.error('Save failed:', data.message);
                     showNotification('error', 'Save Failed', 'Failed to save permissions: ' + data.message);
                 }
             })
@@ -451,11 +500,33 @@
             });
         }
         
-        function resetUserPermissions() {
-            if (!currentUserId) return;
+        function tickAllPermissions() {
+            if (!currentUserId) {
+                alert('Please select a user first');
+                return;
+            }
             
-            if (confirm('Are you sure you want to reset this user\'s permissions to their default user type permissions?')) {
-                loadPermissionsForUser(currentUserId);
+            const checkboxes = document.querySelectorAll('.permission-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+            });
+            
+            showNotification('info', 'All Permissions Selected', 'All permission checkboxes have been ticked');
+        }
+        
+        function clearUserPermissions() {
+            if (!currentUserId) {
+                alert('Please select a user first');
+                return;
+            }
+            
+            if (confirm('Are you sure you want to clear all permissions for this user? This will remove all their access.')) {
+                const checkboxes = document.querySelectorAll('.permission-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                
+                showNotification('info', 'Permissions Cleared', 'All permission checkboxes have been cleared. Click Save to apply changes.');
             }
         }
         
@@ -723,7 +794,7 @@
                             <p class="mt-1 text-sm text-gray-700">${message}</p>
                         </div>
                         <div class="ml-4 flex-shrink-0">
-                            <button onclick="this.parentElement.parentElement.parentElement.parentElement.remove()" 
+                            <button onclick="closeNotification(this)" 
                                     class="text-gray-400 hover:text-gray-600 focus:outline-none">
                                 <i class="fas fa-times"></i>
                             </button>
@@ -751,6 +822,23 @@
                     }
                 }, 300);
             }, 5000);
+        }
+        
+        // Safe notification removal function
+        function closeNotification(button) {
+            const notification = button.closest('.app-notification');
+            if (notification && notification.parentNode) {
+                // Animate out first
+                notification.style.transform = 'translateX(100%)';
+                notification.style.opacity = '0';
+                
+                // Remove after animation completes
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 300);
+            }
         }
     </script>
 </body>

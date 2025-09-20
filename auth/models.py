@@ -227,27 +227,29 @@ def init_default_permissions():
         
         # Default permissions
         default_permissions = [
-            # Upload permissions
-            ('po_uploader', 'Upload Purchase Order files', 'upload'),
-            ('batch_management', 'Manage batch numbers', 'upload'),
-            ('file_validation', 'Validate uploaded files', 'upload'),
-            
-            # View permissions
-            ('dashboard_view', 'View main dashboard', 'view'),
-            ('por_search', 'Search POR records', 'view'),
-            ('por_detail', 'View POR details', 'view'),
-            ('analytics_view', 'View analytics', 'view'),
-            
-            # Diagnostic permissions
-            ('diagnostic_view', 'Access diagnostic views', 'diagnostic'),
-            ('system_logs', 'View system logs', 'diagnostic'),
-            ('performance_metrics', 'View performance metrics', 'diagnostic'),
-            
-            # Admin permissions
-            ('user_management', 'Manage users', 'admin'),
-            ('permission_management', 'Manage permissions', 'admin'),
-            ('system_settings', 'Modify system settings', 'admin'),
-            ('audit_logs', 'View audit logs', 'admin')
+            # Core Permissions
+            ('dashboard_view', 'View main dashboard', 'Core'),
+            ('por_search', 'Search POR records', 'Core'),
+            ('por_detail_view', 'View POR details', 'Core'),
+            ('diagnostic_views', 'Access diagnostic views', 'Core'),
+
+            # Management Permissions
+            ('po_uploader', 'Upload Purchase Order files', 'Management'),
+            ('batch_management', 'Manage batch numbers', 'Management'),
+            ('file_validation', 'Validate uploaded files', 'Management'),
+            ('user_management', 'Manage users', 'Management'),
+
+            # System Permissions
+            ('system_settings', 'Modify system settings', 'System'),
+            ('audit_logs', 'View audit logs', 'System'),
+            ('database_management', 'Manage database settings', 'System'),
+            ('company_switching', 'Switch between company databases', 'System'),
+
+            # Admin Permissions
+            ('admin_access', 'Access the admin console', 'Admin'),
+            ('permission_management', 'Manage user permissions', 'Admin'),
+            ('user_creation', 'Create new user accounts', 'Admin'),
+            ('system_monitoring', 'Monitor system health and performance', 'Admin')
         ]
         
         # Create permissions

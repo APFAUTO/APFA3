@@ -290,7 +290,7 @@ def permissions():
         user_permissions = {}
         for user in users:
             user_perms = session.query(UserPermission).filter(UserPermission.user_id == user.id).all()
-            user_permissions[user.id] = [up.permission.name for up in user_perms]
+            user_permissions[user.id] = [up.permission.name for up in user_perms if up.permission]
         
         return render_template('admin/permissions.html',
                              permissions=permissions,
@@ -406,22 +406,6 @@ def update_user_permissions():
                 added_count += 1
                 current_app.logger.info(f"Added permission: {perm_name}")
         
-        # Commit changes
-        db_session.commit()
-        current_app.logger.info(f"Committed changes: added {added_count}, removed {len(to_remove)}")
-        
-        # Verify final state
-        final_perms = db_session.query(UserPermission).join(Permission).filter(
-            UserPermission.user_id == user_id,
-            UserPermission.is_active == True
-        ).all()
-        final_perm_names = [up.permission.name for up in final_perms]
-        
-        current_app.logger.info(f"=== FINAL VERIFICATION ===")
-        current_app.logger.info(f"Requested: {sorted(selected_permissions)}")
-        current_app.logger.info(f"Final in DB: {sorted(final_perm_names)}")
-        current_app.logger.info(f"Match: {set(selected_permissions) == set(final_perm_names)}")
-        
         # Log the action
         audit_log = AuditLog(
             user_id=session.get('user_id'),
@@ -432,7 +416,22 @@ def update_user_permissions():
             success=True
         )
         db_session.add(audit_log)
+        
+        # Commit all changes in a single transaction
         db_session.commit()
+        current_app.logger.info(f"Committed changes: added {added_count}, removed {len(to_remove)}")
+        
+        # Verify final state after commit
+        final_perms = db_session.query(UserPermission).join(Permission).filter(
+            UserPermission.user_id == user_id,
+            UserPermission.is_active == True
+        ).all()
+        final_perm_names = [up.permission.name for up in final_perms]
+        
+        current_app.logger.info(f"=== FINAL VERIFICATION ===")
+        current_app.logger.info(f"Requested: {sorted(selected_permissions)}")
+        current_app.logger.info(f"Final in DB: {sorted(final_perm_names)}")
+        current_app.logger.info(f"Match: {set(selected_permissions) == set(final_perm_names)}")
         
         return jsonify({
             'success': True, 
@@ -529,7 +528,8 @@ def audit_logs():
                 log.username = 'unknown'
         
         # Get current user for template
-        current_user = session.query(User).get(session.get('user_id'))
+        current_user_id = session.get('user_id')
+        current_user = session.get(User, current_user_id) if current_user_id else None
         
         return render_template('admin/audit_logs.html',
                              audit_logs=logs,
