@@ -27,6 +27,7 @@ from utils import (
     redo_last_change,
 )
 from auth.security import login_required
+from auth.permissions import permission_required
 from database_managers import get_database_manager
 from company_config import get_company_config
 
@@ -165,6 +166,7 @@ def debug_upload():
 
 @routes.route('/dashboard')
 @login_required
+@permission_required('dashboard_view')
 def dashboard():
     """Display the main dashboard."""
     try:
@@ -332,6 +334,8 @@ def root():
 
 
 @routes.route('/upload', methods=['GET', 'POST'])
+@login_required
+@permission_required('po_uploader')
 def upload():
     """Handle file upload and processing."""
     if request.method == 'POST':
@@ -516,6 +520,8 @@ def check_updates():
 
 
 @routes.route('/view')
+@login_required
+@permission_required('por_detail_view')
 def view():
     """Display single POR record with navigation."""
     import time
@@ -662,6 +668,8 @@ def view():
 
 
 @routes.route('/search')
+@login_required
+@permission_required('por_search')
 def search():
     """Advanced search for PO records with intelligent matching and relevance scoring."""
     try:
@@ -908,6 +916,8 @@ def search():
 
 
 @routes.route('/change-batch', methods=['GET', 'POST'])
+@login_required
+@permission_required('batch_management')
 def change_batch():
     """Handle batch number range updates for the currently active database."""
     if request.method == 'POST':
@@ -1099,6 +1109,8 @@ def check_batch_completion():
 
 
 @routes.route('/attach-files/<int:por_id>', methods=['GET', 'POST'])
+@login_required
+@permission_required('file_validation')
 def attach_files(por_id):
     """Handle file attachments for POR records."""
     try:
@@ -1420,6 +1432,8 @@ def delete_file(file_id):
 
 
 @routes.route('/delete_por', methods=['POST'])
+@login_required
+@permission_required('po_uploader')
 def delete_por():
     """Delete a POR record and its associated files and line items."""
     try:
@@ -1460,6 +1474,8 @@ def delete_por():
 
 
 @routes.route('/update_timeline_stage', methods=['POST'])
+@login_required
+@permission_required('por_detail_view')
 def update_timeline_stage():
     """Update the timeline stage of a POR."""
     logger.info("update_timeline_stage endpoint hit")
@@ -1497,6 +1513,8 @@ def update_timeline_stage():
 
 
 @routes.route('/add_timeline_comment', methods=['POST'])
+@login_required
+@permission_required('por_detail_view')
 def add_timeline_comment():
     """Add a comment to a specific timeline stage of a POR."""
     try:
@@ -1580,6 +1598,8 @@ def delete_timeline_comment():
 
 
 @routes.route('/update_por_field', methods=['POST'])
+@login_required
+@permission_required('por_detail_view')
 def update_por_field():
     """Update a single field of a POR record."""
     try:
@@ -1626,6 +1646,8 @@ def update_por_field():
 
 
 @routes.route('/update_line_item_field', methods=['POST'])
+@login_required
+@permission_required('por_detail_view')
 def update_line_item_field():
     """Update a single field of a LineItem record."""
     try:
@@ -1673,6 +1695,8 @@ def update_line_item_field():
 
 
 @routes.route('/add_line_item', methods=['POST'])
+@login_required
+@permission_required('por_detail_view')
 def add_line_item():
     """Add a new line item to a POR."""
     try:
@@ -1716,6 +1740,8 @@ def add_line_item():
 
 
 @routes.route('/delete_line_item/<int:line_item_id>', methods=['DELETE'])
+@login_required
+@permission_required('por_detail_view')
 def delete_line_item(line_item_id):
     """Delete a line item from a POR."""
     try:
@@ -1867,6 +1893,8 @@ def update_content_type():
 
 
 @routes.route('/analytics')
+@login_required
+@permission_required('diagnostic_views')
 def analytics():
     """Display analytics dashboard with POR statistics and charts."""
     try:
@@ -1965,6 +1993,8 @@ def update_order_type_route():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @routes.route('/settings')
+@login_required
+@permission_required('system_settings')
 def settings():
     """Display the settings page."""
     try:
@@ -1982,6 +2012,8 @@ def settings():
 
 
 @routes.route('/logs')
+@login_required
+@permission_required('audit_logs')
 def logs():
     """Display the application logs."""
     try:

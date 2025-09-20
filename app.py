@@ -110,6 +110,17 @@ def create_app():
     from admin.routes import admin_bp
     app.register_blueprint(admin_bp)
     
+    # Add template helper functions for permissions
+    from auth.permissions import has_permission, get_user_permissions_for_template
+    
+    @app.context_processor
+    def inject_permission_helpers():
+        """Inject permission helper functions into all templates"""
+        return {
+            'has_permission': has_permission,
+            'get_user_permissions': get_user_permissions_for_template
+        }
+    
     return app
 
 if __name__ == '__main__':
