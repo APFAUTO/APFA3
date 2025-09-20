@@ -314,6 +314,9 @@ def update_user_type_permissions():
     try:
         user_type = request.form.get('user_type')
         selected_permissions = request.form.getlist('permissions')
+        # Always enforce mandatory dashboard permission on save
+        if 'dashboard_view' not in selected_permissions:
+            selected_permissions.append('dashboard_view')
         
         # Update default permissions for user type
         # This would typically be stored in a settings table
@@ -380,6 +383,9 @@ def update_user_permissions():
         requested_set = set(selected_permissions)
         to_add = requested_set - current_perm_names
         to_remove = current_perm_names - requested_set
+        # Never remove dashboard_view
+        if 'dashboard_view' in to_remove:
+            to_remove.remove('dashboard_view')
         
         current_app.logger.info(f"Permissions to add: {to_add}")
         current_app.logger.info(f"Permissions to remove: {to_remove}")

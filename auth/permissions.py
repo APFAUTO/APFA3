@@ -24,6 +24,10 @@ class PermissionManager:
         if user.is_admin:
             return True
         
+        # Dashboard permission is mandatory for all active users
+        if permission_name == 'dashboard_view':
+            return True
+        
         # Check specific permission
         permission = self.auth_session.query(Permission).filter(
             Permission.name == permission_name,
@@ -105,6 +109,10 @@ class PermissionManager:
     def revoke_permission(self, user_id, permission_name):
         """Revoke permission from user"""
         from auth.models import Permission, UserPermission
+        
+        # Dashboard permission is mandatory and cannot be revoked
+        if permission_name == 'dashboard_view':
+            return False, "Dashboard permission is mandatory and cannot be revoked"
         
         permission = self.auth_session.query(Permission).filter(
             Permission.name == permission_name
@@ -288,7 +296,11 @@ class PermissionManager:
             }
             
             for permission in permissions:
-                row['permissions'][permission.name] = permission.id in user_permissions
+                # Ensure dashboard appears as granted for all users in the matrix
+                if permission.name == 'dashboard_view':
+                    row['permissions'][permission.name] = True
+                else:
+                    row['permissions'][permission.name] = permission.id in user_permissions
             
             matrix.append(row)
         

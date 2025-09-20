@@ -237,8 +237,8 @@
                                     <h5 class="text-md font-medium text-gray-800 mb-3">Core Permissions</h5>
                                     <div class="space-y-3">
                                         <label class="flex items-center space-x-3">
-                                            <input type="checkbox" class="permission-checkbox" data-permission="dashboard_view">
-                                            <span class="text-sm text-gray-700">Dashboard View</span>
+                                            <input type="checkbox" class="permission-checkbox" data-permission="dashboard_view" checked disabled>
+                                            <span class="text-sm text-gray-700">Dashboard View <span class="ml-2 text-xs text-blue-600 font-medium">(Mandatory)</span></span>
                                         </label>
                                         <label class="flex items-center space-x-3">
                                             <input type="checkbox" class="permission-checkbox" data-permission="por_search">
@@ -397,13 +397,22 @@
                         console.log('Loading permissions for user:', data.user.username);
                         console.log('Permissions data:', data.permissions);
                         
-                        // Clear all checkboxes first
+                        // Clear all checkboxes first (but keep dashboard checked/disabled)
                         const checkboxes = document.querySelectorAll('.permission-checkbox');
                         console.log('Found', checkboxes.length, 'checkboxes');
                         
                         checkboxes.forEach(checkbox => {
-                            checkbox.checked = false;
+                            const permName = checkbox.getAttribute('data-permission');
+                            if (permName !== 'dashboard_view') {
+                                checkbox.checked = false;
+                            }
                         });
+                        // Enforce dashboard checked and disabled in UI
+                        const dashboardCheckbox = document.querySelector('.permission-checkbox[data-permission="dashboard_view"]');
+                        if (dashboardCheckbox) {
+                            dashboardCheckbox.checked = true;
+                            dashboardCheckbox.disabled = true;
+                        }
                         
                         // Set checkboxes based on user's current permissions
                         let checkedCount = 0;
@@ -523,8 +532,17 @@
             if (confirm('Are you sure you want to clear all permissions for this user? This will remove all their access.')) {
                 const checkboxes = document.querySelectorAll('.permission-checkbox');
                 checkboxes.forEach(checkbox => {
-                    checkbox.checked = false;
+                    const permName = checkbox.getAttribute('data-permission');
+                    if (permName !== 'dashboard_view') {
+                        checkbox.checked = false;
+                    }
                 });
+                // Re-affirm dashboard mandatory
+                const dashboardCheckbox = document.querySelector('.permission-checkbox[data-permission="dashboard_view"]');
+                if (dashboardCheckbox) {
+                    dashboardCheckbox.checked = true;
+                    dashboardCheckbox.disabled = true;
+                }
                 
                 showNotification('info', 'Permissions Cleared', 'All permission checkboxes have been cleared. Click Save to apply changes.');
             }

@@ -32,14 +32,15 @@
     </script>
     <style>
         body {
-            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            background: linear-gradient(135deg, #2c3e50, #34495e, #2c3e50);
             font-family: 'Inter', sans-serif;
         }
         
         .login-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
         }
         
         .input-field {
@@ -70,25 +71,56 @@
                 radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
                 radial-gradient(circle at 75% 75%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
         }
+
+        .brand-badge {
+            position: relative;
+            box-shadow: 0 12px 30px rgba(59, 130, 246, 0.35);
+        }
+        .brand-badge::after {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 9999px;
+            background: conic-gradient(from 180deg, #60a5fa, #8b5cf6, #60a5fa);
+            filter: blur(18px);
+            opacity: 0.25;
+            z-index: -1;
+        }
+
+        .subtle-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0,0,0,0.08), transparent);
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+            100% { transform: translateY(0); }
+        }
+        .float {
+            animation: float 4s ease-in-out infinite;
+        }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center hexagon-pattern">
+    <!-- Template updated: 2025-09-20 14:59 -->
     <div class="container mx-auto px-4 py-8">
         <div class="max-w-md w-full mx-auto">
             <!-- Logo and Title -->
             <div class="text-center mb-8">
-                <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-4">
+                <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-4 brand-badge float">
                     <i class="fas fa-file-invoice-dollar text-white text-3xl"></i>
                 </div>
-                <h1 class="text-3xl font-bold text-white mb-2">POR Automator</h1>
-                <p class="text-gray-300">Purchase Order Request Management System</p>
+                <h1 class="text-3xl font-extrabold text-gray-900 mb-2 tracking-tight">POR Automator</h1>
+                <p class="text-gray-800 font-semibold">Purchase Order Request Management System</p>
             </div>
             
             <!-- Login Card -->
             <div class="login-card rounded-2xl shadow-2xl p-8">
                 <div class="text-center mb-6">
                     <h2 class="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h2>
-                    <p class="text-gray-600">Sign in to access your dashboard</p>
+                    <p class="text-gray-800 font-medium">Sign in to access your dashboard</p>
+                    <div class="subtle-divider mt-4"></div>
                 </div>
                 
                 <!-- Flash Messages -->
@@ -106,33 +138,41 @@
                 {% endwith %}
                 
                 <!-- Login Form -->
-                <form method="POST" action="{{ url_for('auth.login') }}" class="space-y-6">
+                <form method="POST" action="{{ url_for('auth.login') }}" class="space-y-6" onsubmit="return beginLogin(this)">
                     <input type="hidden" name="next" value="{{ request.args.get('next', '') }}">
                     
                     <!-- Username Field -->
                     <div>
-                        <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
+                        <label for="username" class="block text-sm font-bold text-gray-900 mb-2">
                             <i class="fas fa-user mr-2"></i>Username
                         </label>
-                        <input type="text" 
-                               id="username" 
-                               name="username" 
-                               class="input-field w-full px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                               placeholder="Enter your username"
-                               required
-                               autocomplete="username">
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                                <i class="fas fa-user"></i>
+                            </span>
+                            <input type="text" 
+                                   id="username" 
+                                   name="username" 
+                                   class="input-field w-full pl-10 pr-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   placeholder="Enter your username"
+                                   required
+                                   autocomplete="username">
+                        </div>
                     </div>
                     
                     <!-- Password Field -->
                     <div>
-                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                        <label for="password" class="block text-sm font-bold text-gray-900 mb-2">
                             <i class="fas fa-lock mr-2"></i>Password
                         </label>
                         <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                                <i class="fas fa-lock"></i>
+                            </span>
                             <input type="password" 
                                    id="password" 
                                    name="password" 
-                                   class="input-field w-full px-4 py-3 pr-12 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   class="input-field w-full pl-10 pr-12 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                    placeholder="Enter your password"
                                    required
                                    autocomplete="current-password">
@@ -148,23 +188,29 @@
                     <div class="flex items-center justify-between">
                         <label class="flex items-center">
                             <input type="checkbox" name="remember_me" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                            <span class="ml-2 text-sm text-gray-600">Remember me</span>
+                            <span class="ml-2 text-sm font-medium text-gray-800">Remember me</span>
                         </label>
-                        <a href="#" class="text-sm text-blue-600 hover:text-blue-800">Forgot password?</a>
+                        <a href="#" class="text-sm text-blue-800 hover:text-blue-900 font-semibold">Forgot password?</a>
                     </div>
                     
                     <!-- Submit Button -->
-                    <button type="submit" class="login-btn w-full py-3 px-4 rounded-lg text-white font-semibold text-lg">
-                        <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+                    <button id="login-submit" type="submit" class="login-btn w-full py-3 px-4 rounded-lg text-white font-semibold text-lg focus:outline-none focus:ring-4 focus:ring-blue-200">
+                        <span class="inline-flex items-center justify-center">
+                            <i class="fas fa-sign-in-alt mr-2"></i>
+                            <span id="login-btn-text">Sign In</span>
+                            <span id="login-spinner" class="ml-3 hidden">
+                                <i class="fas fa-circle-notch fa-spin"></i>
+                            </span>
+                        </span>
                     </button>
                 </form>
                 
                 <!-- Default Login Info -->
                 <div class="mt-6 p-4 bg-gray-50 rounded-lg">
-                    <p class="text-sm text-gray-600 mb-2">
+                    <p class="text-sm font-semibold text-gray-800 mb-2">
                         <i class="fas fa-info-circle mr-2"></i>Default Login:
                     </p>
-                    <div class="text-xs text-gray-500">
+                    <div class="text-xs text-gray-700 font-medium">
                         <p><strong>Username:</strong> admin</p>
                         <p><strong>Password:</strong> admin123</p>
                     </div>
@@ -173,9 +219,11 @@
             
             <!-- Footer -->
             <div class="text-center mt-8">
-                <p class="text-gray-400 text-sm">
+                <p class="text-white text-sm font-medium">
                     &copy; 2024 POR Automator. All rights reserved.
                 </p>
+                <div class="subtle-divider mt-4"></div>
+                <p class="text-white text-xs mt-4 font-medium">Secure access powered by modern authentication.</p>
             </div>
         </div>
     </div>
@@ -205,6 +253,17 @@
                 document.querySelector('form').submit();
             }
         });
+
+        function beginLogin(form) {
+            const submitBtn = document.getElementById('login-submit');
+            const spinner = document.getElementById('login-spinner');
+            const btnText = document.getElementById('login-btn-text');
+            submitBtn.disabled = true;
+            spinner.classList.remove('hidden');
+            btnText.textContent = 'Signing In...';
+            // allow normal submit
+            return true;
+        }
     </script>
 </body>
 </html>
