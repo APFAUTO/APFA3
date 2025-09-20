@@ -311,7 +311,7 @@ def permission_required(permission_name):
             
             if not permission_manager.check_permission(session['user_id'], permission_name):
                 flash('You do not have permission to access this page.', 'error')
-                return redirect(url_for('routes.dashboard'))
+                return redirect(url_for('auth.login'))
             
             return f(*args, **kwargs)
         return decorated_function

@@ -185,7 +185,7 @@ def admin_required(f):
         
         if not user or not user.is_admin:
             flash('Admin access required.', 'error')
-            return redirect(url_for('routes.dashboard'))
+            return redirect(url_for('auth.login'))
         
         return f(*args, **kwargs)
     return decorated_function
