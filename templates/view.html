@@ -39,7 +39,7 @@
             <div class="header-actions" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #e3f0fa; padding: 15px; border-radius: 10px; border: 2px solid #3e8ed0;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     {% if request.args.get('from_search') %}
-                        <a href="/search?{{ request.args.get('from_search', '')|clean_query_string }}" class="nav-link" style="background: #6c757d; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.2); border: none; cursor: pointer;">⬅️ Back to Search</a>
+                        <a href="/view?{{ request.args.get('from_search', '')|clean_query_string }}" class="nav-link" style="background: #6c757d; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.2); border: none; cursor: pointer;">⬅️ Back to Search</a>
                     {% endif %}
                     <h2 style="margin: 0; color: #022b3a; font-size: 20px;">📋 PO Details</h2>
                 </div>
@@ -66,7 +66,7 @@
             {% endwith %}
             
             <!-- Search Bar -->
-            <form method="get" action="/search" style="margin-bottom: 20px;">
+            <form method="get" action="/view" style="margin-bottom: 20px;">
                 <div style="display: flex; gap: 10px;">
                     <input type="text" name="q" placeholder="Search by PO number, requestor, job number, or date..." value="{{ request.args.get('q','') }}" 
                            autocomplete="off"

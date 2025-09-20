@@ -85,7 +85,7 @@ def test():
                 <h3>🔗 Navigation</h3>
                 <p><a href="/">📤 Upload Page</a></p>
                 <p><a href="/view">👁️ View Records</a></p>
-                <p><a href="/search">🔍 Search</a></p>
+                <p><a href="/view">🔍 Search</a></p>
                 <p><a href="/change-batch">🔄 Batch Change</a></p>
                 <p><a href="/dashboard">📊 Dashboard</a></p>
             </div>
@@ -667,252 +667,6 @@ def view():
 
 
 
-@routes.route('/search')
-@login_required
-@permission_required('por_search')
-def search():
-    """Advanced search for PO records with intelligent matching and relevance scoring."""
-    try:
-        search_query = request.args.get('q', '').strip()
-        search_type = request.args.get('type', 'all')  # all, date, po_number, requestor, supplier
-        date_from = request.args.get('date_from', '')
-        date_to = request.args.get('date_to', '')
-        stage_filter = request.args.get('stage', 'all')  # all, received, sent, filed
-        content_type_filter = request.args.get('content_type', 'all')  # all, work_iwo, supply_and_fit, supply
-        min_amount = request.args.get('min_amount', '')
-        max_amount = request.args.get('max_amount', '')
-        
-        if not search_query and not date_from and not date_to and stage_filter == 'all' and content_type_filter == 'all' and not min_amount and not max_amount:
-            return redirect(url_for('routes.view'))
-        
-        from datetime import datetime, timedelta
-        from sqlalchemy import or_, and_, func, case, desc
-        
-        current_db = get_current_database()
-        db_manager = get_database_manager(current_db)
-        db_session = db_manager.get_session()
-        
-        # Start with base query
-        query = db_session.query(db_manager.POR)
-        
-        # Apply filters
-        filters = []
-        
-        # Date range filter
-        if date_from:
-            try:
-                from_date = datetime.strptime(date_from, '%Y-%m-%d').date()
-                filters.append(func.date(db_manager.POR.created_at) >= from_date)
-            except ValueError:
-                pass
-        
-        if date_to:
-            try:
-                to_date = datetime.strptime(date_to, '%Y-%m-%d').date()
-                filters.append(func.date(db_manager.POR.created_at) <= to_date)
-            except ValueError:
-                pass
-        
-        # Stage filter
-        if stage_filter != 'all':
-            filters.append(db_manager.POR.current_stage == stage_filter)
-        
-        # Content type filter
-        if content_type_filter != 'all':
-            filters.append(db_manager.POR.content_type == content_type_filter)
-        
-        # Amount range filter
-        if min_amount:
-            try:
-                min_val = float(min_amount)
-                filters.append(db_manager.POR.order_total >= min_val)
-            except ValueError:
-                pass
-        
-        if max_amount:
-            try:
-                max_val = float(max_amount)
-                filters.append(db_manager.POR.order_total <= max_val)
-            except ValueError:
-                pass
-        
-        # Text search with intelligent matching
-        if search_query:
-            # Check if it's a date search
-            search_date = None
-            try:
-                # Try UK format first (DD/MM/YYYY)
-                search_date = datetime.strptime(search_query, '%d/%m/%Y').date()
-            except ValueError:
-                try:
-                    # Try US format (YYYY-MM-DD)
-                    search_date = datetime.strptime(search_query, '%Y-%m-%d').date()
-                except ValueError:
-                    pass
-            
-            if search_date:
-                # Date search
-                filters.append(func.date(db_manager.POR.created_at) == search_date)
-                search_type = 'date'
-            else:
-                # Text search with relevance scoring
-                search_terms = search_query.split()
-                search_conditions = []
-                
-                for term in search_terms:
-                    term_pattern = f"%{term}%"
-                    search_conditions.append(
-                        or_(
-                            db_manager.POR.po_number.like(term_pattern),
-                            db_manager.POR.requestor_name.like(term_pattern),
-                            db_manager.POR.ship_project_name.like(term_pattern),
-                            db_manager.POR.supplier.like(term_pattern),
-                            db_manager.POR.job_contract_no.like(term_pattern),
-                            db_manager.POR.op_no.like(term_pattern),
-                            db_manager.POR.description.like(term_pattern),
-                            db_manager.POR.quote_ref.like(term_pattern),
-                            db_manager.POR.specification_standards.like(term_pattern),
-                            db_manager.POR.supplier_contact_name.like(term_pattern),
-                            db_manager.POR.supplier_contact_email.like(term_pattern),
-                            db_manager.POR.content_type.like(term_pattern)
-                        )
-                    )
-                
-                # Apply search conditions
-                if search_conditions:
-                    filters.append(or_(*search_conditions))
-        
-        # Apply all filters
-        if filters:
-            query = query.filter(and_(*filters))
-        
-        # Add relevance scoring for text searches
-        if search_query and not search_date:
-            # Create relevance score based on field importance and match quality
-            relevance_score = case(
-                (db_manager.POR.po_number.like(f"%{search_query}%"), 100),  # Exact PO number match
-                (db_manager.POR.po_number.like(f"{search_query}%"), 90),    # PO number starts with
-                (db_manager.POR.requestor_name.like(f"%{search_query}%"), 80),
-                (db_manager.POR.ship_project_name.like(f"%{search_query}%"), 75),
-                (db_manager.POR.supplier.like(f"%{search_query}%"), 70),
-                (db_manager.POR.job_contract_no.like(f"%{search_query}%"), 65),
-                (db_manager.POR.op_no.like(f"%{search_query}%"), 60),
-                (db_manager.POR.description.like(f"%{search_query}%"), 50),
-                (db_manager.POR.quote_ref.like(f"%{search_query}%"), 45),
-                (db_manager.POR.specification_standards.like(f"%{search_query}%"), 40),
-                (db_manager.POR.supplier_contact_name.like(f"%{search_query}%"), 35),
-                (db_manager.POR.supplier_contact_email.like(f"%{search_query}%"), 30),
-                (db_manager.POR.content_type.like(f"%{search_query}%"), 25),
-                else_=0
-            )
-            
-            # Add relevance score to query
-            query = query.add_columns(relevance_score.label('relevance_score'))
-            
-            # Order by relevance score (descending) then by date (newest first)
-            query = query.order_by(desc('relevance_score'), desc(db_manager.POR.id))
-        else:
-            # For date searches or filtered searches, order by date
-            query = query.order_by(desc(db_manager.POR.id))
-        
-        # Execute query
-        results = query.all()
-        
-        # Process results
-        if search_query and not search_date:
-            # Extract POR objects and relevance scores
-            por_results = []
-            for result in results:
-                if hasattr(result, 'relevance_score'):
-                    por = result[0]  # First element is the POR object
-                    por.relevance_score = result[1]  # Second element is the relevance score
-                else:
-                    por = result
-                    por.relevance_score = 0
-                por_results.append(por)
-        else:
-            por_results = results
-            # Ensure all POR objects have relevance_score attribute
-            for por in por_results:
-                if not hasattr(por, 'relevance_score'):
-                    por.relevance_score = 0
-        
-        # Set file count and attachment icons for each POR record
-        for por in por_results:
-            por.file_count = len(por.attached_files)
-            
-            # Prepare attachment icons for display (max 4, one of each type)
-            attachment_icons = []
-            if por.attached_files:
-                # Group files by type
-                files_by_type = {}
-                for file in por.attached_files:
-                    if file.file_type not in files_by_type:
-                        files_by_type[file.file_type] = []
-                    files_by_type[file.file_type].append(file)
-                
-                # Add one icon for each file type (up to 4)
-                for file_type, files in files_by_type.items():
-                    if len(attachment_icons) < 4:
-                        attachment_icons.append({
-                            'type': file_type,
-                            'count': len(files),
-                            'icon': get_file_type_icon(file_type)
-                        })
-                
-                # If we have more than 4 types, add a "+X" indicator
-                if len(por.attached_files) > 4:
-                    attachment_icons.append({
-                        'type': 'more',
-                        'count': len(por.attached_files) - 4,
-                        'icon': '+'
-                    })
-            
-            por.attachment_icons = attachment_icons
-        
-        # Generate search statistics
-        total_results = len(por_results)
-        if total_results > 0:
-            # Calculate statistics
-            total_value = sum(por.order_total or 0 for por in por_results)
-            avg_value = total_value / total_results if total_results > 0 else 0
-            stages_count = {}
-            for por in por_results:
-                stage = por.current_stage or 'received'
-                stages_count[stage] = stages_count.get(stage, 0) + 1
-            
-            # No flash message needed - statistics are displayed in the search summary
-            
-            return render_template("search_results.html", 
-                                 search_query=search_query,
-                                 results=por_results,
-                                 search_type=search_type,
-                                 total_results=total_results,
-                                 total_value=total_value,
-                                 avg_value=avg_value,
-                                 stages_count=stages_count,
-                                 filters={
-                                     'date_from': date_from,
-                                     'date_to': date_to,
-                                     'stage': stage_filter,
-                                     'content_type': content_type_filter,
-                                     'min_amount': min_amount,
-                                     'max_amount': max_amount
-                                 })
-        else:
-            # No results found
-            if search_date:
-                flash(f"❌ No POs found for date '{search_date.strftime('%d/%m/%Y')}'", 'error')
-            else:
-                flash(f"❌ No PO found matching '{search_query}'", 'error')
-            return redirect(url_for('routes.view'))
-        
-        db_session.close()
-            
-    except Exception as e:
-        logger.error(f"Search error: {str(e)}")
-        flash(f"❌ Error searching: {str(e)}", 'error')
-        return redirect(url_for('routes.view'))
 
 
 @routes.route('/change-batch', methods=['GET', 'POST'])
@@ -1911,22 +1665,39 @@ def analytics():
 
         # Status distribution
         status_dist = db_session.query(db_manager.POR.current_stage, func.count(db_manager.POR.id)).group_by(db_manager.POR.current_stage).all()
-        status_labels = [row[0] for row in status_dist]
+        status_labels = [row[0] if row[0] is not None else 'Unknown' for row in status_dist]
         status_data = [row[1] for row in status_dist]
 
         # Content type distribution
         content_type_dist = db_session.query(db_manager.POR.content_type, func.count(db_manager.POR.id)).group_by(db_manager.POR.content_type).all()
-        content_type_labels = [row[0] for row in content_type_dist]
+        content_type_labels = [row[0] if row[0] is not None else 'Unknown' for row in content_type_dist]
         content_type_data = [row[1] for row in content_type_dist]
 
         # Top suppliers
-        top_suppliers = db_session.query(db_manager.POR.supplier, func.sum(db_manager.POR.order_total).label('total_value')).group_by(db_manager.POR.supplier).order_by(func.sum(db_manager.POR.order_total).desc()).limit(5).all()
+        top_suppliers = db_session.query(
+            db_manager.POR.supplier.label('name'),
+            func.sum(db_manager.POR.order_total).label('total_value')
+        ).group_by(db_manager.POR.supplier).order_by(func.sum(db_manager.POR.order_total).desc()).limit(5).all()
 
         # Top requestors
-        top_requestors = db_session.query(db_manager.POR.requestor_name, func.count(db_manager.POR.id).label('por_count')).group_by(db_manager.POR.requestor_name).order_by(func.count(db_manager.POR.id).desc()).limit(5).all()
+        top_requestors = db_session.query(
+            db_manager.POR.requestor_name.label('name'),
+            func.count(db_manager.POR.id).label('por_count')
+        ).group_by(db_manager.POR.requestor_name).order_by(func.count(db_manager.POR.id).desc()).limit(5).all()
 
-        # Monthly data
-        monthly_data = db_session.query(func.strftime('%Y-%m', db_manager.POR.created_at), func.count(db_manager.POR.id), func.sum(db_manager.POR.order_total)).group_by(func.strftime('%Y-%m', db_manager.POR.created_at)).order_by(func.strftime('%Y-%m', db_manager.POR.created_at)).all()
+        # Monthly data (exclude records without a created_at timestamp to ensure valid labels)
+        monthly_data = (
+            db_session
+            .query(
+                func.strftime('%Y-%m', db_manager.POR.created_at),
+                func.count(db_manager.POR.id),
+                func.sum(db_manager.POR.order_total)
+            )
+            .filter(db_manager.POR.created_at.isnot(None))
+            .group_by(func.strftime('%Y-%m', db_manager.POR.created_at))
+            .order_by(func.strftime('%Y-%m', db_manager.POR.created_at))
+            .all()
+        )
         monthly_labels = [row[0] for row in monthly_data]
         monthly_counts = [row[1] for row in monthly_data]
         monthly_values = [float(row[2]) if row[2] is not None else 0.0 for row in monthly_data]

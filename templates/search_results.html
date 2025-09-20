@@ -46,6 +46,82 @@
         .table-view {
             transition: opacity 0.3s ease;
         }
+        
+        /* Dynamic styling classes */
+        .status-badge {
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        
+        .status-badge.table {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+        }
+        
+        .order-type-new { background: #28a745; }
+        .order-type-revised { background: #fd7e14; }
+        .order-type-cancelled { background: #dc3545; }
+        
+        .content-type-work-iwo { background: #dc3545; }
+        .content-type-supply-and-fit { background: #fd7e14; }
+        .content-type-supply { background: #6c757d; }
+        
+        .stage-received { background: #28a745; }
+        .stage-sent { background: #017bb5; }
+        .stage-filed { background: #6c757d; }
+        
+        .amount-badge {
+            background: #6c757d;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .file-badge {
+            background: #28a745;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .relevance-badge {
+            background: #fd7e14;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .date-badge {
+            background: #017bb5;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
     </style>
 </head>
 <body>
@@ -63,13 +139,8 @@
                 {% if messages %}
                     <div style="margin-bottom: 20px;">
                         {% for category, message in messages %}
-                            <div class="alert alert-{{ 'error' if category == 'error' else 'success' }}" 
-                                 style="padding: 12px; border-radius: 8px; margin-bottom: 10px; font-weight: bold; 
-                                        {% if category == 'error' %}
-                                            background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;
-                                        {% else %}
-                                            background: #d4edda; color: #155724; border: 1px solid #c3e6cb;
-                                        {% endif %}">
+                            <div class="alert alert-{{ 'error' if category == 'error' else 'success' }} alert-{{ 'error' if category == 'error' else 'success' }}" 
+                                 style="padding: 12px; border-radius: 8px; margin-bottom: 10px; font-weight: bold;">
                                 {{ message }}
                             </div>
                         {% endfor %}
@@ -81,7 +152,7 @@
             <div style="background: white; border: 2px solid #e3f0fa; border-radius: 15px; padding: 20px; margin-bottom: 20px;">
                 <h3 style="margin: 0 0 15px 0; color: #022b3a;">🔍 Advanced Search</h3>
                 
-                <form method="get" action="/search" id="searchForm">
+                <form method="get" action="/view" id="searchForm">
                     <!-- Main Search Bar -->
                     <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                         <input type="text" name="q" placeholder="Search by PO number, requestor, job number, or date..." value="{{ search_query }}" 
@@ -194,8 +265,9 @@
                 <!-- Card View -->
                 <div class="card-view" id="cardView" style="display: flex; flex-direction: column; gap: 15px;">
                     {% for por in results %}
-                        <div class="result-card" style="background: white; border: 2px solid #e3f0fa; border-radius: 15px; padding: 20px; cursor: pointer; transition: all 0.3s ease; hover:border-color: #017bb5;" 
-                             onclick="window.location.href='{{ url_for('routes.view', id=por.id, from_search=request.query_string.decode('utf-8')|clean_query_string) }}'"
+                        <div class="result-card" style="background: white; border: 2px solid #e3f0fa; border-radius: 15px; padding: 20px; cursor: pointer; transition: all 0.3s ease;" 
+                             data-url="{{ url_for('routes.view', id=por.id, from_search=request.query_string.decode('utf-8')|clean_query_string) }}"
+                             onclick="navigateToUrl(this)"
                              onmouseover="this.style.borderColor='#017bb5'; this.style.transform='translateY(-2px)'" 
                              onmouseout="this.style.borderColor='#e3f0fa'; this.style.transform='translateY(0)'">
                             
@@ -228,40 +300,26 @@
                                             {% endfor %}
                                         </div>
                                     {% elif por.file_count > 0 %}
-                                        <span style="background: #28a745; color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold;">
+                                        <span class="file-badge">
                                             📎 {{ por.file_count }} file(s)
                                         </span>
                                     {% endif %}
-                                    <span style="background: 
-                                        {% if por.order_type == 'new' %}#28a745
-                                        {% elif por.order_type == 'revised' %}#fd7e14
-                                        {% elif por.order_type == 'cancelled' %}#dc3545
-                                        {% else %}#28a745{% endif %}; 
-                                        color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold;">
+                                    <span class="status-badge {% if por.order_type == 'new' %}order-type-new{% elif por.order_type == 'revised' %}order-type-revised{% elif por.order_type == 'cancelled' %}order-type-cancelled{% else %}order-type-new{% endif %}">
                                         {% if por.order_type == 'new' %}🆕 New
                                         {% elif por.order_type == 'revised' %}📝 Revised
                                         {% elif por.order_type == 'cancelled' %}❌ Cancelled
                                         {% else %}🆕 New{% endif %}
                                     </span>
-                                    <span style="background: 
-                                        {% if por.content_type == 'work_iwo' %}#dc3545
-                                        {% elif por.content_type == 'supply_and_fit' %}#fd7e14
-                                        {% elif por.content_type == 'supply' %}#6c757d
-                                        {% else %}#6c757d{% endif %}; 
-                                        color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold;">
+                                    <span class="status-badge {% if por.content_type == 'work_iwo' %}content-type-work-iwo{% elif por.content_type == 'supply_and_fit' %}content-type-supply-and-fit{% elif por.content_type == 'supply' %}content-type-supply{% else %}content-type-supply{% endif %}">
                                         {% if por.content_type == 'work_iwo' %}🔧 Work IWO
                                         {% elif por.content_type == 'supply_and_fit' %}🔧 Supply & Fit
                                         {% elif por.content_type == 'supply' %}📦 Supply
                                         {% else %}📦 Supply{% endif %}
                                     </span>
-                                    <span style="background: 
-                                        {% if por.current_stage == 'received' %}#28a745
-                                        {% elif por.current_stage == 'sent' %}#017bb5
-                                        {% else %}#6c757d{% endif %}; 
-                                        color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold;">
+                                    <span class="status-badge {% if por.current_stage == 'received' %}stage-received{% elif por.current_stage == 'sent' %}stage-sent{% else %}stage-filed{% endif %}">
                                         {{ por.current_stage or 'received' }}
                                     </span>
-                                    <span style="background: #6c757d; color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold;">
+                                    <span class="amount-badge">
                                         £{{ "%.0f"|format(por.order_total or 0) }}
                                     </span>
                                 </div>
@@ -366,12 +424,7 @@
                                                 {{ por.supplier or 'N/A' }}
                                             </td>
                                             <td style="padding: 12px;">
-                                                <span style="background: 
-                                                    {% if por.order_type == 'new' %}#28a745
-                                                    {% elif por.order_type == 'revised' %}#fd7e14
-                                                    {% elif por.order_type == 'cancelled' %}#dc3545
-                                                    {% else %}#28a745{% endif %}; 
-                                                    color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">
+                                                <span class="status-badge table {% if por.order_type == 'new' %}order-type-new{% elif por.order_type == 'revised' %}order-type-revised{% elif por.order_type == 'cancelled' %}order-type-cancelled{% else %}order-type-new{% endif %}">
                                                     {% if por.order_type == 'new' %}🆕 New
                                                     {% elif por.order_type == 'revised' %}📝 Revised
                                                     {% elif por.order_type == 'cancelled' %}❌ Cancelled
@@ -379,12 +432,7 @@
                                                 </span>
                                             </td>
                                             <td style="padding: 12px;">
-                                                <span style="background: 
-                                                    {% if por.content_type == 'work_iwo' %}#dc3545
-                                                    {% elif por.content_type == 'supply_and_fit' %}#fd7e14
-                                                    {% elif por.content_type == 'supply' %}#6c757d
-                                                    {% else %}#6c757d{% endif %}; 
-                                                    color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">
+                                                <span class="status-badge table {% if por.content_type == 'work_iwo' %}content-type-work-iwo{% elif por.content_type == 'supply_and_fit' %}content-type-supply-and-fit{% elif por.content_type == 'supply' %}content-type-supply{% else %}content-type-supply{% endif %}">
                                                     {% if por.content_type == 'work_iwo' %}🔧 Work IWO
                                                     {% elif por.content_type == 'supply_and_fit' %}🔧 Supply & Fit
                                                     {% elif por.content_type == 'supply' %}📦 Supply
@@ -392,11 +440,7 @@
                                                 </span>
                                             </td>
                                             <td style="padding: 12px;">
-                                                <span style="background: 
-                                                    {% if por.current_stage == 'received' %}#28a745
-                                                    {% elif por.current_stage == 'sent' %}#017bb5
-                                                    {% else %}#6c757d{% endif %}; 
-                                                    color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">
+                                                <span class="status-badge table {% if por.current_stage == 'received' %}stage-received{% elif por.current_stage == 'sent' %}stage-sent{% else %}stage-filed{% endif %}">
                                                     {{ por.current_stage or 'received' }}
                                                 </span>
                                             </td>
@@ -404,7 +448,8 @@
                                                 £{{ "%.0f"|format(por.order_total or 0) }}
                                             </td>
                                             <td style="padding: 12px;">
-                                                <button onclick="window.location.href='{{ url_for('routes.view', id=por.id, from_search=request.query_string.decode('utf-8')|clean_query_string) }}'" 
+                                                <button data-url="{{ url_for('routes.view', id=por.id, from_search=request.query_string.decode('utf-8')|clean_query_string) }}"
+                                                        onclick="navigateToUrl(this)" 
                                                         style="background: #017bb5; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;">
                                                     👁️ View
                                                 </button>
@@ -487,6 +532,14 @@
         // Export results (placeholder for future functionality)
         function exportResults() {
             alert('Export functionality coming soon! This will allow you to download search results as CSV/Excel.');
+        }
+        
+        // Navigate to URL from data attribute
+        function navigateToUrl(element) {
+            const url = element.getAttribute('data-url');
+            if (url) {
+                window.location.href = url;
+            }
         }
         
         // Toggle view mode functionality

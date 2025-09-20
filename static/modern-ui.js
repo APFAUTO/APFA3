@@ -76,7 +76,7 @@ class ModernUI {
     showQuickActions() {
         const actions = [
             { label: 'Upload File', icon: '📁', action: () => window.location.href = '/upload' },
-            { label: 'Search PORs', icon: '🔍', action: () => window.location.href = '/search' },
+            { label: 'Search PORs', icon: '🔍', action: () => window.location.href = '/view' },
             { label: 'View All', icon: '📋', action: () => window.location.href = '/view' }
         ];
         
@@ -432,7 +432,7 @@ class ModernUI {
         if (path === '/') return 'dashboard';
         if (path === '/upload') return 'upload';
         if (path === '/view') return 'view';
-        if (path === '/search') return 'search';
+        if (path === '/view') return 'view';
         if (path.includes('/attach')) return 'attach';
         if (path.includes('/change-batch')) return 'change_batch';
         return 'dashboard';
