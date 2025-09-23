@@ -277,6 +277,10 @@ def extract_line_items_by_map(ws: Worksheet) -> List[Dict[str, Any]]:
     items = []
     
     try:
+        # Get supplier information for business rule application
+        supplier = ws.cell(row=2, column=4).value  # D2 - SUPPLIER (if known)
+        supplier_str = str(supplier).lower().strip() if supplier else ""
+        
         # According to map: rows 6-26 for line items
         start_row = 6
         end_row = min(26, ws.max_row)
@@ -304,6 +308,22 @@ def extract_line_items_by_map(ws: Worksheet) -> List[Dict[str, Any]]:
                 # Check for end of line items (ORDER TOTAL)
                 if isinstance(description, str) and "ORDER TOTAL" in description.upper():
                     break
+                
+                # Apply business rule: EAPL supplier with IWO or Supply and Fit
+                if description and isinstance(description, str):
+                    desc_lower = description.lower()
+                    
+                    # Check if supplier is EAPL and description contains relevant keywords
+                    if (supplier_str == "eapl" and 
+                        ("iwo" in desc_lower or "supply and fit" in desc_lower) and
+                        "work i.w.o" in desc_lower):
+                        
+                        # Replace "Work I.W.O" with "Provide Labour I.W.O"
+                        description = description.replace("Work I.W.O", "Provide Labour I.W.O")
+                        description = description.replace("work i.w.o", "Provide Labour I.W.O")
+                        description = description.replace("WORK I.W.O", "Provide Labour I.W.O")
+                        
+                        logger.info(f"Applied EAPL business rule: Modified description for row {row}")
                 
                 # Only add if we have at least a description or job/contract
                 if description or job_contract:
@@ -413,15 +433,45 @@ def validate_excel_structure(rows: List[List[Any]]) -> bool:
     return found_keywords >= 3  # At least 3 keywords should be found
 
 def allowed_file(filename: str) -> bool:
-    """Check if file extension is allowed."""
-    allowed_extensions = {'xlsx', 'xls', 'xlsm', 'xltx', 'xltm', 'xlt', 'xlm', 'msg', 'eml', 'pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'}
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+    """
+    Check if file is allowed for attachments.
+    ACCEPTS ALL FILE TYPES - no restrictions for maximum compatibility.
+    This ensures drag-and-drop from Outlook and all file types work.
+    """
+    # Accept everything - no restrictions for file attachments
+    return True
 
 
 def allowed_excel_file(filename: str) -> bool:
-    """Check if file extension is allowed for main POR uploader (Excel only)."""
-    allowed_extensions = {'xlsx', 'xls', 'xlsm', 'xltx', 'xltm', 'xlt', 'xlm'}
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+    """
+    Check if file extension is allowed for main POR uploader.
+    Accepts ALL Excel formats including legacy and variations.
+    """
+    if not filename or not isinstance(filename, str):
+        return False
+    
+    # If no extension, reject (POR files must have extensions)
+    if '.' not in filename:
+        return False
+    
+    # Get extension
+    extension = filename.rsplit('.', 1)[1].lower()
+    
+    # Comprehensive Excel format support including legacy
+    excel_extensions = {
+        # Modern Excel formats
+        'xlsx', 'xlsm', 'xlsb', 'xltx', 'xltm',
+        # Legacy Excel formats
+        'xls', 'xlt', 'xlm', 'xla', 'xlw',
+        # OpenOffice/LibreOffice Calc formats (often compatible)
+        'ods', 'ots',
+        # CSV formats (often used with Excel)
+        'csv', 'tsv',
+        # Other Excel-compatible formats
+        'xml', 'mhtml', 'mht'
+    }
+    
+    return extension in excel_extensions
 
 
 def get_file_type_icon(file_type: str) -> str:

@@ -1634,6 +1634,7 @@ def update_content_type():
             return jsonify({'success': False, 'error': 'POR not found'}), 404
         
         por.content_type = content_type
+        
         db_session.commit()
         db_session.close()
         

@@ -225,8 +225,8 @@
                             <i class="fas fa-cloud-upload-alt text-4xl text-blue-500"></i>
                             <h3 class="text-lg font-semibold text-gray-900">Drag & Drop Files Here</h3>
                             <p class="text-gray-600">or click to browse files</p>
-                            <p class="text-sm text-blue-600 font-medium">💡 You can select multiple files and add more later!</p>
-                            <input type="file" name="files" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm,.xltx,.xltm,.xlt,.xlm,.jpg,.jpeg,.png,.msg,.eml" style="display: none;" id="fileInput" onchange="handleFileSelect(this.files)">
+                            <p class="text-sm text-blue-600 font-medium">💡 All file types accepted - drag from Outlook, emails, documents, images, etc.</p>
+                            <input type="file" name="files" multiple style="display: none;" id="fileInput" onchange="handleFileSelect(this.files)">
                             <button type="button" onclick="document.getElementById('fileInput').click()" class="px-6 py-3 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 transition-colors duration-200">
                                 Browse Files
                             </button>

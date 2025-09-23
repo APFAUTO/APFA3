@@ -63,7 +63,7 @@ def process_uploaded_file(file) -> Tuple[bool, str, Optional[dict], Optional[lis
         # For main POR uploader, we only process Excel files
         if not allowed_excel_file(file.filename):
             logger.warning(f"File type not allowed for main uploader: {file.filename}")
-            return False, "Only Excel files (.xlsx, .xls, .xlsm, .xltx, .xltm, .xlt, .xlm) are allowed for POR uploads", None, None
+            return False, "Only Excel-compatible files are allowed for POR uploads. Supported formats: .xlsx, .xls, .xlsm, .xlsb, .xltx, .xltm, .xlt, .xlm, .xla, .xlw, .ods, .csv, .xml", None, None
         
         # Check file extension
         file_extension = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''

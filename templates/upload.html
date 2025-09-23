@@ -21,9 +21,9 @@
                         <button type="button" class="browse-btn" onclick="document.getElementById('fileInput').click()">
                             Browse Files
                         </button>
-                        <p class="file-info">Supported formats: .xlsx, .xls, .xlsm, .xltx, .xltm, .xlt, .xlm (Excel files only)</p>
+                        <p class="file-info">Supported formats: All Excel formats (.xlsx, .xls, .xlsm, .xlsb, .xltx, .xltm, .xlt, .xlm, .xla, .xlw, .ods, .csv, .xml)</p>
                     </div>
-                    <input type="file" name="file" id="fileInput" accept=".xlsx,.xls,.xlsm,.xltx,.xltm,.xlt,.xlm" style="display: none;">
+                    <input type="file" name="file" id="fileInput" accept=".xlsx,.xls,.xlsm,.xlsb,.xltx,.xltm,.xlt,.xlm,.xla,.xlw,.ods,.csv,.xml,.tsv,.mhtml,.mht" style="display: none;">
                 </div>
                 
                 <div class="file-preview" id="filePreview" style="display: none;">
@@ -128,12 +128,12 @@
         });
 
         function handleFile(file) {
-            // Check file type
-            const allowedTypes = ['.xlsx', '.xls', '.xlsm', '.xltx', '.xltm', '.xlt', '.xlm'];
+            // Check file type - Accept all Excel formats including legacy
+            const allowedTypes = ['.xlsx', '.xls', '.xlsm', '.xlsb', '.xltx', '.xltm', '.xlt', '.xlm', '.xla', '.xlw', '.ods', '.csv', '.xml', '.tsv', '.mhtml', '.mht'];
             const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
             
             if (!allowedTypes.includes(fileExtension)) {
-                alert('Please select a valid Excel file (.xlsx or .xls)');
+                alert('Please select a valid Excel-compatible file. Supported formats: .xlsx, .xls, .xlsm, .xlsb, .xltx, .xltm, .xlt, .xlm, .xla, .xlw, .ods, .csv, .xml');
                 return;
             }
 
