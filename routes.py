@@ -693,7 +693,7 @@ def change_batch():
             else:
                 # Parse batch range (e.g., "100-200")
                 import re
-                range_pattern = re.compile(r'^(\\d+)-(\\d+)$')
+                range_pattern = re.compile(r'^(\d+)-(\d+)$')
                 match = range_pattern.match(batch_range)
                 
                 if not match:
@@ -728,26 +728,20 @@ def change_batch():
                             
                         except Exception as db_error:
                             logger.error(f"[DEBUG] BatchNumberManager error in change-batch: {str(db_error)}")
-                            if request.is_json:
-                                return jsonify({'success': False, 'error': f'Batch manager error: {str(db_error)}'})
-                            else:
-                                flash(f"❌ Batch manager error: {str(db_error)}", 'error')
-                            company_info = get_company_config(current_db)
-                            return render_template("change_batch.html", 
-                                                 current_highest_po=0,
-                                                 company=current_db,
-                                                 company_info=company_info)
+                            return jsonify({'success': False, 'error': f'Batch manager error: {str(db_error)}'})
                         
-                        # Store batch information in session for tracking
-                        session['batch_start'] = start_po
-                        session['batch_end'] = end_po
-                        session['current_batch_po'] = start_po
+                        # Store batch information in session for tracking - company-specific
+                        session[f'{current_db}_batch_start'] = start_po
+                        session[f'{current_db}_batch_end'] = end_po
+                        session[f'{current_db}_current_batch_po'] = start_po
+                        session.modified = True
                         
                         if request.is_json:
                             return jsonify({
-                                'success': True, 
+                                'success': True,
                                 'message': f'Batch range {start_po}-{end_po} started successfully for {current_db.upper()}',
                                 'current_po': start_po,
+                                'batch_start': start_po,
                                 'batch_end': end_po,
                                 'database': current_db
                             })
@@ -770,17 +764,17 @@ def change_batch():
         db_manager = get_database_manager(current_db)
         db_session = db_manager.get_session()
         counter = db_manager.get_or_create_batch_counter(db_session)
-        current_po_value = counter.value if counter else 1000 # Use the batch counter value
+        current_po_value = counter.value if counter else 1000
         db_session.close()
     except Exception as e:
         logger.error(f"Error getting current PO for change_batch template: {str(e)}")
-        current_po_value = 1000 # Fallback
+        current_po_value = 1000
     
     # Get current database info for template
     company_info = get_company_config(current_db)
     
     return render_template("change_batch.html", 
-                         current_po=current_po_value, # Pass current_po_value
+                         current_po=current_po_value,
                          company=current_db,
                          company_info=company_info,
                          active_page='change-batch')
@@ -790,38 +784,25 @@ def change_batch():
 def check_batch_status():
     """Check current batch status and PO number for the currently active database."""
     try:
-        # Get current PO from the active database
         current_db = get_current_database()
-        db_manager = get_database_manager(current_db)
-        db_session = db_manager.get_session()
-        counter = db_manager.get_or_create_batch_counter(db_session)
-        current_po = counter.value if counter else 1000
-        db_session.close()
-        
-        # Get batch information from session
-        batch_start = session.get('batch_start', 0)
-        batch_end = session.get('batch_end', 0)
-        
-        # Check if we've reached the end of the batch
-        batch_complete = False
-        if batch_end > 0 and current_po > batch_end:
-            batch_complete = True
-            # Reset batch info
-            session.pop('batch_start', None)
-            session.pop('batch_end', None)
-            session.pop('current_batch_po', None)
+        from batch_number_manager import get_batch_manager
+        batch_manager = get_batch_manager(current_db)
+        stats = batch_manager.get_batch_statistics()
         
         return jsonify({
-            'current_po': current_po,
-            'batch_start': batch_start,
-            'batch_end': batch_end,
-            'batch_complete': batch_complete,
+            'current_po': stats.get('current_batch_number'),
+            'next_batch_number': stats.get('next_batch_number'),
+            'health_status': stats.get('health_status'),
+            'total_pors': stats.get('total_pors'),
+            'batch_start': session.get(f'{current_db}_batch_start', 0),
+            'batch_end': session.get(f'{current_db}_batch_end', 0),
             'database': current_db
         })
         
     except Exception as e:
         logger.error(f"Error checking batch status: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
 
 
 @routes.route('/check-batch-completion')

@@ -3,462 +3,581 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ company_info.name }} POR Automator - Batch Manager</title>
+    <title>{{ company_info.name }} POR Automator - Advanced Batch Manager</title>
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script>
-        // Load theme preference based on database on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check current database from backend and apply theme automatically
-            const currentCompany = '{{ company }}';
-            if (currentCompany === 'fdec') {
-                document.body.classList.add('dark-mode');
-                localStorage.setItem('darkMode', 'enabled');
-                localStorage.setItem('activeDatabase', 'FDEC');
-            } else {
-                document.body.classList.remove('dark-mode');
-                localStorage.setItem('darkMode', 'disabled');
-                localStorage.setItem('activeDatabase', 'A&P');
-            }
-        });
-    </script>
-        <style>
-        /* Dark Mode Styles */
-        .dark-mode {
-            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460) !important;
-            color: #e2e8f0 !important;
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        
-        .dark-mode .bg-white\/80 {
-            background-color: rgba(30, 41, 59, 0.8) !important;
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-        
-        .dark-mode .text-gray-900 {
-            color: #f1f5f9 !important;
+        .pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite alternate;
         }
-        
-        .dark-mode .text-gray-600 {
-            color: #cbd5e1 !important;
+        @keyframes pulse-glow {
+            from { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
+            to { box-shadow: 0 0 30px rgba(59, 130, 246, 0.8); }
         }
-        
-        .dark-mode .text-gray-700 {
-            color: #e2e8f0 !important;
+        .dark-mode .glass-effect {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.3);
         }
-        
-        .dark-mode .bg-gray-50 {
-            background-color: #1e293b !important;
+        .company-blue {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8, #1e40af);
         }
-        
-        .dark-mode .border-gray-200\/50 {
-            border-color: rgba(51, 65, 85, 0.5) !important;
+        .company-green {
+            background: linear-gradient(135deg, #10b981, #059669, #047857);
         }
-        
-        .dark-mode .bg-gray-100 {
-            background-color: #334155 !important;
+        .slide-in {
+            animation: slideIn 0.5s ease-out;
         }
-        
-        .dark-mode .hover\:bg-gray-100:hover {
-            background-color: #475569 !important;
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
-        
-        .dark-mode .bg-white {
-            background-color: #1e293b !important;
+        .bounce-in {
+            animation: bounceIn 0.6s ease-out;
         }
-        
-        .dark-mode .bg-gray-50\/50 {
-            background-color: rgba(30, 41, 59, 0.5) !important;
-        }
-        
-        .dark-mode .border-gray-200 {
-            border-color: #475569 !important;
-        }
-        
-        /* Fix input and form element colors in dark mode */
-        .dark-mode input[type="text"] {
-            background-color: #334155 !important;
-            color: #f1f5f9 !important;
-            border-color: #64748b !important;
-        }
-        
-        .dark-mode input[type="text"]:focus {
-            background-color: #475569 !important;
-            border-color: #60a5fa !important;
-        }
-        
-        .dark-mode .bg-blue-50 {
-            background-color: #1e3a8a !important;
-        }
-        
-        .dark-mode .text-blue-900 {
-            color: #93c5fd !important;
-        }
-        
-        .dark-mode .text-blue-700 {
-            color: #bfdbfe !important;
-        }
-        
-        .dark-mode .text-blue-600 {
-            color: #60a5fa !important;
-        }
-        
-        .dark-mode .border-blue-200 {
-            border-color: #1e40af !important;
-        }
-        
-        .dark-mode .bg-green-50 {
-            background-color: #065f46 !important;
-        }
-        
-        .dark-mode .text-green-900 {
-            color: #6ee7b7 !important;
-        }
-        
-        .dark-mode .text-green-700 {
-            color: #86efac !important;
-        }
-        
-        .dark-mode .text-green-600 {
-            color: #34d399 !important;
-        }
-        
-        .dark-mode .border-green-200 {
-            border-color: #047857 !important;
-        }
-        
-        .dark-mode .text-red-600 {
-            color: #f87171 !important;
-        }
-        
-        .dark-mode .text-red-700 {
-            color: #fca5a5 !important;
-        }
-        
-        /* Button contrast fixes */
-        .dark-mode button {
-            background-color: #475569 !important;
-            color: #f1f5f9 !important;
-            border-color: #64748b !important;
-        }
-        
-        .dark-mode .bg-gray-500 {
-            background-color: #64748b !important;
-        }
-        
-        .dark-mode .bg-yellow-500 {
-            background-color: #eab308 !important;
-            color: #1f2937 !important;
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 min-h-screen font-inter">
+<body class="min-h-screen font-inter bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100"
+      x-data="batchManager()"
+      x-init="init()"
+      :class="company === 'fdec' ? 'dark-mode' : ''">
+
+    <!-- Theme-aware background -->
+    <div class="fixed inset-0 bg-gradient-to-br transition-all duration-1000"
+         :class="company === 'fdec' ? 'from-slate-900 via-slate-800 to-gray-900' : 'from-slate-50 via-blue-50 to-indigo-100'">
+    </div>
+
     <div class="relative z-10 flex min-h-screen">
         {% include '_sidebar.html' %}
 
         <!-- Main Content -->
         <main class="flex-1 p-8 ml-20">
             <!-- Header -->
-            <div class="mb-8">
-                <div class="flex items-center justify-between mb-4">
+            <div class="mb-8 slide-in">
+                <div class="flex items-center justify-between mb-6">
                     <div>
-                        <h1 class="text-4xl font-bold text-gray-900 mb-2">{{ company_info.name }} Batch Number Manager</h1>
-                        <p class="text-gray-600 text-lg">Manage PO number ranges for {{ company_info.name }} database</p>
-                        <div class="mt-2 inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
-                            <i class="fas fa-database mr-2"></i>
-                            Active Database: {{ company.upper() }}
-                        </div>
+                        <h1 class="text-4xl font-bold mb-2"
+                           :class="company === 'fdec' ? 'text-gray-100' : 'text-blue-900'"
+                           x-text="`🚀 Advanced Batch Manager - ${company.toUpperCase()}`">
+                        </h1>
+                        <p class="text-lg opacity-75"
+                           :class="company === 'fdec' ? 'text-gray-300' : 'text-gray-600'">
+                            Intelligent batch processing with real-time analytics and dual-company support
+                        </p>
                     </div>
-                    <div class="flex space-x-3">
-                        <button onclick="window.location.href='/'" class="px-6 py-3 bg-white text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center space-x-2 border border-gray-200 dark-mode:bg-slate-700 dark-mode:text-gray-200 dark-mode:border-slate-600">
-                            <i class="fas fa-upload"></i>
-                            <span>Back to Upload</span>
-                        </button>
-                        <button onclick="window.location.href='/dashboard'" class="px-6 py-3 bg-gray-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center space-x-2">
-                            <i class="fas fa-home"></i>
-                            <span>Dashboard</span>
-                        </button>
-                        <button onclick="window.location.href='/test'" class="px-6 py-3 bg-yellow-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center space-x-2">
-                            <i class="fas fa-bug"></i>
-                            <span>System Status</span>
-                        </button>
+                    <div class="flex items-center space-x-4">
+                        <div class="px-4 py-2 rounded-full glass-effect"
+                             :class="company === 'fdec' ? 'text-gray-200' : 'text-blue-600'">
+                            <i class="fas fa-database mr-2"></i>
+                            <span x-text="company.toUpperCase() + ' Database'"></span>
+                        </div>
+                        <div class="px-4 py-2 rounded-full glass-effect"
+                             :class="company === 'fdec' ? 'text-gray-200' : 'text-blue-600'">
+                            <i class="fas fa-clock mr-2"></i>
+                            <span x-text="formatTime(currentTime)"></span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Batch Change Form -->
-            <div class="max-w-4xl mx-auto">
-                <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-8 shadow-xl border border-gray-200/50">
-                    <!-- Current Status -->
-                    <div class="mb-8 p-6 bg-blue-50 rounded-xl border border-blue-200">
-                        <h3 class="text-lg font-semibold text-blue-900 mb-2">📊 Current Status - {{ company.upper() }} Database</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div class="text-center">
-                                <div class="text-2xl font-bold text-blue-600">{{ current_po|default(0) }}</div>
-                                <div class="text-sm text-blue-700">Highest PO Number</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-2xl font-bold text-green-600" id="currentBatchStart">-</div>
-                                <div class="text-sm text-green-700">Batch Start</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-2xl font-bold text-red-600" id="currentBatchEnd">-</div>
-                                <div class="text-sm text-red-700">Batch End</div>
-                            </div>
+            <!-- Main Dashboard -->
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
+                <!-- Current Status Card -->
+                <div class="xl:col-span-1">
+                    <div class="bg-white/90 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 glass-effect bounce-in"
+                         :class="company === 'fdec' ? 'bg-slate-800/90' : 'bg-white/90'">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-semibold"
+                               :class="company === 'fdec' ? 'text-gray-100' : 'text-gray-900'">
+                                📊 Current Status
+                            </h3>
+                            <div class="w-3 h-3 rounded-full pulse-glow"
+                                 :class="company === 'fdec' ? 'bg-gray-400' : 'bg-blue-500'"></div>
                         </div>
-                    </div>
 
-                    <!-- Batch Form -->
-                    <form method="POST" action="/change-batch" id="batchForm" class="space-y-6">
-                        <div class="text-center mb-8">
-                            <h2 class="text-2xl font-bold text-gray-900 mb-2">Set New Batch Range for {{ company.upper() }}</h2>
-                            <p class="text-gray-600">Enter a range of PO numbers for batch processing in the {{ company.upper() }} database</p>
-                        </div>
-                        
                         <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span :class="company === 'fdec' ? 'text-gray-300' : 'text-gray-600'">Current Batch #</span>
+                                <span class="text-2xl font-bold"
+                                      :class="company === 'fdec' ? 'text-gray-100' : 'text-blue-600'"
+                                      x-text="currentBatchNumber">
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span :class="company === 'fdec' ? 'text-gray-300' : 'text-gray-600'">Next Available</span>
+                                <span class="text-xl font-semibold"
+                                      :class="company === 'fdec' ? 'text-gray-100' : 'text-blue-500'"
+                                      x-text="nextBatchNumber">
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span :class="company === 'fdec' ? 'text-gray-300' : 'text-gray-600'">Health Status</span>
+                                <span class="px-3 py-1 rounded-full text-sm font-medium"
+                                      :class="healthStatus === 'HEALTHY' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'"
+                                      x-text="healthStatus">
+                                </span>
+                            </div>
+                                                    </div>
+
+                    </div>
+                </div>
+<!-- Batch Configuration Card -->
+                <div class="xl:col-span-2">
+                    <div class="bg-white/90 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 glass-effect bounce-in"
+                         :class="company === 'fdec' ? 'bg-slate-800/90' : 'bg-white/90'"
+                         style="animation-delay: 0.1s;">
+
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-semibold"
+                               :class="company === 'fdec' ? 'text-gray-100' : 'text-gray-900'">
+                                 Batch Configuration
+                            </h3>
+                            <div class="flex items-center space-x-2">
+                                <span class="px-3 py-1 rounded-full text-xs font-medium"
+                                      :class="company === 'fdec' ? 'bg-gray-700 text-gray-200' : 'bg-blue-100 text-blue-800'"
+                                      x-text="company.toUpperCase()">
+                                </span>
+                            </div>
+                        </div>
+
+                        <form @submit.prevent="startBatch()" class="space-y-6">
+                            <!-- Batch Range Input -->
                             <div>
-                                <label for="batch_range" class="block text-sm font-medium text-gray-700 mb-2">
-                                    Batch Number Range
+                                <label class="block text-sm font-medium mb-3"
+                                       :class="company === 'fdec' ? 'text-gray-300' : 'text-gray-700'">
+                                     Batch Number Range
                                 </label>
-                                <input type="text" 
-                                       name="batch_range" 
-                                       id="batch_range" 
-                                       placeholder="e.g., 100-200" 
-                                       required
-                                       pattern="^\d+-\d+$"
-                                       title="Please enter a range in format: start-end (e.g., 100-200)"
-                                       class="w-full px-4 py-3 border-2 border-blue-300 rounded-xl text-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-300">
-                                <p class="mt-2 text-sm text-gray-500">
-                                    Format: start-end (e.g., 100-200, 500-600)
+                                <div class="flex space-x-3">
+                                    <input type="text"
+                                           x-model="batchStart"
+                                           @focus="isEditing = true"
+                                           @blur="isEditing = false"
+                                           placeholder="Start (e.g., 100)"
+                                           class="flex-1 px-4 py-3 border-2 rounded-xl text-lg focus:ring-2 focus:ring-opacity-50 transition-all duration-200"
+                                           :class="company === 'fdec'
+                                                  ? 'border-gray-600 focus:border-gray-400 focus:ring-gray-500 bg-slate-700 text-gray-100'
+                                                  : 'border-blue-300 focus:border-blue-500 focus:ring-blue-200'"
+                                           required>
+                                    <div class="flex items-center">
+                                        <span class="text-2xl font-bold"
+                                              :class="company === 'fdec' ? 'text-gray-300' : 'text-blue-600'">
+                                            -
+                                        </span>
+                                    </div>
+                                    <input type="text"
+                                           x-model="batchEnd"
+                                           @focus="isEditing = true"
+                                           @blur="isEditing = false"
+                                           placeholder="End (e.g., 200)"
+                                           class="flex-1 px-4 py-3 border-2 rounded-xl text-lg focus:ring-2 focus:ring-opacity-50 transition-all duration-200"
+                                           :class="company === 'fdec'
+                                                  ? 'border-gray-600 focus:border-gray-400 focus:ring-gray-500 bg-slate-700 text-gray-100'
+                                                  : 'border-blue-300 focus:border-blue-500 focus:ring-blue-200'"
+                                           required>
+                                </div>
+                                <p class="mt-2 text-sm"
+                                   :class="company === 'fdec' ? 'text-gray-400' : 'text-gray-500'">
+                                    Format: start-end (e.g., 100-200, 5000-5100)
                                 </p>
                             </div>
-                        </div>
 
+                            
+                            <!-- Batch Preview -->
+                            <div class="p-4 rounded-lg border-2"
+                                 :class="company === 'fdec'
+                                        ? 'border-gray-600 bg-gray-800/50'
+                                        : 'border-blue-300 bg-blue-50/50'">
+                                <h4 class="font-semibold mb-2"
+                                   :class="company === 'fdec' ? 'text-gray-200' : 'text-blue-800'">
+                                     Batch Preview
+                                </h4>
+                                <div class="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <span :class="company === 'fdec' ? 'text-gray-300' : 'text-blue-600'">Range Size:</span>
+                                        <span class="font-medium ml-2" x-text="batchEnd - batchStart + 1"></span>
+                                    </div>
+                                    <div>
+                                        <span :class="company === 'fdec' ? 'text-gray-300' : 'text-blue-600'">Current Usage:</span>
+                                        <span class="font-medium ml-2" x-text="Math.max(0, currentBatchNumber - batchStart + 1)"></span>
+                                    </div>
+                                    <div>
+                                        <span :class="company === 'fdec' ? 'text-gray-300' : 'text-blue-600'">Remaining:</span>
+                                        <span class="font-medium ml-2" x-text="Math.max(0, batchEnd - currentBatchNumber + 1)"></span>
+                                    </div>
+                                    <div>
+                                        <span :class="company === 'fdec' ? 'text-gray-300' : 'text-blue-600'">Progress:</span>
+                                        <span class="font-medium ml-2" x-text="Math.round(((currentBatchNumber - batchStart + 1) / (batchEnd - batchStart + 1)) * 100) + '%'"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="flex space-x-4">
+                                <button type="submit"
+                                        :disabled="isLoading"
+                                        class="flex-1 px-6 py-4 rounded-xl font-semibold shadow-lg transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-2"
+                                        :class="isLoading
+                                               ? 'opacity-50 cursor-not-allowed'
+                                               : company === 'fdec'
+                                                 ? 'bg-gray-700 hover:bg-gray-600 text-white'
+                                                 : 'bg-blue-600 hover:bg-blue-700 text-white'">
+                                    <i class="fas fa-rocket" :class="isLoading ? 'fa-spin' : ''"></i>
+                                    <span x-text="isLoading ? 'Starting...' : ' Start Batch'"></span>
+                                </button>
+                                <button type="button"
+                                        @click="resetBatch()"
+                                        class="px-6 py-4 rounded-xl font-semibold shadow-lg transition-all duration-300 hover:scale-105 flex items-center space-x-2"
+                                        :class="company === 'fdec'
+                                               ? 'bg-gray-600 hover:bg-gray-500 text-gray-200'
+                                               : 'bg-blue-100 hover:bg-blue-200 text-blue-800'">
+                                    <i class="fas fa-undo"></i>
+                                    <span>Reset</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Tracking -->
+            <div x-show="showProgress" x-transition:enter="slide-in" x-transition:enter-start="opacity-0 transform translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0">
+                <div class="bg-white/90 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 glass-effect"
+                     :class="company === 'fdec' ? 'bg-slate-800/90' : 'bg-white/90'">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-semibold"
+                           :class="company === 'fdec' ? 'text-gray-100' : 'text-gray-900'">
+                             Live Batch Progress
+                        </h3>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-2 h-2 rounded-full animate-pulse"
+                                 :class="company === 'fdec' ? 'bg-gray-400' : 'bg-blue-500'"></div>
+                            <span class="text-sm"
+                                  :class="company === 'fdec' ? 'text-gray-300' : 'text-gray-600'">
+                                Real-time Updates
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium"
+                                  :class="company === 'fdec' ? 'text-gray-300' : 'text-gray-700'">
+                                Overall Progress
+                            </span>
+                            <span class="text-sm font-bold"
+                                  :class="company === 'fdec' ? 'text-gray-100' : 'text-blue-600'"
+                                  x-text="progressPercentage + '%'">
+                            </span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500 ease-out"
+                                 :class="company === 'fdec'
+                                        ? 'bg-gradient-to-r from-gray-600 to-gray-500'
+                                        : 'bg-gradient-to-r from-blue-500 to-indigo-500'"
+                                 :style="`width: ${progressPercentage}%`">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Stats -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="text-center p-3 rounded-lg"
+                             :class="company === 'fdec' ? 'bg-gray-800/50' : 'bg-blue-50'">
+                            <div class="text-2xl font-bold"
+                                 :class="company === 'fdec' ? 'text-gray-100' : 'text-blue-600'"
+                                 x-text="currentBatchNumber">
+                            </div>
+                            <div class="text-xs"
+                                 :class="company === 'fdec' ? 'text-gray-300' : 'text-blue-700'">
+                                Current Batch
+                            </div>
+                        </div>
+                        <div class="text-center p-3 rounded-lg"
+                             :class="company === 'fdec' ? 'bg-gray-800/50' : 'bg-blue-50'">
+                            <div class="text-2xl font-bold"
+                                 :class="company === 'fdec' ? 'text-gray-100' : 'text-blue-600'"
+                                 x-text="batchEnd - currentBatchNumber">
+                            </div>
+                            <div class="text-xs"
+                                 :class="company === 'fdec' ? 'text-gray-300' : 'text-blue-700'">
+                                Remaining
+                            </div>
+                        </div>
+                        <div class="text-center p-3 rounded-lg"
+                             :class="company === 'fdec' ? 'bg-gray-800/50' : 'bg-blue-50'">
+                            <div class="text-2xl font-bold"
+                                 :class="company === 'fdec' ? 'text-gray-100' : 'text-blue-600'"
+                                 x-text="batchEnd - batchStart + 1">
+                            </div>
+                            <div class="text-xs"
+                                 :class="company === 'fdec' ? 'text-gray-300' : 'text-blue-700'">
+                                Total Range
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Batch Complete Message -->
+                    <div x-show="batchComplete" x-transition:enter="bounce-in" class="mt-6 p-4 rounded-lg border-2"
+                         :class="company === 'fdec'
+                                ? 'border-gray-600 bg-gray-800/50'
+                                : 'border-blue-300 bg-blue-50/50'">
                         <div class="text-center">
-                            <button type="submit" class="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center space-x-2 mx-auto">
-                                <i class="fas fa-rocket"></i>
-                                <span>Start Batch for {{ company.upper() }}</span>
-                            </button>
-                        </div>
-                    </form>
-                    
-                    <!-- Batch Progress Section -->
-                    <div id="batchProgress" class="hidden mt-8 p-6 bg-green-50 rounded-xl border border-green-200">
-                        <h3 class="text-lg font-semibold text-green-900 mb-4">📊 Batch Progress - {{ company.upper() }}</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                            <div class="text-center">
-                                <div class="text-2xl font-bold text-blue-600" id="currentPo">-</div>
-                                <div class="text-sm text-blue-700">Current PO</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-2xl font-bold text-green-600" id="targetEnd">-</div>
-                                <div class="text-sm text-green-700">Target End</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-2xl font-bold text-red-600" id="remaining">-</div>
-                                <div class="text-sm text-red-700">Remaining</div>
-                            </div>
-                        </div>
-                        
-                        <!-- Progress Bar -->
-                        <div class="mb-4">
-                            <div class="bg-gray-200 rounded-full h-4 overflow-hidden">
-                                <div id="progressBar" class="bg-gradient-to-r from-green-500 to-blue-500 h-full transition-all duration-500 ease-out" style="width: 0%"></div>
-                            </div>
-                        </div>
-                        
-                        <div id="batchStatus" class="text-center font-semibold text-green-700 mb-4"></div>
-                        
-                        <!-- Batch Complete Message -->
-                        <div id="batchComplete" class="hidden text-center p-4 bg-green-100 rounded-lg border border-green-300">
-                            <h4 class="text-lg font-semibold text-green-800 mb-2">✅ Batch Complete!</h4>
-                            <p class="text-green-700 mb-4">All batch numbers have been used. Please set a new batch range.</p>
-                            <button onclick="resetBatchForm()" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors duration-300">
-                                🔄 Set New Batch Range
+                            <div class="text-4xl mb-2"></div>
+                            <h4 class="text-lg font-semibold mb-2"
+                               :class="company === 'fdec' ? 'text-gray-100' : 'text-blue-800'">
+                                Batch Complete!
+                            </h4>
+                            <p class="mb-4"
+                              :class="company === 'fdec' ? 'text-gray-300' : 'text-blue-700'">
+                                All batch numbers have been used. Ready for a new batch range!
+                            </p>
+                            <button @click="resetBatch()"
+                                    class="px-6 py-3 rounded-lg font-semibold transition-all duration-200 hover:scale-105"
+                                    :class="company === 'fdec'
+                                           ? 'bg-gray-700 hover:bg-gray-600 text-white'
+                                           : 'bg-blue-600 hover:bg-blue-700 text-white'">
+                                 Set New Batch Range
                             </button>
                         </div>
                     </div>
-                    
-                    <!-- Flash Messages -->
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            <div class="mt-6 space-y-3">
-                                {% for category, message in messages %}
-                                    <div class="p-4 rounded-lg {% if category == 'success' %}bg-green-100 border border-green-300 text-green-800{% else %}bg-red-100 border border-red-300 text-red-800{% endif %}">
-                                        {{ message }}
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    {% endwith %}
                 </div>
             </div>
-        </main>
+
+                    </main>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div x-show="showToast" x-transition:enter="slide-in" x-transition:enter-start="opacity-0 transform translate-x-full" x-transition:enter-end="opacity-100 transform translate-x-0"
+         class="fixed top-4 right-4 z-50">
+        <div class="px-6 py-4 rounded-lg shadow-lg flex items-center space-x-3"
+             :class="toastType === 'success'
+                    ? (company === 'fdec' ? 'bg-emerald-600' : 'bg-green-600')
+                    : (company === 'fdec' ? 'bg-red-600' : 'bg-red-600')"
+             style="animation-delay: 0.5s;">
+            <i :class="toastType === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle'"></i>
+            <span class="text-white font-medium" x-text="toastMessage"></span>
+            <button @click="showToast = false" class="text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
     </div>
 
     <script>
-        let batchStart = 0;
-        let batchEnd = 0;
-        let currentPo = 0;
-        
-        document.getElementById('batchForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const batchRange = document.getElementById('batch_range').value.trim();
-            const rangePattern = /^(\d+)-(\d+)$/;
-            
-            if (!rangePattern.test(batchRange)) {
-                alert('Please enter a valid range in format: start-end (e.g., 100-200)');
-                return;
-            }
-            
-            const matches = batchRange.match(rangePattern);
-            batchStart = parseInt(matches[1]);
-            batchEnd = parseInt(matches[2]);
-            
-            if (batchStart >= batchEnd) {
-                alert('Start number must be less than end number');
-                return;
-            }
-            
-            startBatch();
-        });
-        
-        function startBatch() {
-            // Clear any previous batch data
-            document.getElementById('batchComplete').classList.add('hidden');
-            document.getElementById('progressBar').style.width = '0%';
-            document.getElementById('batchStatus').textContent = '';
-            
-            // Hide form and show progress
-            document.getElementById('batchForm').classList.add('hidden');
-            document.getElementById('batchProgress').classList.remove('hidden');
-            
-            // Set initial values
-            currentPo = batchStart;
-            updateProgress();
-            
-            // Update current batch display
-            document.getElementById('currentBatchStart').textContent = batchStart;
-            document.getElementById('currentBatchEnd').textContent = batchEnd;
-            
-            // Send request to start batch
-            fetch('/change-batch', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
+        function batchManager() {
+            return {
+                // Data
+                company: '{{ company | safe }}',
+                currentBatchNumber: 0,
+                nextBatchNumber: 0,
+                totalPORs: 0,
+                healthStatus: 'HEALTHY',
+                batchStart: '',
+                batchEnd: '',
+                showProgress: false,
+                showAnalytics: false,
+                batchComplete: false,
+                progressPercentage: 0,
+                isLoading: false,
+                isEditing: false,
+                currentTime: new Date(),
+
+
+                // Toast
+                showToast: false,
+                toastMessage: '',
+                toastType: 'success',
+
+                // Initialize
+                init() {
+                    this.loadCurrentStatus();
+                    this.startRealTimeUpdates();
+                    this.startTimeUpdates();
                 },
-                body: JSON.stringify({
-                    batch_range: `${batchStart}-${batchEnd}`
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    updateProgress();
-                    checkBatchStatus();
-                } else {
-                    alert('Error starting batch: ' + data.error);
-                    resetBatchForm();
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error starting batch');
-                resetBatchForm();
-            });
-        }
-        
-        function updateProgress() {
-            // Handle case where current PO is outside the batch range
-            if (currentPo < batchStart) {
-                // Current PO is below batch range - show as not started
-                const remaining = batchEnd - batchStart + 1;
-                const total = batchEnd - batchStart + 1;
-                const used = 0;
-                const percentage = 0;
-                
-                document.getElementById('currentPo').textContent = batchStart;
-                document.getElementById('targetEnd').textContent = batchEnd;
-                document.getElementById('remaining').textContent = remaining;
-                document.getElementById('progressBar').style.width = percentage + '%';
-                document.getElementById('batchStatus').textContent = `Batch ready: ${total} numbers available`;
-                
-            } else if (currentPo > batchEnd) {
-                // Current PO is above batch range - show as complete/exceeded
-                const total = batchEnd - batchStart + 1;
-                const used = total;
-                const percentage = 100;
-                
-                document.getElementById('currentPo').textContent = currentPo;
-                document.getElementById('targetEnd').textContent = batchEnd;
-                document.getElementById('remaining').textContent = 0;
-                document.getElementById('progressBar').style.width = percentage + '%';
-                document.getElementById('batchStatus').textContent = `Batch exceeded! Current PO (${currentPo}) is beyond target end (${batchEnd})`;
-                document.getElementById('batchComplete').classList.remove('hidden');
-                
-            } else {
-                // Current PO is within batch range - normal calculation
-                const remaining = batchEnd - currentPo + 1;
-                const total = batchEnd - batchStart + 1;
-                const used = currentPo - batchStart + 1;
-                const percentage = Math.min((used / total) * 100, 100);
-                
-                document.getElementById('currentPo').textContent = currentPo;
-                document.getElementById('targetEnd').textContent = batchEnd;
-                document.getElementById('remaining').textContent = remaining;
-                document.getElementById('progressBar').style.width = percentage + '%';
-                
-                if (remaining <= 0) {
-                    document.getElementById('batchStatus').textContent = 'Batch Complete!';
-                    document.getElementById('batchComplete').classList.remove('hidden');
-                } else {
-                    document.getElementById('batchStatus').textContent = `${used} of ${total} numbers used`;
-                }
+
+                // Load current batch status
+                async loadCurrentStatus() {
+                    try {
+                        const response = await fetch('/check-batch-status');
+                        const data = await response.json();
+
+                        if (data.current_po) {
+                            this.currentBatchNumber = data.current_po;
+                            this.nextBatchNumber = data.current_po + 1;
+                            if (!this.isEditing) {
+                                this.batchStart = data.batch_start || '';
+                                this.batchEnd = data.batch_end || '';
+                            }
+                            this.showProgress = true;
+                            this.updateProgress(); // Re-calculate progress with the new data
+                        }
+
+                        // Load analytics if available
+                        this.showAnalytics = true;
+
+                    } catch (error) {
+                        console.error('Error loading batch status:', error);
+                        this.showToast('Error loading batch status', 'error');
+                    }
+                },
+
+                // Centralized state update function
+                updateBatchState(data) {
+                    this.currentBatchNumber = data.current_po;
+                    this.nextBatchNumber = data.current_po + 1;
+                    this.batchStart = data.batch_start || data.current_po;
+                    this.batchEnd = data.batch_end;
+                    this.showProgress = true;
+                    this.updateProgress();
+                },
+
+                // Start batch processing (Overhauled)
+                async startBatch() {
+                    const self = this;
+                    this.isLoading = true;
+
+                    if (!this.batchStart || !this.batchEnd) {
+                        this.showToast('Please enter both start and end batch numbers', 'error');
+                        this.isLoading = false;
+                        return;
+                    }
+
+                    const start = parseInt(this.batchStart);
+                    const end = parseInt(this.batchEnd);
+
+                    if (isNaN(start) || isNaN(end) || start >= end) {
+                        this.showToast('End batch must be a number greater than start', 'error');
+                        this.isLoading = false;
+                        return;
+                    }
+
+                    this.stopRealTimeUpdates();
+                    try {
+                        const batchRange = `${start}-${end}`;
+                        const payload = {
+                            batch_range: batchRange,
+                            company: this.company
+                        };
+                        console.log('[DEBUG] Sending to /change-batch:', JSON.stringify(payload, null, 2));
+
+                        const response = await fetch('/change-batch', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        console.log('[DEBUG] Received response object:', response);
+                        const data = await response.json();
+                        console.log('[DEBUG] Parsed response data:', data);
+
+                        if (data.success) {
+                            this.updateBatchState(data);
+                            this.showToast('Batch started successfully!', 'success');
+                        } else {
+                            this.showToast(data.error || 'Failed to start batch', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Error starting batch:', error);
+                        self.showToast('An unexpected error occurred.', 'error');
+                    } finally {
+                        this.isLoading = false;
+                        this.startRealTimeUpdates();
+                    }
+                },
+
+
+                // Reset batch form
+                resetBatch() {
+                    this.batchStart = '';
+                    this.batchEnd = '';
+                    this.batchComplete = false;
+                    this.showProgress = false;
+                    this.showToast('Batch form reset', 'success');
+                },
+
+                // Update progress calculations
+                updateProgress() {
+                    const start = parseInt(this.batchStart);
+                    const end = parseInt(this.batchEnd);
+
+                    if (!isNaN(start) && !isNaN(end) && start < end) {
+                        const current = this.currentBatchNumber;
+                        const total = end - start + 1;
+                        
+                        if (total > 0) {
+                            const used = Math.max(0, current - start);
+                            this.progressPercentage = Math.min(100, Math.round((used / total) * 100));
+                        } else {
+                            this.progressPercentage = 0;
+                        }
+
+                        this.batchComplete = current >= end;
+                    } else {
+                        this.progressPercentage = 0;
+                        this.batchComplete = false;
+                    }
+                },
+
+                // Real-time updates
+                pollingTimer: null,
+                startRealTimeUpdates() {
+                    if (this.pollingTimer) clearInterval(this.pollingTimer);
+                    this.pollingTimer = setInterval(() => {
+                        this.loadCurrentStatus();
+                        this.updateProgress();
+                    }, 5000); // Update every 5 seconds
+                },
+                stopRealTimeUpdates() {
+                    if (this.pollingTimer) {
+                        clearInterval(this.pollingTimer);
+                        this.pollingTimer = null;
+                    }
+                },
+
+                // Time updates
+                startTimeUpdates() {
+                    setInterval(() => {
+                        this.currentTime = new Date();
+                    }, 1000);
+                },
+
+                // Utility functions
+                formatTime(date) {
+                    return date.toLocaleTimeString();
+                },
+
+                showToast(message, type = 'success') {
+                    this.toastMessage = message;
+                    this.toastType = type;
+                    this.showToast = true;
+
+                    setTimeout(() => {
+                        this.showToast = false;
+                    }, 5000);
+                },
+
             }
-        }
-        
-        function checkBatchStatus() {
-            fetch('/check-batch-status')
-            .then(response => response.json())
-            .then(data => {
-                if (data.current_po !== currentPo) {
-                    currentPo = data.current_po;
-                    updateProgress();
-                }
-                
-                if (currentPo <= batchEnd) {
-                    setTimeout(checkBatchStatus, 2000); // Check every 2 seconds
-                }
-            })
-            .catch(error => {
-                console.error('Error checking batch status:', error);
-            });
-        }
-        
-        function resetBatchForm() {
-            // Reset all batch variables
-            batchStart = 0;
-            batchEnd = 0;
-            currentPo = 0;
-            
-            // Reset form display
-            document.getElementById('batchForm').classList.remove('hidden');
-            document.getElementById('batchProgress').classList.add('hidden');
-            document.getElementById('batchComplete').classList.add('hidden');
-            document.getElementById('batch_range').value = '';
-            
-            // Clear progress display
-            document.getElementById('currentPo').textContent = '-';
-            document.getElementById('targetEnd').textContent = '-';
-            document.getElementById('remaining').textContent = '-';
-            document.getElementById('progressBar').style.width = '0%';
-            document.getElementById('batchStatus').textContent = '';
-            
-            // Clear current batch display
-            document.getElementById('currentBatchStart').textContent = '-';
-            document.getElementById('currentBatchEnd').textContent = '-';
         }
     </script>
 </body>
-</html> 
+</html>
