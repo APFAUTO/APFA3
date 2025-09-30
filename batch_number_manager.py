@@ -208,26 +208,18 @@ class BatchNumberManager:
     def _calibrate_counter(self, session: Session, counter) -> int:
         """
         Calibrate counter to ensure it's accurate and never negative.
-        It sets the counter to the highest_used PO number + 1, or batch_start, whichever is greater.
+        It sets the counter to batch_start if it's lower.
         It does NOT increment for the *next* PO number, only ensures a valid starting point.
         Returns the calibrated value.
         """
         current_value = counter.value
 
-        # Get highest PO number actually used
-        highest_por = session.query(self.models['POR']).order_by(
-            self.models['POR'].po_number.desc()
-        ).first()
-        highest_used = highest_por.po_number if highest_por else 0
-
-        # The counter should be at least the highest PO number used + 1
-        # and also at least the configured batch_start, and at least 1.
-        # This is the minimum valid value the counter should be.
-        minimum_valid_value = max(highest_used + 1, self.config.batch_start, 1)
+        # The counter should be at least the configured batch_start, and at least 1.
+        minimum_valid_value = max(self.config.batch_start, 1)
 
         # Only return the calculated value, do not modify counter.value here
         if current_value < minimum_valid_value:
-            logger.info(f"🔧 {self.company_name.upper()}: Calibration calculated: {minimum_valid_value} (current: {current_value}, highest used: {highest_used})")
+            logger.info(f"🔧 {self.company_name.upper()}: Calibration calculated: {minimum_valid_value} (current: {current_value})")
             return minimum_valid_value
         
         logger.info(f"🔧 {self.company_name.upper()}: Counter already calibrated at {current_value}.")
