@@ -154,9 +154,9 @@ def process_excel_file(file) -> Tuple[bool, str, Optional[dict], Optional[list]]
             'supplier': por_data.get('supplier', ''),
             'filename': safe_filename,
             'company': current_db,  # Use current database instead of hardcoded 'a&p'
-            'job_contract_no': first_item.get('job'),
-            'op_no': first_item.get('op'),
-            'description': first_item.get('desc'),
+            'job_contract_no': str(first_item.get('job')) if first_item.get('job') is not None else '',
+            'op_no': str(first_item.get('op')) if first_item.get('op') is not None else '',
+            'description': str(first_item.get('desc')) if first_item.get('desc') is not None else '',
             'quantity': first_item.get('qty'),
             'price_each': to_float(first_item.get('price')),
             'line_total': to_float(first_item.get('ltot')),

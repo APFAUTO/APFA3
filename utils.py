@@ -491,9 +491,7 @@ def capitalize_text(value):
     """Capitalize text values, handling None and non-string values."""
     if value is None:
         return None
-    if isinstance(value, str):
-        return value.upper()
-    return value
+    return str(value).upper()
 
 def clean_query_string(query_string):
     """Custom filter to clean query string by removing from_search parameter."""

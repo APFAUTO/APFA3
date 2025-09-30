@@ -39,9 +39,9 @@ def save_por_to_database(data: dict, line_items: list = None) -> Tuple[bool, str
             for i, item in enumerate(line_items):
                 line_item = db_manager.LineItem(
                     por_id=por.id,
-                    job_contract_no=item.get('job'),
-                    op_no=item.get('op'),
-                    description=item.get('desc'),
+                    job_contract_no=str(item.get('job')) if item.get('job') is not None else '',
+                    op_no=str(item.get('op')) if item.get('op') is not None else '',
+                    description=str(item.get('desc')) if item.get('desc') is not None else '',
                     quantity=item.get('qty'),
                     price_each=to_float(item.get('price')),
                     line_total=to_float(item.get('ltot'))
