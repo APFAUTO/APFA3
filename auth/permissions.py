@@ -24,8 +24,8 @@ class PermissionManager:
         if user.is_admin:
             return True
         
-        # Dashboard permission is mandatory for all active users
-        if permission_name == 'dashboard_view':
+        # Dashboard and System Settings permissions are mandatory for all active users
+        if permission_name in ['dashboard_view', 'system_settings']:
             return True
         
         # Check specific permission
@@ -202,8 +202,8 @@ class PermissionManager:
                 print(f"⚠️ No database defaults found for {user_type}, using fallback")
                 fallback_permissions = {
                     'admin': ['dashboard_view', 'por_search', 'por_detail', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view', 'system_logs', 'database_access', 'user_management', 'system_settings'],
-                    'buyer': ['dashboard_view', 'por_search', 'por_detail', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view'],
-                    'user': ['dashboard_view', 'por_search', 'por_detail']
+                    'buyer': ['dashboard_view', 'system_settings', 'por_search', 'por_detail', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view'],
+                    'user': ['dashboard_view', 'system_settings', 'por_search', 'por_detail']
                 }
                 
                 permissions_to_grant = self.auth_session.query(Permission).filter(

@@ -1,21 +1,20 @@
-2025-10-01 08:21:49,365 - database - ERROR - ❌ Database error during save: (sqlite3.IntegrityError) UNIQUE constraint failed: por.po_number
-[SQL: INSERT INTO por (po_number, requestor_name, date_order_raised, date_required_by, ship_project_name, supplier, filename, company, job_contract_no, op_no, description, quantity, price_each, line_total, order_total, specification_standards, supplier_contact_name, supplier_contact_email, quote_ref, quote_date, show_price, data_summary, created_at, current_stage, status_color, order_type, content_type, received_comments, sent_comments, filed_comments, amazon_comment, work_date_comment, fdec_warning, stage_updated_at, change_history, current_change_index) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
-[parameters: (10001, 'S TIMMINS', '30TH  Sep', '', 'HMS SCOTT (FTSP)', 'SHIELD', 'PO_10001_30TH_Sep_S_TIMMINS.xlsx', 'a&p', '27', '', '', None, 0.0, 0.0, 4568.0, 'CERTIFICATION COC', '', '', 'BLAPF2509251', '', 'Y', "['DATE ORDER RAISED', 'SHIP / PROJECT NAME', None, 'SUPPLIER (if known) ', None, None, None, 'DATE REQUIRED BY ', None]\n['30TH  Sep', 'HMS SCOTT (FT ... (588 characters truncated) ... , None, None, None, None, None, None]\n[None, None, None, None, None, None, None, None, None]\n[None, None, None, None, None, None, None, None, None]", '2025-10-01 08:21:49.360753', 'received', 'normal', 'new', 'supply', None, None, None, None, None, None, '2025-10-01 08:21:49.364707', None, -1)]
-(Background on this error at: https://sqlalche.me/e/20/gkpj)
-2025-10-01 08:21:49,366 - database - ERROR - ❌ Error type: IntegrityError
-2025-10-01 08:21:49,372 - database - ERROR - ❌ Full traceback: Traceback (most recent call last):
+2025-10-01 12:22:23,001 - app - ERROR - User creation error: (sqlite3.OperationalError) attempt to write a readonly database
+[SQL: INSERT INTO users (username, email, password_hash, first_name, last_name, user_type, is_active, is_admin, created_at, last_login, failed_login_attempts, locked_until, force_password_change) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
+[parameters: ('wemu', 'mwes96322@gmail.com', '$2b$12$inerwwxpGzAfuG1PFD.K9Ovf.UL39uiG4ixy635uBqWswjh7m4xaS', 'Wesley', 'Musgrave', 'user', 1, 0, '2025-10-01 12:22:23.000978', None, 0, None, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Traceback (most recent call last):
   File "/home/codespace/.local/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
     self.dialect.do_execute(
   File "/home/codespace/.local/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 941, in do_execute
     cursor.execute(statement, parameters)
-sqlite3.IntegrityError: UNIQUE constraint failed: por.po_number
+sqlite3.OperationalError: attempt to write a readonly database
 
 The above exception was the direct cause of the following exception:
 
 Traceback (most recent call last):
-  File "/workspaces/APFA3/database.py", line 33, in save_por_to_database
-    db_session.flush()  # Get POR id
-    ^^^^^^^^^^^^^^^^^^
+  File "/workspaces/APFA3/auth/routes.py", line 279, in register
+    auth_session.flush()  # Get the user ID
+    ^^^^^^^^^^^^^^^^^^^^
   File "/home/codespace/.local/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4352, in flush
     self._flush(objects)
   File "/home/codespace/.local/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4487, in _flush
@@ -53,8 +52,7 @@ Traceback (most recent call last):
     self.dialect.do_execute(
   File "/home/codespace/.local/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 941, in do_execute
     cursor.execute(statement, parameters)
-sqlalchemy.exc.IntegrityError: (sqlite3.IntegrityError) UNIQUE constraint failed: por.po_number
-[SQL: INSERT INTO por (po_number, requestor_name, date_order_raised, date_required_by, ship_project_name, supplier, filename, company, job_contract_no, op_no, description, quantity, price_each, line_total, order_total, specification_standards, supplier_contact_name, supplier_contact_email, quote_ref, quote_date, show_price, data_summary, created_at, current_stage, status_color, order_type, content_type, received_comments, sent_comments, filed_comments, amazon_comment, work_date_comment, fdec_warning, stage_updated_at, change_history, current_change_index) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
-[parameters: (10001, 'S TIMMINS', '30TH  Sep', '', 'HMS SCOTT (FTSP)', 'SHIELD', 'PO_10001_30TH_Sep_S_TIMMINS.xlsx', 'a&p', '27', '', '', None, 0.0, 0.0, 4568.0, 'CERTIFICATION COC', '', '', 'BLAPF2509251', '', 'Y', "['DATE ORDER RAISED', 'SHIP / PROJECT NAME', None, 'SUPPLIER (if known) ', None, None, None, 'DATE REQUIRED BY ', None]\n['30TH  Sep', 'HMS SCOTT (FT ... (588 characters truncated) ... , None, None, None, None, None, None]\n[None, None, None, None, None, None, None, None, None]\n[None, None, None, None, None, None, None, None, None]", '2025-10-01 08:21:49.360753', 'received', 'normal', 'new', 'supply', None, None, None, None, None, None, '2025-10-01 08:21:49.364707', None, -1)]
-(Background on this error at: https://sqlalche.me/e/20/gkpj)
-
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) attempt to write a readonly database
+[SQL: INSERT INTO users (username, email, password_hash, first_name, last_name, user_type, is_active, is_admin, created_at, last_login, failed_login_attempts, locked_until, force_password_change) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
+[parameters: ('wemu', 'mwes96322@gmail.com', '$2b$12$inerwwxpGzAfuG1PFD.K9Ovf.UL39uiG4ixy635uBqWswjh7m4xaS', 'Wesley', 'Musgrave', 'user', 1, 0, '2025-10-01 12:22:23.000978', None, 0, None, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)

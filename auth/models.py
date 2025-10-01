@@ -17,8 +17,7 @@ AUTH_DB_URL = os.environ.get('AUTH_DB_URL', "sqlite:///auth.db")
 auth_engine = create_engine(
     AUTH_DB_URL,
     future=True,
-    poolclass=StaticPool,
-    pool_pre_ping=True,
+    connect_args={'timeout': 15},
     echo=False
 )
 
@@ -229,6 +228,7 @@ def init_default_permissions():
         default_permissions = [
             # Core Permissions
             ('dashboard_view', 'View main dashboard', 'Core'),
+            ('system_settings', 'Modify system settings (includes audit logs, database management, company switching)', 'Core'),
             ('por_search', 'Search POR records', 'Core'),
             ('por_detail_view', 'View POR details', 'Core'),
             ('diagnostic_views', 'Access diagnostic views', 'Core'),
@@ -240,10 +240,6 @@ def init_default_permissions():
             ('user_management', 'Manage users', 'Management'),
 
             # System Permissions
-            ('system_settings', 'Modify system settings', 'System'),
-            ('audit_logs', 'View audit logs', 'System'),
-            ('database_management', 'Manage database settings', 'System'),
-            ('company_switching', 'Switch between company databases', 'System'),
 
             # Admin Permissions
             ('admin_access', 'Access the admin console', 'Admin'),

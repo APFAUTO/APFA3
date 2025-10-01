@@ -21,8 +21,7 @@ class AuthDatabaseManager:
         self.engine = create_engine(
             self.db_url,
             future=True,
-            poolclass=StaticPool,
-            pool_pre_ping=True,
+            connect_args={'timeout': 15},
             echo=False
         )
         

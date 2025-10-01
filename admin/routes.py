@@ -751,10 +751,13 @@ def api_get_user_permissions(user_id):
         
         current_app.logger.info(f"Found {len(user_permissions)} permissions in database: {permissions}")
         
-        # Always include dashboard_view as it's mandatory
+        # Always include dashboard_view and system_settings as they're mandatory
         if 'dashboard_view' not in permissions:
             permissions.append('dashboard_view')
             current_app.logger.info(f"Added mandatory dashboard_view permission")
+        if 'system_settings' not in permissions:
+            permissions.append('system_settings')
+            current_app.logger.info(f"Added mandatory system_settings permission")
         
         current_app.logger.info(f"Final permissions to return: {permissions}")
         return jsonify({'success': True, 'permissions': permissions})
@@ -872,9 +875,11 @@ def update_user_type_defaults():
         if not user_type or user_type not in ['user', 'buyer', 'admin']:
             return jsonify({'success': False, 'message': 'Invalid user type.'})
         
-        # Always include dashboard_view
+        # Always include dashboard_view and system_settings
         if 'dashboard_view' not in selected_permissions:
             selected_permissions.append('dashboard_view')
+        if 'system_settings' not in selected_permissions:
+            selected_permissions.append('system_settings')
         
         # Remove existing defaults for this user type
         deleted_count = auth_session.query(UserTypeDefaultPermission).filter(
@@ -1113,8 +1118,8 @@ def force_init_defaults():
         current_app.logger.info(f"Found {len(permissions)} permissions")
         
         defaults = {
-            'user': ['dashboard_view', 'por_search', 'por_detail'],
-            'buyer': ['dashboard_view', 'por_search', 'por_detail', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view'],
+            'user': ['dashboard_view', 'system_settings', 'por_search', 'por_detail'],
+            'buyer': ['dashboard_view', 'system_settings', 'por_search', 'por_detail', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view'],
             'admin': ['dashboard_view', 'por_search', 'por_detail', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view', 'system_logs', 'database_access', 'user_management', 'system_settings']
         }
         
@@ -1309,11 +1314,12 @@ def get_user_permissions(user_id):
         user_permission_ids = {up.permission_id for up in user_permissions}
         
         for permission in all_permissions:
+            is_mandatory = permission.name in ['dashboard_view', 'system_settings']
             permissions_data.append({
                 'id': permission.id,
                 'name': permission.name,
                 'description': permission.description or permission.name.replace('_', ' ').title(),
-                'has_permission': permission.id in user_permission_ids
+                'has_permission': is_mandatory or (permission.id in user_permission_ids)
             })
         
         return jsonify({
