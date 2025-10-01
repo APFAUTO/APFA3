@@ -11,8 +11,8 @@ from typing import Optional, Tuple, List
 from flask import Blueprint, request, render_template, flash, redirect, url_for, send_file, session, jsonify
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
-from sqlalchemy import func
-
+from sqlalchemy import func, inspect
+from sqlalchemy.orm import joinedload
 from database import save_por_to_database, get_paginated_records, get_current_database
 from file_processing import process_uploaded_file
 from utils import (
@@ -521,7 +521,7 @@ def check_updates():
 
 @routes.route('/view')
 @login_required
-@permission_required('por_detail_view')
+@permission_required('po_uploader')
 def view():
     """Display single POR record with navigation."""
     import time
@@ -538,7 +538,10 @@ def view():
         if not por_id:
             logger.info(f"[DEBUG] View route - Querying PORs from database: {current_db}")
             
-            all_pors = db_session.query(db_manager.POR).order_by(db_manager.POR.id.desc()).all()
+            all_pors = db_session.query(db_manager.POR)\
+                .options(joinedload(db_manager.POR.attached_files))\
+                .options(joinedload(db_manager.POR.line_items))\
+                .order_by(db_manager.POR.id.desc()).all()
             logger.info(f"[DEBUG] View route - Found {len(all_pors)} PORs in database")
             
             # Log first few PORs for debugging
@@ -548,11 +551,11 @@ def view():
             # Prepare POR data for the list view
             por_data = []
             for por in all_pors:
-                # Get line items count
-                line_items_count = db_session.query(db_manager.LineItem).filter_by(por_id=por.id).count()
+                # Get line items count (now eager loaded)
+                line_items_count = len(por.line_items)
                 
-                # Get file count
-                file_count = len(por.attached_files) if hasattr(por, 'attached_files') else 0
+                # Get file count (now eager loaded)
+                file_count = len(por.attached_files)
                 
                 por_data.append({
                     'id': por.id,
@@ -1210,7 +1213,7 @@ def delete_por():
 
 @routes.route('/update_timeline_stage', methods=['POST'])
 @login_required
-@permission_required('por_detail_view')
+@permission_required('po_uploader')
 def update_timeline_stage():
     """Update the timeline stage of a POR."""
     logger.info("update_timeline_stage endpoint hit")
@@ -1249,7 +1252,7 @@ def update_timeline_stage():
 
 @routes.route('/add_timeline_comment', methods=['POST'])
 @login_required
-@permission_required('por_detail_view')
+@permission_required('po_uploader')
 def add_timeline_comment():
     """Add a comment to a specific timeline stage of a POR."""
     try:
@@ -1334,7 +1337,7 @@ def delete_timeline_comment():
 
 @routes.route('/update_por_field', methods=['POST'])
 @login_required
-@permission_required('por_detail_view')
+@permission_required('po_uploader')
 def update_por_field():
     """Update a single field of a POR record."""
     try:
@@ -1382,7 +1385,7 @@ def update_por_field():
 
 @routes.route('/update_line_item_field', methods=['POST'])
 @login_required
-@permission_required('por_detail_view')
+@permission_required('po_uploader')
 def update_line_item_field():
     """Update a single field of a LineItem record."""
     try:
@@ -1431,7 +1434,7 @@ def update_line_item_field():
 
 @routes.route('/add_line_item', methods=['POST'])
 @login_required
-@permission_required('por_detail_view')
+@permission_required('po_uploader')
 def add_line_item():
     """Add a new line item to a POR."""
     try:
@@ -1476,7 +1479,7 @@ def add_line_item():
 
 @routes.route('/delete_line_item/<int:line_item_id>', methods=['DELETE'])
 @login_required
-@permission_required('por_detail_view')
+@permission_required('po_uploader')
 def delete_line_item(line_item_id):
     """Delete a line item from a POR."""
     try:
@@ -1770,10 +1773,16 @@ def settings():
 def logs():
     """Display the application logs."""
     try:
+        # Read only the last 1000 lines of the log file for performance
         with open('logs.txt', 'r', encoding='utf-8') as f:
-            logs = f.read()
+            # Read all lines and take the last 1000
+            all_lines = f.readlines()
+            logs = "".join(all_lines[-1000:])
     except FileNotFoundError:
         logs = "No logs found."
+    except Exception as e:
+        logger.error(f"Error reading logs.txt: {str(e)}")
+        logs = f"Error reading logs: {str(e)}"
     
     current_db = get_current_database()
     company_info = get_company_config(current_db)

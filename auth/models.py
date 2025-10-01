@@ -229,12 +229,10 @@ def init_default_permissions():
             # Core Permissions
             ('dashboard_view', 'View main dashboard', 'Core'),
             ('system_settings', 'Modify system settings (includes audit logs, database management, company switching)', 'Core'),
-            ('por_search', 'Search POR records', 'Core'),
-            ('por_detail_view', 'View POR details', 'Core'),
             ('diagnostic_views', 'Access diagnostic views', 'Core'),
 
             # Management Permissions
-            ('po_uploader', 'Upload Purchase Order files', 'Management'),
+            ('po_uploader', 'Upload Purchase Order files and view POR details', 'Management'),
             ('batch_management', 'Manage batch numbers', 'Management'),
             ('file_validation', 'Validate uploaded files', 'Management'),
             ('user_management', 'Manage users', 'Management'),

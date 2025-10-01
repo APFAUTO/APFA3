@@ -1118,8 +1118,8 @@ def force_init_defaults():
         current_app.logger.info(f"Found {len(permissions)} permissions")
         
         defaults = {
-            'user': ['dashboard_view', 'system_settings', 'por_search', 'por_detail'],
-            'buyer': ['dashboard_view', 'system_settings', 'por_search', 'por_detail', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view'],
+            'user': ['dashboard_view', 'system_settings'],
+            'buyer': ['dashboard_view', 'system_settings', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view'],
             'admin': ['dashboard_view', 'por_search', 'por_detail', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view', 'system_logs', 'database_access', 'user_management', 'system_settings']
         }
         

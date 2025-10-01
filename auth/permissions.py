@@ -202,8 +202,8 @@ class PermissionManager:
                 print(f"⚠️ No database defaults found for {user_type}, using fallback")
                 fallback_permissions = {
                     'admin': ['dashboard_view', 'por_search', 'por_detail', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view', 'system_logs', 'database_access', 'user_management', 'system_settings'],
-                    'buyer': ['dashboard_view', 'system_settings', 'por_search', 'por_detail', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view'],
-                    'user': ['dashboard_view', 'system_settings', 'por_search', 'por_detail']
+                    'buyer': ['dashboard_view', 'system_settings', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view'],
+                    'user': ['dashboard_view', 'system_settings']
                 }
                 
                 permissions_to_grant = self.auth_session.query(Permission).filter(

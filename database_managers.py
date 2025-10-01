@@ -16,13 +16,14 @@ class DatabaseManager:
         self.company_name = company_name
         self.db_filename = db_filename
         self.batch_start = batch_start
-        self.database_url = f"sqlite:///{db_filename}"
+        self.database_url = f"sqlite:///{db_filename}?check_same_thread=false&timeout=15&journal_mode=WAL"
         
         # Create isolated engine for this company
         self.engine = create_engine(
             self.database_url,
             future=True,
-            poolclass=StaticPool,
+            pool_size=10,  # Increased pool size
+            max_overflow=20, # Increased max overflow
             pool_pre_ping=True,
             echo=False
         )
@@ -103,6 +104,11 @@ class DatabaseManager:
             __table_args__ = (
                 Index('idx_po_requestor', 'po_number', 'requestor_name'),
                 Index('idx_job_op', 'job_contract_no', 'op_no'),
+                Index('idx_current_stage', 'current_stage'),
+                Index('idx_content_type', 'content_type'),
+                Index('idx_supplier', 'supplier'),
+                Index('idx_requestor_name', 'requestor_name'),
+                Index('idx_created_at', 'created_at'),
             )
             
             def __repr__(self):
