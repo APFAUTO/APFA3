@@ -5,58 +5,44 @@ Defines the database schema for users, permissions, and audit logs.
 
 import os
 from datetime import datetime, timezone, timedelta
-from sqlalchemy import create_engine, Column, Integer, String, Float, Text, DateTime, Boolean, ForeignKey, Index
-from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from sqlalchemy import Column, Integer, String, Float, Text, DateTime, Boolean, ForeignKey, Index
+from sqlalchemy.orm import relationship
 from flask_login import UserMixin
-from sqlalchemy.pool import StaticPool
+from app import db # Import db from app.py
 
-# Authentication database configuration
-AUTH_DB_URL = os.environ.get('AUTH_DB_URL', "sqlite:///auth.db")
-
-# Create engine for authentication database
-auth_engine = create_engine(
-    AUTH_DB_URL,
-    future=True,
-    connect_args={'timeout': 15},
-    echo=False
-)
-
-# Create declarative base
-Base = declarative_base()
-
-class User(Base, UserMixin):
+class User(db.Model, UserMixin):
     """User model for authentication"""
     __tablename__ = "users"
     
     # Primary key
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     
     # Basic information
-    username = Column(String(80), unique=True, nullable=False, index=True)
-    email = Column(String(120), unique=True, nullable=False, index=True)
-    password_hash = Column(String(255), nullable=False)
-    first_name = Column(String(50), nullable=False)
-    last_name = Column(String(50), nullable=False)
+    username = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(255), nullable=False)
+    first_name = db.Column(db.String(50), nullable=False)
+    last_name = db.Column(db.String(50), nullable=False)
     
     # User type and permissions
-    user_type = Column(String(20), nullable=False)  # 'admin', 'buyer', 'user'
-    is_active = Column(Boolean, default=True)
-    is_admin = Column(Boolean, default=False)
+    user_type = db.Column(db.String(20), nullable=False)  # 'admin', 'buyer', 'user'
+    is_active = db.Column(db.Boolean, default=True)
+    is_admin = db.Column(db.Boolean, default=False)
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    last_login = Column(DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_login = db.Column(db.DateTime)
     
     # Security
-    failed_login_attempts = Column(Integer, default=0)
-    locked_until = Column(DateTime)
-    force_password_change = Column(Boolean, default=False)
+    failed_login_attempts = db.Column(db.Integer, default=0)
+    locked_until = db.Column(db.DateTime)
+    force_password_change = db.Column(db.Boolean, default=False)
     
     # Relationships
-    permissions = relationship("UserPermission", back_populates="user", foreign_keys="[UserPermission.user_id]")
-    settings = relationship("UserSetting", back_populates="user")
-    audit_logs = relationship("AuditLog", back_populates="user")
-    granted_permissions = relationship("UserPermission", back_populates="granted_by_user", foreign_keys="[UserPermission.granted_by]")
+    permissions = db.relationship("UserPermission", back_populates="user", foreign_keys="[UserPermission.user_id]")
+    settings = db.relationship("UserSetting", back_populates="user")
+    audit_logs = db.relationship("AuditLog", back_populates="user")
+    granted_permissions = db.relationship("UserPermission", back_populates="granted_by_user", foreign_keys="[UserPermission.granted_by]")
     
     def __repr__(self):
         return f"<User {self.username}>"
@@ -79,143 +65,140 @@ class User(Base, UserMixin):
             return 0
         return int((self.locked_until - datetime.utcnow()).total_seconds() / 60)
 
-class Permission(Base):
+class Permission(db.Model):
     """Permission model for feature access control"""
     __tablename__ = "permissions"
     
     # Primary key
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     
     # Permission details
-    name = Column(String(50), unique=True, nullable=False, index=True)
-    description = Column(Text)
-    category = Column(String(30), nullable=False)  # 'upload', 'view', 'admin', 'diagnostic'
-    is_active = Column(Boolean, default=True)
+    name = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    description = db.Column(db.Text)
+    category = db.Column(db.String(30), nullable=False)  # 'upload', 'view', 'admin', 'diagnostic'
+    is_active = db.Column(db.Boolean, default=True)
     
     # Relationships
-    user_permissions = relationship("UserPermission", back_populates="permission")
+    user_permissions = db.relationship("UserPermission", back_populates="permission")
     
     def __repr__(self):
         return f"<Permission {self.name}>"
 
-class UserPermission(Base):
+class UserPermission(db.Model):
     """Many-to-many relationship between users and permissions"""
     __tablename__ = "user_permissions"
     
     # Primary key
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     
     # Foreign keys
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    permission_id = Column(Integer, ForeignKey('permissions.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    permission_id = db.Column(db.Integer, db.ForeignKey('permissions.id'), nullable=False)
     
     # Metadata
-    granted_at = Column(DateTime, default=datetime.utcnow)
-    granted_by = Column(Integer, ForeignKey('users.id'))
-    is_active = Column(Boolean, default=True)
+    granted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    granted_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    is_active = db.Column(db.Boolean, default=True)
     
     # Relationships
-    user = relationship("User", back_populates="permissions", foreign_keys=[user_id])
-    permission = relationship("Permission", back_populates="user_permissions")
-    granted_by_user = relationship("User", back_populates="granted_permissions", foreign_keys=[granted_by])
+    user = db.relationship("User", back_populates="permissions", foreign_keys=[user_id])
+    permission = db.relationship("Permission", back_populates="user_permissions")
+    granted_by_user = db.relationship("User", back_populates="granted_permissions", foreign_keys=[granted_by])
     
     def __repr__(self):
         return f"<UserPermission {self.user_id}:{self.permission_id}>"
 
-class UserSetting(Base):
+class UserSetting(db.Model):
     """User-specific settings and preferences"""
     __tablename__ = "user_settings"
     
     # Primary key
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     
     # Foreign key
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     
     # Setting details
-    setting_key = Column(String(50), nullable=False)
-    setting_value = Column(Text)
-    updated_at = Column(DateTime, default=datetime.utcnow)
+    setting_key = db.Column(db.String(50), nullable=False)
+    setting_value = db.Column(db.Text)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    user = relationship("User", back_populates="settings")
+    user = db.relationship("User", back_populates="settings")
     
     def __repr__(self):
         return f"<UserSetting {self.user_id}:{self.setting_key}>"
 
-class UserTypeDefaultPermission(Base):
+class UserTypeDefaultPermission(db.Model):
     """Default permissions for user types"""
     __tablename__ = "user_type_default_permissions"
     
     # Primary key
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     
     # User type and permission
-    user_type = Column(String(20), nullable=False)  # 'admin', 'buyer', 'user'
-    permission_id = Column(Integer, ForeignKey('permissions.id'), nullable=False)
+    user_type = db.Column(db.String(20), nullable=False)  # 'admin', 'buyer', 'user'
+    permission_id = db.Column(db.Integer, db.ForeignKey('permissions.id'), nullable=False)
     
     # Metadata
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    permission = relationship("Permission")
+    permission = db.relationship("Permission")
     
     def __repr__(self):
         return f"<UserTypeDefaultPermission {self.user_type}:{self.permission_id}>"
 
-class AuditLog(Base):
+class AuditLog(db.Model):
     """Audit log for tracking user actions and system events"""
     __tablename__ = "audit_logs"
     
     # Primary key
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     
     # User information
-    user_id = Column(Integer, ForeignKey('users.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     
     # Action details
-    action = Column(String(100), nullable=False)
-    resource_type = Column(String(50))
-    resource_id = Column(String(50))
+    action = db.Column(db.String(100), nullable=False)
+    resource_type = db.Column(db.String(50))
+    resource_id = db.Column(db.String(50))
     
     # Request information
-    ip_address = Column(String(45))
-    user_agent = Column(Text)
+    ip_address = db.Column(db.String(45))
+    user_agent = db.Column(db.Text)
     
     # Timestamp and status
-    timestamp = Column(DateTime, default=datetime.utcnow)
-    success = Column(Boolean, default=True)
-    details = Column(Text)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    success = db.Column(db.Boolean, default=True)
+    details = db.Column(db.Text)
     
     # Relationships
-    user = relationship("User", back_populates="audit_logs")
+    user = db.relationship("User", back_populates="audit_logs")
     
     def __repr__(self):
         return f"<AuditLog {self.action} by {self.user_id}>"
 
 # Create indexes for performance
-Index('idx_users_username', User.username)
-Index('idx_users_email', User.email)
-Index('idx_permissions_name', Permission.name)
-Index('idx_audit_logs_timestamp', AuditLog.timestamp)
-Index('idx_audit_logs_user_id', AuditLog.user_id)
-
-# Create session factory
-AuthSessionLocal = sessionmaker(bind=auth_engine)
+db.Index('idx_users_username', User.username)
+db.Index('idx_users_email', User.email)
+db.Index('idx_permissions_name', Permission.name)
+db.Index('idx_audit_logs_timestamp', AuditLog.timestamp)
+db.Index('idx_audit_logs_user_id', AuditLog.user_id)
 
 def get_auth_session():
     """Get a new authentication database session"""
-    return AuthSessionLocal()
+    return db.session
 
-def create_auth_tables():
+def create_auth_tables(db_instance):
     """Create all authentication tables"""
-    Base.metadata.create_all(bind=auth_engine)
+    db_instance.create_all()
     print("Authentication database tables created successfully")
 
-def init_default_permissions():
+def init_default_permissions(db_instance):
     """Initialize default permissions in the database"""
-    session = get_auth_session()
+    session = db_instance.session
     
     try:
         # Check if permissions already exist
@@ -264,9 +247,9 @@ def init_default_permissions():
     finally:
         session.close()
 
-def create_default_admin_user():
+def create_default_admin_user(db_instance):
     """Create default admin user if none exists"""
-    session = get_auth_session()
+    session = db_instance.session
     
     try:
         # Check if admin user already exists
@@ -317,8 +300,4 @@ def create_default_admin_user():
     finally:
         session.close()
 
-# Initialize database when module is imported
-if __name__ == "__main__":
-    create_auth_tables()
-    init_default_permissions()
-    create_default_admin_user()
+

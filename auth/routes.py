@@ -7,10 +7,10 @@ from datetime import datetime
 from flask import Blueprint, request, render_template, flash, redirect, url_for, session, jsonify, current_app
 from flask_login import login_user, logout_user
 
-from auth.database import get_auth_session
+from app import db # Import db from app.py
 from auth.models import User, AuditLog
 from auth.security import SecurityManager, InputValidator, login_required, admin_required
-from auth.permissions import PermissionManager, permission_required
+from auth.permissions import has_permission, get_user_permissions_for_template, permission_required
 
 # Create blueprint
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -29,7 +29,7 @@ def login():
             return render_template('auth/login.html')
         
         # Get authentication session
-        auth_session = get_auth_session()
+        auth_session = db.session
         security_manager = SecurityManager(auth_session)
         
         try:
@@ -92,8 +92,6 @@ def login():
         except Exception as e:
             flash('An error occurred during login. Please try again.', 'error')
             print(f"Login error: {e}")
-        finally:
-            auth_session.close()
     
     return render_template('auth/login.html')
 
@@ -111,7 +109,7 @@ def logout():
     
     # Log logout event
     if user_id:
-        auth_session = get_auth_session()
+        auth_session = db.session
         security_manager = SecurityManager(auth_session)
         
         try:
@@ -121,8 +119,6 @@ def logout():
             )
         except Exception as e:
             print(f"Logout logging error: {e}")
-        finally:
-            auth_session.close()
     
     flash('You have been logged out successfully.', 'info')
     return redirect(url_for('auth.login'))
@@ -131,7 +127,7 @@ def logout():
 @login_required
 def profile():
     """Display user profile"""
-    auth_session = get_auth_session()
+    auth_session = db.session
     user = auth_session.query(User).get(session['user_id'])
     
     if not user:
@@ -139,10 +135,7 @@ def profile():
         return redirect(url_for('auth.login'))
     
     # Get user permissions
-    permission_manager = PermissionManager(auth_session)
-    user_permissions = permission_manager.get_user_permissions(user.id)
-    
-    auth_session.close()
+    user_permissions = get_user_permissions_for_template()
     
     return render_template('auth/profile.html', user=user, permissions=user_permissions)
 
@@ -164,7 +157,7 @@ def change_password():
             flash('New passwords do not match.', 'error')
             return render_template('auth/change_password.html')
         
-        auth_session = get_auth_session()
+        auth_session = db.session
         security_manager = SecurityManager(auth_session)
         user = auth_session.query(User).get(session['user_id'])
         
@@ -199,8 +192,6 @@ def change_password():
             auth_session.rollback()
             flash('An error occurred while changing password.', 'error')
             print(f"Password change error: {e}")
-        finally:
-            auth_session.close()
     
     return render_template('auth/change_password.html')
 
@@ -237,7 +228,7 @@ def register():
             flash('Invalid user type.', 'error')
             return render_template('auth/register.html')
         
-        auth_session = get_auth_session()
+        auth_session = db.session
         security_manager = SecurityManager(auth_session)
         
         try:
@@ -299,8 +290,6 @@ def register():
             current_app.logger.error(f"User creation error: {str(e)}", exc_info=True)
             flash(f'An error occurred while creating user: {str(e)}', 'error')
             print(f"User creation error: {e}")
-        finally:
-            auth_session.close()
     
     return render_template('auth/register.html')
 
@@ -322,16 +311,13 @@ def check_auth():
 @login_required
 def session_info():
     """Get current session information"""
-    auth_session = get_auth_session()
+    auth_session = db.session
     user = auth_session.query(User).get(session['user_id'])
     
     if not user:
         return jsonify({'error': 'User not found'}), 404
     
-    permission_manager = PermissionManager(auth_session)
-    user_permissions = permission_manager.get_user_permissions(user.id)
-    
-    auth_session.close()
+    user_permissions = get_user_permissions_for_template()
     
     return jsonify({
         'user_id': user.id,

@@ -8,6 +8,7 @@ import bcrypt
 from datetime import datetime, timedelta
 from functools import wraps
 from flask import session, flash, redirect, url_for, request
+from app import db # Import db from app.py
 
 class SecurityManager:
     """Handles security operations and authentication"""
@@ -177,10 +178,9 @@ def admin_required(f):
             flash('Please log in to access this page.', 'error')
             return redirect(url_for('auth.login'))
         
-        from auth.database import get_auth_session
+        auth_session = db.session
         from auth.models import User
         
-        auth_session = get_auth_session()
         user = auth_session.query(User).get(session['user_id'])
         
         if not user or not user.is_admin:

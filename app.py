@@ -8,26 +8,7 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler
 from flask import Flask, g
-from auth.database import initialize_auth_database
-
-# Setup logging
-log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-# Console handler
-console_handler = logging.StreamHandler()
-console_handler.setFormatter(log_formatter)
-console_handler.setLevel(logging.INFO)
-
-# File handler
-file_handler = RotatingFileHandler('logs.txt', maxBytes=10240, backupCount=10)
-file_handler.setFormatter(log_formatter)
-file_handler.setLevel(logging.ERROR)
-
-# Get root logger
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-logger.addHandler(console_handler)
-logger.addHandler(file_handler)
+from extensions import db
 
 def create_app():
     # Flask app setup
@@ -45,50 +26,28 @@ def create_app():
         SECRET_KEY='a-very-secret-key',  # Hardcoded for consistency
     )
 
+    # Configure and initialize Flask-SQLAlchemy for auth.db
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('AUTH_DB_URL', "sqlite:///auth.db")
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    db.init_app(app) # Initialize db with the app here
+
     from auth.__init__ import login_manager
     login_manager.init_app(app)
 
-    # Initialize database once at startup
-    def initialize_database():
-        if not os.path.exists('auth.db'):
-            initialize_auth_database()
-        
-        # Initialize user type defaults if needed (only once)
-        from auth.models import get_auth_session, UserTypeDefaultPermission, Permission
-        auth_session = get_auth_session()
-        try:
-            # Check if defaults exist
-            existing_defaults = auth_session.query(UserTypeDefaultPermission).count()
-            if existing_defaults == 0:
-                # Initialize with default permissions
-                permissions = auth_session.query(Permission).all()
-                permission_dict = {p.name: p.id for p in permissions}
-                
-                defaults = {
-                    'user': ['dashboard_view', 'por_search', 'por_detail'],
-                    'buyer': ['dashboard_view', 'por_search', 'por_detail', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view'],
-                    'admin': ['dashboard_view', 'por_search', 'por_detail', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view', 'system_logs', 'database_access', 'user_management', 'system_settings']
-                }
-                
-                for user_type, perm_names in defaults.items():
-                    for perm_name in perm_names:
-                        if perm_name in permission_dict:
-                            default_perm = UserTypeDefaultPermission(
-                                user_type=user_type,
-                                permission_id=permission_dict[perm_name]
-                            )
-                            auth_session.add(default_perm)
-                
-                auth_session.commit()
-                print("✅ User type default permissions initialized")
-        except Exception as e:
-            print(f"⚠️ Error initializing user type defaults: {e}")
-            auth_session.rollback()
-        finally:
-            auth_session.close()
-    
-    # Run initialization once at startup
-    initialize_database()
+    # Initialize database tables within app context
+    with app.app_context():
+        # Import models to ensure they are registered with SQLAlchemy
+        from auth.models import UserTypeDefaultPermission, Permission, init_default_permissions, create_default_admin_user, create_auth_tables
+
+        # Ensure auth.db file exists
+        auth_db_path = app.config['SQLALCHEMY_DATABASE_URI'].replace("sqlite:///", "")
+        if not os.path.exists(auth_db_path):
+            open(auth_db_path, 'a').close()
+            print(f"DEBUG: Created empty auth.db at {auth_db_path}")
+
+        print("DEBUG: Calling db.create_all()")
+        db.create_all()
+        print("DEBUG: db.create_all() called.")
 
     # Add cache-busting headers to all responses
     @app.after_request

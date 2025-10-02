@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from sqlalchemy import create_engine, Column, Integer, String, Float, Text, DateTime, Index, ForeignKey
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from sqlalchemy.pool import StaticPool
+import contextlib # Import contextlib
 
 class DatabaseManager:
     """Base database manager with isolated database logic."""
@@ -176,6 +177,19 @@ class DatabaseManager:
         """Get a new database session for this company."""
         return self.SessionLocal()
     
+    @contextlib.contextmanager
+    def session_scope(self):
+        """Provide a transactional scope around a series of operations."""
+        session = self.SessionLocal()
+        try:
+            yield session
+            session.commit()
+        except:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+    
     def get_or_create_batch_counter(self, session):
         """Get or create batch counter for this company."""
         # Filter by company to get the correct counter
@@ -184,7 +198,7 @@ class DatabaseManager:
             # Create with company name
             counter = self.BatchCounter(company=self.company_name, value=self.batch_start)
             session.add(counter)
-            # session.commit() # <--- REMOVE THIS COMMIT
+            # session.commit() # This commit is handled by the session_scope context manager
         return counter
 
 
