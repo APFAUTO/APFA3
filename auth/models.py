@@ -219,6 +219,7 @@ def init_default_permissions(db_instance):
             ('batch_management', 'Manage batch numbers', 'Management'),
             ('file_validation', 'Validate uploaded files', 'Management'),
             ('user_management', 'Manage users', 'Management'),
+            ('ppe_logger_view', 'View and manage PPE logs', 'Management'),
 
             # System Permissions
 

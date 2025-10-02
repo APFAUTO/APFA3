@@ -213,7 +213,8 @@ def get_all_permissions():
         'upload': [],
         'view': [],
         'diagnostic': [],
-        'admin': []
+        'admin': [],
+        'Management': []
     }
     
     for perm in permissions:
@@ -264,8 +265,8 @@ def grant_user_type_permissions(user_id, user_type):
         if not type_defaults:
             print(f"⚠️ No database defaults found for {user_type}, using fallback")
             fallback_permissions = {
-                'admin': ['dashboard_view', 'por_search', 'por_detail', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view', 'system_logs', 'database_access', 'user_management', 'system_settings'],
-                'buyer': ['dashboard_view', 'system_settings', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view'],
+                'admin': ['dashboard_view', 'por_search', 'por_detail', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view', 'system_logs', 'database_access', 'user_management', 'system_settings', 'ppe_logger_view'],
+                'buyer': ['dashboard_view', 'system_settings', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view', 'ppe_logger_view'],
                 'user': ['dashboard_view', 'system_settings']
             }
             

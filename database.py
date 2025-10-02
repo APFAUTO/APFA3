@@ -98,8 +98,19 @@ def save_por_to_database(data: dict, line_items: list = None) -> Tuple[bool, str
             
             # db_session.close() is handled by the context manager
             return True, ""
+    except IntegrityError as ie: # Catch IntegrityError specifically
+        logger.error(f"❌ Integrity error during save: {str(ie)}")
+        logger.error(f"❌ Full traceback: {traceback.format_exc()}")
+        
+        if "UNIQUE constraint failed: por.po_number" in str(ie):
+            # Custom message for duplicate PO number
+            po_number = data.get('po_number', 'Unknown')
+            detailed_error = f"Database error: {str(ie)}"
+            return False, f"Duplicate PO Number: PO #{po_number} already exists. Please use a different PO number or check existing records. <details><summary>Show detailed error</summary><pre>{detailed_error}</pre></details>"
+        else:
+            # For other integrity errors
+            return False, f"Database integrity error: {str(ie)}"
     except Exception as e:
-        logger.error(f"❌ Database error during save: {str(e)}")
         logger.error(f"❌ Error type: {type(e).__name__}")
         import traceback
         logger.error(f"❌ Full traceback: {traceback.format_exc()}")

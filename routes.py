@@ -1767,6 +1767,15 @@ def settings():
         return redirect(url_for('routes.dashboard'))
 
 
+@routes.route('/ppe_logger')
+@login_required
+@permission_required('ppe_logger_view')
+def ppe_logger():
+    current_db = get_current_database()
+    company_info = get_company_config(current_db)
+    return render_template('ppe_logger.html', company=current_db, company_info=company_info, active_page='ppe_logger')
+
+
 @routes.route('/logs')
 @login_required
 @permission_required('audit_logs')

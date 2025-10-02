@@ -48,6 +48,14 @@
                 </a>
                 {% endif %}
                 
+                {% if has_permission('ppe_logger_view') %}
+                <a href="/ppe_logger" class="group relative block w-12 h-12">
+                    <div class="w-full h-full rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110 cursor-pointer {% if active_page == 'ppe_logger' %}{% if company == 'fdec' %}bg-gradient-to-br from-green-500 to-green-600 text-white{% else %}bg-green-500 text-white{% endif %}{% else %}{% if company == 'fdec' %}bg-gray-100 text-gray-600 hover:bg-gradient-to-br hover:from-green-500 hover:to-green-600 hover:text-white{% else %}text-blue-200 hover:bg-green-500 hover:text-white{% endif %}{% endif %}">
+                        <i class="fas fa-hard-hat text-lg"></i>
+                    </div>
+                </a>
+                {% endif %}
+                
                 {% if has_permission('system_settings') %}
                 <a href="/settings" class="group relative block w-12 h-12">
                     <div class="w-full h-full rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110 cursor-pointer {% if active_page == 'settings' %}{% if company == 'fdec' %}bg-gradient-to-br from-purple-500 to-purple-600 text-white{% else %}bg-purple-500 text-white{% endif %}{% else %}{% if company == 'fdec' %}bg-gray-100 text-gray-600 hover:bg-gradient-to-br hover:from-purple-500 hover:to-purple-600 hover:text-white{% else %}text-blue-200 hover:bg-purple-500 hover:text-white{% endif %}{% endif %}">
