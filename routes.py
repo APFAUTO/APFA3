@@ -1776,6 +1776,23 @@ def ppe_logger():
     return render_template('ppe_logger.html', company=current_db, company_info=company_info, active_page='ppe_logger')
 
 
+@routes.route('/ppe_logger/data_entry')
+@login_required
+@permission_required('ppe_logger_view') # Assuming ppe_logger_view covers data entry
+def ppe_logger_data_entry():
+    current_db = get_current_database()
+    company_info = get_company_config(current_db)
+    return render_template('ppe_logger_data_entry.html', company=current_db, company_info=company_info, active_page='ppe_logger_data_entry')
+
+@routes.route('/ppe_logger/reporting')
+@login_required
+@permission_required('ppe_logger_view') # Assuming ppe_logger_view covers reporting
+def ppe_logger_reporting():
+    current_db = get_current_database()
+    company_info = get_company_config(current_db)
+    return render_template('ppe_logger_reporting.html', company=current_db, company_info=company_info, active_page='ppe_logger_reporting')
+
+
 @routes.route('/logs')
 @login_required
 @permission_required('audit_logs')
