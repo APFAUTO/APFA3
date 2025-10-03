@@ -11,6 +11,100 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+@ppe_api.route('/entry', methods=['POST'])
+def add_ppe_entry():
+    """Add new PPE usage entries."""
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    data = request.get_json()
+    
+    employee_id = data.get('employee_id')
+    employee_name = data.get('employee_name')
+    department = data.get('department')
+    date_str = data.get('date')
+    items = data.get('items', [])
+    
+    if not all([employee_id, employee_name, department, date_str, items]):
+        return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
+        
+    try:
+        entry_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        week = entry_date.isocalendar()[1]
+        month = entry_date.month
+        year = entry_date.year
+        
+        inserted_records = 0
+        for item in items:
+            ppe_item = item.get('ppe_item')
+            quantity = item.get('quantity')
+            
+            if not all([ppe_item, quantity]):
+                continue
+            
+            c.execute("""
+                INSERT INTO ppe_usage (
+                    date, employee_id, employee_name, department, 
+                    ppe_item, quantity, checkout_time, week, month, year
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                date_str, employee_id, employee_name, department,
+                ppe_item, quantity, datetime.now().isoformat(), week, month, year
+            ))
+            inserted_records += 1
+            
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'status': 'success',
+            'inserted_records': inserted_records,
+            'timestamp': datetime.now().isoformat()
+        }), 201
+        
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@ppe_api.route('/employees/search', methods=['GET'])
+def search_employees():
+    conn = get_db_connection()
+    c = conn.cursor()
+    query = request.args.get('query', '').lower()
+    department = request.args.get('department', '')
+
+    sql_query = "SELECT DISTINCT employee_id, employee_name, department FROM ppe_usage WHERE 1=1"
+    params = []
+
+    if query:
+        sql_query += " AND (LOWER(employee_name) LIKE ? OR LOWER(employee_id) LIKE ?)"
+        params.append(f'%{query}%')
+        params.append(f'%{query}%')
+    
+    if department:
+        sql_query += " AND department = ?"
+        params.append(department)
+
+    c.execute(sql_query, params)
+    employees = [dict(row) for row in c.fetchall()]
+    conn.close()
+    return jsonify(employees)
+
+@ppe_api.route('/items/search', methods=['GET'])
+def search_ppe_items():
+    conn = get_db_connection()
+    c = conn.cursor()
+    query = request.args.get('query', '').lower()
+
+    sql_query = "SELECT DISTINCT ppe_item FROM ppe_usage WHERE LOWER(ppe_item) LIKE ?"
+    params = [f'%{query}%']
+
+    c.execute(sql_query, params)
+    ppe_items = [row['ppe_item'] for row in c.fetchall()]
+    conn.close()
+    return jsonify(ppe_items)
+
 @ppe_api.route('/usage', methods=['GET'])
 def get_usage_data():
     """Get PPE usage data with optional filtering."""
@@ -70,7 +164,7 @@ def get_filter_options():
     c.execute("SELECT DISTINCT ppe_item FROM ppe_usage")
     ppe_items = [row['ppe_item'] for row in c.fetchall()]
 
-    c.execute("SELECT DISTINCT employee_id, employee_name FROM ppe_usage")
+    c.execute("SELECT DISTINCT employee_id, employee_name, COALESCE(department, 'Unknown') as department FROM ppe_usage")
     employees = [dict(row) for row in c.fetchall()]
 
     conn.close()

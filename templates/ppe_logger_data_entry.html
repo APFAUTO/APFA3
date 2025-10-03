@@ -254,10 +254,10 @@
         }
     </style>
 </head>
-<body class="min-h-screen font-inter">
+<body class="min-h-screen font-inter {% if company == 'fdec' %}dark-mode{% endif %}">
     
     <!-- Background layer -->
-    <div class="{% if company == 'fdec' %}dark-mode fdec-rain-background{% else %}bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100{% endif %} fixed inset-0 z-0"></div>
+    <div class="{% if company == 'fdec' %}fdec-rain-background{% else %}bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100{% endif %} fixed inset-0 z-0"></div>
     
     <!-- Animated Background Pattern -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none">
@@ -273,8 +273,8 @@
             <!-- Header -->
             <div class="flex items-center justify-between mb-8">
                 <div>
-                    <h1 class="text-4xl font-bold text-gray-900 mb-2">PPE Data Entry</h1>
-                    <p class="text-gray-600 text-lg">Enter and manage PPE data</p>
+                    <h1 class="text-4xl font-bold {% if company == 'fdec' %}text-white{% else %}text-gray-900{% endif %} mb-2">PPE Data Entry</h1>
+                    <p class="text-lg {% if company == 'fdec' %}text-gray-300{% else %}text-gray-600{% endif %}">Record new PPE usage</p>
                 </div>
                 
                 <!-- Quick Actions -->
@@ -286,196 +286,464 @@
                 </div>
             </div>
 
-            <!-- Main Card -->
-            <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50">
-                <h2 class="text-2xl font-bold text-gray-900 mb-4">Under Construction</h2>
-                <p class="text-gray-600 mb-6">This page is under construction. Here you will be able to enter and manage PPE data.</p>
+            <!-- Data Entry Form -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Left Column: Employee Selection & PPE Basket -->
+                <div class="lg:col-span-2 space-y-8">
+                    <!-- Employee Selection -->
+                    <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 relative z-30">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-2xl font-bold text-gray-900">Employee Selection</h2>
+                            <select id="department-filter" class="bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5">
+                                <option value="">All Departments</option>
+                            </select>
+                        </div>
+                        <input type="text" id="employee-search" class="w-full p-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-gray-900" placeholder="Search employee by name or ID...">
+                        <div id="employee-results" class="relative mt-2">
+                            <!-- Employee search results will appear here -->
+                        </div>
+                        <div id="selected-employee-summary" class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200 hidden">
+                            <p class="text-blue-900 font-semibold"><span id="summary-employee-name"></span> (<span id="summary-employee-id"></span>)</p>
+                            <p class="text-blue-700 text-sm"><span id="summary-department"></span></p>
+                        </div>
+                    </div>
+
+                    <!-- PPE Selection & Basket -->
+                    <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-4">PPE Selection</h2>
+                        <input type="text" id="ppe-search" class="w-full p-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-gray-900" placeholder="Search PPE item by name or code...">
+                        <div id="ppe-results" class="relative mt-2">
+                            <!-- PPE search results will appear here -->
+                        </div>
+                        
+                        <div class="mt-6">
+                            <h3 class="text-xl font-bold text-gray-900 mb-3">PPE Basket</h3>
+                            <div id="ppe-basket" class="space-y-3">
+                                <!-- PPE items in basket will appear here -->
+                                <div class="text-gray-500 text-center py-4" id="empty-basket-message">No PPE items added yet.</div>
+                            </div>
+                            <div class="flex items-center justify-between mt-6">
+                                <label for="checkout-date" class="text-gray-700 font-medium">Checkout Date:</label>
+                                <input type="date" id="checkout-date" class="p-2 rounded-lg border border-gray-300 bg-gray-50 text-gray-900">
+                            </div>
+                            <button id="submit-ppe" class="w-full mt-6 px-6 py-3 bg-green-500 text-white font-semibold rounded-xl shadow-lg hover:bg-green-600 transition-colors duration-300">
+                                <i class="fas fa-check-circle mr-2"></i>Submit PPE Usage
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Recent Activity Log -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-4">Recent Activity</h2>
+                        <div id="recent-activity-log" class="space-y-4">
+                            <!-- Recent submissions will appear here -->
+                            <div class="text-gray-500 text-center py-4">No recent activity.</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
 
     <script>
-        function refreshDashboard() {
-            location.reload();
-        }
-        
-        function updateDefaultCompany(company) {
-            // Store the default company preference in localStorage
-            localStorage.setItem('defaultCompany', company);
-            
-            // Show success notification
-            showNotification(`Default company set to ${company}`, 'success');
-            
-            // Update the radio button states
-            document.querySelectorAll('input[name="defaultCompany"]').forEach(radio => {
-                radio.checked = radio.value === company;
-            });
-        }
-        
-        function showNotification(message, type) {
-            // Remove existing notifications
-            const existingNotifications = document.querySelectorAll('.notification');
-            existingNotifications.forEach(notif => notif.remove());
+        // Global state
+        let selectedEmployee = null;
+        let ppeBasket = [];
+        let allEmployees = [];
+        let allPpeItems = [];
+        let recentActivity = [];
+
+        // Utility function to show notifications
+        function showNotification(type, title, message) {
+            const existingNotifications = document.querySelectorAll('.app-notification');
+            existingNotifications.forEach(n => n.remove());
             
             const notification = document.createElement('div');
-            notification.className = `notification fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all duration-300 ${
-                type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-            }`;
-            notification.textContent = message;
+            notification.className = `app-notification fixed top-4 right-4 max-w-md rounded-lg shadow-2xl z-50 transform transition-all duration-300 ease-in-out`;
+            
+            let bgColor, borderColor, iconColor, icon;
+            if (type === 'success') {
+                bgColor = 'bg-green-50';
+                borderColor = 'border-green-200';
+                iconColor = 'text-green-600';
+                icon = 'fa-check-circle';
+            } else if (type === 'error') {
+                bgColor = 'bg-red-50';
+                borderColor = 'border-red-200';
+                iconColor = 'text-red-600';
+                icon = 'fa-exclamation-circle';
+            } else {
+                bgColor = 'bg-blue-50';
+                borderColor = 'border-blue-200';
+                iconColor = 'text-blue-600';
+                icon = 'fa-info-circle';
+            }
+            
+            notification.className += ` ${bgColor} ${borderColor} border-2`;
+            
+            notification.innerHTML = `
+                <div class="p-4">	
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <i class="fas ${icon} ${iconColor} text-xl"></i>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <h3 class="text-sm font-semibold text-gray-900">${title}</h3>
+                            <p class="mt-1 text-sm text-gray-700">${message}</p>
+                        </div>
+                        <div class="ml-4 flex-shrink-0">
+                            <button onclick="closeNotification(this)" 
+                                    class="text-gray-400 hover:text-gray-600 focus:outline-none">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
             
             document.body.appendChild(notification);
             
-            // Auto-remove after 3 seconds
             setTimeout(() => {
-                notification.remove();
-            }, 3000);
-        }
-        
-        function switchToFDEC() {
-            // Make API call to switch database
-            fetch('/switch_database', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ database: 'fdec' })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    localStorage.setItem('activeDatabase', 'FDEC');
-                    // Automatically apply dark mode for FDEC
-                    document.body.classList.add('dark-mode');
-                    localStorage.setItem('darkMode', 'enabled');
-                    showNotification(data.message, 'success');
-                    console.log('Switched to FDEC, POR count:', data.por_count);
-                    
-                    // Verify the switch worked before reloading
-                    setTimeout(() => {
-                        fetch('/test_database')
-                        .then(response => response.json())
-                        .then(verifyData => {
-                            if (verifyData.success && verifyData.current_database === 'fdec') {
-                                console.log('Database switch verified, reloading page...');
-                                location.reload();
-                            } else {
-                                console.error('Database switch verification failed:', verifyData);
-                                showNotification('Database switch verification failed', 'error');
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Verification error:', error);
-                            showNotification('Database switch verification failed', 'error');
-                        });
-                    }, 1000);
-                } else {
-                    showNotification('Error switching database: ' + data.error, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Error switching database', 'error');
-            });
-        }
-        
-        function switchToAP() {
-            // Make API call to switch database
-            fetch('/switch_database', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ database: 'a&p' })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    localStorage.setItem('activeDatabase', 'A&P');
-                    // Automatically remove dark mode for A&P
-                    document.body.classList.remove('dark-mode');
-                    localStorage.setItem('darkMode', 'disabled');
-                    showNotification(data.message, 'success');
-                    console.log('Switched to A&P, POR count:', data.por_count);
-                    
-                    // Verify the switch worked before reloading
-                    setTimeout(() => {
-                        fetch('/test_database')
-                        .then(response => response.json())
-                        .then(verifyData => {
-                            if (verifyData.success && verifyData.current_database === 'a&p') {
-                                console.log('Database switch verified, reloading page...');
-                                location.reload();
-                            } else {
-                                console.error('Database switch verification failed:', verifyData);
-                                showNotification('Database switch verification failed', 'error');
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Verification error:', error);
-                            showNotification('Database switch verification failed', 'error');
-                        });
-                    }, 1000);
-                } else {
-                    showNotification('Error switching database: ' + data.error, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Error switching database', 'error');
-            });
-        }
-        
-        function loadDatabaseInfo() {
-            fetch('/get_database_info')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Update database info display
-                    const dbInfoElement = document.getElementById('currentDatabaseInfo');
-                    if (dbInfoElement) {
-                        dbInfoElement.innerHTML = `
-                            <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                <div class="flex items-center justify-between">
-                                    <span class="font-medium text-blue-900">Current Database</span>
-                                    <span class="text-blue-600 font-semibold">${data.display_name}</span>
-                                </div>
-                                <div class="mt-2 text-sm text-blue-700">
-                                    ${data.total_pors} PORs • £${data.total_value.toFixed(2)}
-                                </div>
-                            </div>
-                        `;
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error loading database info:', error);
-            });
-        }
-        
-        // Load default company preference on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            const savedCompany = localStorage.getItem('defaultCompany');
-            if (savedCompany) {
-                const radio = document.querySelector(`input[value="${savedCompany}"]`);
-                if (radio) {
-                    radio.checked = true;
-                }
-            }
+                notification.style.transform = 'translateX(0)';
+                notification.style.opacity = '1';
+            }, 10);	
             
-            // Load active database preference and apply theme automatically
-            const currentCompany = '{{ company }}';
-            if (currentCompany === 'fdec') {
-                document.body.classList.add('dark-mode');
-                localStorage.setItem('darkMode', 'enabled');
-                localStorage.setItem('activeDatabase', 'FDEC');
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 300);	
+            }, 5000);	
+        }
+        
+        function closeNotification(button) {
+            const notification = button.closest('.app-notification');
+            if (notification && notification.parentNode) {
+                notification.style.transform = 'translateX(100%)';
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 300);	
+            }	
+        }
+
+        // Fetch initial filter data (employees, PPE items, departments)
+        async function fetchFilterData() {
+            try {
+                const response = await fetch('/api/ppe/filters');
+                const data = await response.json();
+                allEmployees = data.employees;
+                allPpeItems = data.ppe_items;
+                
+                const departmentFilter = document.getElementById('department-filter');
+                data.departments.forEach(dept => {
+                    const option = document.createElement('option');
+                    option.value = dept;
+                    option.textContent = dept;
+                    departmentFilter.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error fetching filter data:', error);
+                showNotification('error', 'Data Error', 'Failed to load employee and PPE data.');
+            }
+        }
+
+        // Render employee search results
+        function renderEmployeeResults(query, department) {
+            const resultsDiv = document.getElementById('employee-results');
+            resultsDiv.innerHTML = '';
+            if (query.length < 2) return;
+
+            const filteredEmployees = allEmployees.filter(emp => {
+                const matchesQuery = emp.employee_name.toLowerCase().includes(query.toLowerCase()) ||
+                                     emp.employee_id.toLowerCase().includes(query.toLowerCase());
+                const matchesDept = department === '' || emp.department === department;
+                return matchesQuery && matchesDept;
+            });
+
+            if (filteredEmployees.length > 0) {
+                const ul = document.createElement('ul');
+                ul.className = 'absolute z-20 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto';
+                filteredEmployees.forEach(emp => {
+                    const li = document.createElement('li');
+                    li.className = 'p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-200 last:border-b-0';
+                    li.innerHTML = `<p class="font-semibold text-gray-900">${emp.employee_name} (${emp.employee_id})</p><p class="text-sm text-gray-600">${emp.department}</p>`;
+                    li.onclick = () => selectEmployee(emp);
+                    ul.appendChild(li);
+                });
+                resultsDiv.appendChild(ul);
             } else {
-                document.body.classList.remove('dark-mode');
-                localStorage.setItem('darkMode', 'disabled');
-                localStorage.setItem('activeDatabase', 'A&P');
+                resultsDiv.innerHTML = '<p class="p-3 text-gray-500">No employees found.</p>';
+            }
+        }
+
+        // Select an employee
+        function selectEmployee(employee) {
+            selectedEmployee = employee;
+            document.getElementById('employee-search').value = `${employee.employee_name} (${employee.employee_id})`;
+            document.getElementById('employee-results').innerHTML = '';
+            
+            document.getElementById('summary-employee-name').textContent = employee.employee_name;
+            document.getElementById('summary-employee-id').textContent = employee.employee_id;
+            document.getElementById('summary-department').textContent = employee.department;
+            document.getElementById('selected-employee-summary').classList.remove('hidden');
+        }
+
+        // Render PPE search results
+        function renderPpeResults(query) {
+            const resultsDiv = document.getElementById('ppe-results');
+            resultsDiv.innerHTML = '';
+            if (query.length < 2) return;
+
+            const filteredPpe = allPpeItems.filter(item => 
+                item.toLowerCase().includes(query.toLowerCase())
+            );
+
+            if (filteredPpe.length > 0) {
+                const ul = document.createElement('ul');
+                ul.className = 'absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto';
+                filteredPpe.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = 'p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-200 last:border-b-0';
+                    li.textContent = item;
+                    li.onclick = () => addPpeToBasket(item);
+                    ul.appendChild(li);
+                });
+                resultsDiv.appendChild(ul);
+            } else {
+                resultsDiv.innerHTML = '<p class="p-3 text-gray-500">No PPE items found.</p>';
+            }
+        }
+
+        // Add PPE to basket
+        function addPpeToBasket(item) {
+            const normalizedItem = item.trim().toLowerCase(); // Normalize the item string
+            const existingItemIndex = ppeBasket.findIndex(p => p.ppe_item.toLowerCase() === normalizedItem); // Get index
+            
+            if (existingItemIndex !== -1) {
+                // Item exists, create a new array with updated quantity
+                const updatedBasket = [...ppeBasket];
+                updatedBasket[existingItemIndex] = { ...updatedBasket[existingItemIndex], quantity: updatedBasket[existingItemIndex].quantity + 1 };
+                ppeBasket = updatedBasket;
+            } else {
+                // New item, create a new array with the new item
+                ppeBasket = [...ppeBasket, { ppe_item: item, quantity: 1 }];
+            }
+            document.getElementById('ppe-search').value = '';
+            document.getElementById('ppe-results').innerHTML = ''; // Close dropdown
+            renderPpeBasket();
+        }
+
+        // Render PPE basket
+        function renderPpeBasket() {
+            const basketDiv = document.getElementById('ppe-basket');
+            const emptyMessage = document.getElementById('empty-basket-message');
+            basketDiv.innerHTML = ''; // Clear existing
+            
+            if (ppeBasket.length === 0) {
+                emptyMessage.classList.remove('hidden');
+                return;
+            } else {
+                emptyMessage.classList.add('hidden');
             }
 
-            // Load and display database info
-            loadDatabaseInfo();
+            ppeBasket.forEach((item) => { // Removed index from forEach
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200/50';
+                itemDiv.dataset.ppeItem = item.ppe_item; // Use ppe_item as a unique identifier
+                itemDiv.innerHTML = `\
+                    <span class="text-gray-900 font-medium">${item.ppe_item}</span>\
+                    <div class="flex items-center space-x-2">\
+                        <button class="quantity-btn px-2 py-1 bg-gray-200 rounded-md hover:bg-gray-300" data-action="decrement">-</button>\
+                        <input type="number" value="${item.quantity}" min="1" class="w-16 text-center border border-gray-300 rounded-md quantity-input">\
+                        <button class="quantity-btn px-2 py-1 bg-gray-200 rounded-md hover:bg-gray-300" data-action="increment">+</button>\
+                        <button class="remove-ppe-btn text-red-500 hover:text-red-700"><i class="fas fa-times"></i></button>\
+                    </div>\
+                `;
+                basketDiv.appendChild(itemDiv);
+            });
+        }
+
+        // Event delegation for PPE basket
+        document.getElementById('ppe-basket').addEventListener('click', function(event) {
+            const target = event.target;
+            const itemDiv = target.closest('[data-ppe-item]'); // Find the parent item div
+
+            if (!itemDiv) return; // Not a click on an item
+
+            const ppeItemName = itemDiv.dataset.ppeItem;
+            const itemIndex = ppeBasket.findIndex(p => p.ppe_item === ppeItemName);
+
+            if (itemIndex === -1) return; // Item not found in basket (shouldn't happen)
+
+            if (target.closest('.quantity-btn')) {
+                const action = target.closest('.quantity-btn').dataset.action;
+                if (action === 'increment') {
+                    ppeBasket[itemIndex].quantity++;
+                } else if (action === 'decrement' && ppeBasket[itemIndex].quantity > 1) {
+                    ppeBasket[itemIndex].quantity--;
+                }
+                // Update the input field directly
+                itemDiv.querySelector('.quantity-input').value = ppeBasket[itemIndex].quantity;
+            } else if (target.closest('.remove-ppe-btn')) {
+                ppeBasket.splice(itemIndex, 1);
+                renderPpeBasket(); // Re-render to remove the item
+            }
+        });
+
+        document.getElementById('ppe-basket').addEventListener('change', function(event) {
+            const target = event.target;
+            if (target.classList.contains('quantity-input')) {
+                const itemDiv = target.closest('[data-ppe-item]');
+                const ppeItemName = itemDiv.dataset.ppeItem;
+                const itemIndex = ppeBasket.findIndex(p => p.ppe_item === ppeItemName);
+
+                if (itemIndex === -1) return;
+
+                let newQuantity = parseInt(target.value);
+                if (isNaN(newQuantity) || newQuantity < 1) {
+                    newQuantity = 1;
+                }
+                ppeBasket[itemIndex].quantity = newQuantity;
+                target.value = newQuantity; // Ensure input reflects valid quantity
+            }
+        });
+
+        // Submit PPE usage
+        async function submitPpeUsage() {
+            if (!selectedEmployee) {
+                showNotification('error', 'Validation Error', 'Please select an employee.');
+                return;
+            }
+            if (ppeBasket.length === 0) {
+                showNotification('error', 'Validation Error', 'Please add at least one PPE item to the basket.');
+                return;
+            }
+            const checkoutDate = document.getElementById('checkout-date').value;
+            if (!checkoutDate) {
+                showNotification('error', 'Validation Error', 'Please select a checkout date.');
+                return;
+            }
+            if (new Date(checkoutDate) > new Date()) {
+                showNotification('error', 'Validation Error', 'Checkout date cannot be in the future.');
+                return;
+            }
+
+            const payload = {
+                employee_id: selectedEmployee.employee_id,
+                employee_name: selectedEmployee.employee_name,
+                department: selectedEmployee.department,
+                date: checkoutDate,
+                items: ppeBasket.map(item => ({ ppe_item: item.ppe_item, quantity: item.quantity }))
+            };
+
+            try {
+                const response = await fetch('/api/ppe/entry', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    showNotification('success', 'Submission Successful', `Logged ${data.inserted_records} PPE item(s) for ${selectedEmployee.employee_name}.`);
+                    // Clear form
+                    selectedEmployee = null;
+                    ppeBasket = [];
+                    document.getElementById('employee-search').value = '';
+                    document.getElementById('selected-employee-summary').classList.add('hidden');
+                    document.getElementById('ppe-search').value = '';
+                    document.getElementById('checkout-date').valueAsDate = new Date(); // Reset date
+                    renderPpeBasket();
+                    fetchRecentActivity(); // Refresh recent activity log
+                } else {
+                    showNotification('error', 'Submission Failed', data.message || 'An unknown error occurred.');
+                }
+            } catch (error) {
+                console.error('Error submitting PPE usage:', error);
+                showNotification('error', 'Submission Error', 'Failed to submit PPE usage due to a network error.');
+            }
+        }
+
+        // Fetch and render recent activity
+        async function fetchRecentActivity() {
+            try {
+                const response = await fetch('/api/ppe/usage'); // Fetch all usage, then limit client-side
+                const data = await response.json();
+                recentActivity = data.sort((a, b) => new Date(b.checkout_time) - new Date(a.checkout_time)).slice(0, 10);
+                renderRecentActivity();
+            } catch (error) {
+                console.error('Error fetching recent activity:', error);
+            }
+        }
+
+        function renderRecentActivity() {
+            const logDiv = document.getElementById('recent-activity-log');
+            logDiv.innerHTML = '';
+            if (recentActivity.length === 0) {
+                logDiv.innerHTML = '<div class="text-gray-500 text-center py-4">No recent activity.</div>';
+                return;
+            }
+
+            recentActivity.forEach(entry => {
+                const entryDiv = document.createElement('div');
+                entryDiv.className = 'p-3 bg-gray-50 rounded-lg border border-gray-200/50';
+                entryDiv.innerHTML = `
+                    <p class="text-xs text-gray-500">${new Date(entry.checkout_time).toLocaleString()}</p>
+                    <p class="font-semibold text-gray-900">${entry.employee_name} (${entry.employee_id})</p>
+                    <p class="text-sm text-gray-700">${entry.ppe_item}: ${entry.quantity}</p>
+                    <p class="text-xs text-gray-600">${entry.department}</p>
+                `;
+                logDiv.appendChild(entryDiv);
+            });
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchFilterData();
+            fetchRecentActivity();
+            document.getElementById('checkout-date').valueAsDate = new Date(); // Set default date to today
+
+            document.getElementById('employee-search').addEventListener('input', (event) => {
+                renderEmployeeResults(event.target.value, document.getElementById('department-filter').value);
+            });
+
+            document.getElementById('department-filter').addEventListener('change', (event) => {
+                renderEmployeeResults(document.getElementById('employee-search').value, event.target.value);
+            });
+
+            document.getElementById('ppe-search').addEventListener('input', (event) => {
+                renderPpeResults(event.target.value);
+            });
+
+            document.getElementById('submit-ppe').addEventListener('click', submitPpeUsage);
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(event) {
+                const employeeSearchInput = document.getElementById('employee-search');
+                const employeeResultsDiv = document.getElementById('employee-results');
+                const ppeSearchInput = document.getElementById('ppe-search');
+                const ppeResultsDiv = document.getElementById('ppe-results');
+
+                // For employee search
+                if (!employeeSearchInput.contains(event.target) && !employeeResultsDiv.contains(event.target)) {
+                    employeeResultsDiv.innerHTML = ''; // Clear employee search results
+                }
+
+                // For PPE search
+                if (!ppeSearchInput.contains(event.target) && !ppeResultsDiv.contains(event.target)) {
+                    ppeResultsDiv.innerHTML = ''; // Clear PPE search results
+                }
+            });
         });
     </script>
 </body>
