@@ -3,71 +3,480 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PPE Logger - Data Entry</title>
+    <title>{{ company_info.name }} POR Automator - PPE Data Entry</title>
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f4f7f6;
-            color: #333;
+        /* Dark Mode Styles */
+        .dark-mode {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460) !important;
+            color: #e2e8f0 !important;
         }
-        .navbar {
-            background-color: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        
+        .dark-mode .bg-white\/80 {
+            background-color: rgba(30, 41, 59, 0.8) !important;
         }
-        .nav-link {
-            padding: 1rem 1.5rem;
-            display: block;
-            color: #4a5568;
-            font-weight: 500;
-            transition: all 0.2s ease-in-out;
+        
+        .dark-mode .text-gray-900 {
+            color: #f1f5f9 !important;
         }
-        .nav-link:hover {
-            color: #2b6cb0;
-            background-color: #edf2f7;
+        
+        .dark-mode .text-gray-600 {
+            color: #cbd5e1 !important;
         }
-        .nav-link.active {
-            color: #2b6cb0;
-            border-bottom: 2px solid #2b6cb0;
+        
+        .dark-mode .text-gray-700 {
+            color: #e2e8f0 !important;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
+        
+        .dark-mode .bg-gray-50 {
+            background-color: #1e293b !important;
         }
-        .card {
-            background-color: #ffffff;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            padding: 2rem;
+        
+        .dark-mode .border-gray-200\/50 {
+            border-color: rgba(51, 65, 85, 0.5) !important;
+        }
+        
+        .dark-mode .bg-gray-100 {
+            background-color: #334155 !important;
+        }
+        
+        .dark-mode .hover\:bg-gray-100:hover {
+            background-color: #475569 !important;
+        }
+        
+        /* Enhanced dark mode for all UI elements */
+        .dark-mode .bg-white {
+            background-color: #1e293b !important;
+        }
+        
+        .dark-mode .bg-gray-50\/50 {
+            background-color: rgba(30, 41, 59, 0.5) !important;
+        }
+        
+        .dark-mode .border-gray-200 {
+            border-color: #475569 !important;
+        }
+        
+        .dark-mode .bg-blue-50 {
+            background-color: #1e3a8a !important;
+        }
+        
+        .dark-mode .text-blue-900 {
+            color: #60a5fa !important;
+        }
+        
+        .dark-mode .text-blue-700 {
+            color: #93c5fd !important;
+        }
+        
+        .dark-mode .bg-green-50 {
+            background-color: #065f46 !important;
+        }
+        
+        .dark-mode .text-green-600 {
+            color: #34d399 !important;
+        }
+        
+        .dark-mode .bg-orange-50 {
+            background-color: #92400e !important;
+        }
+        
+        .dark-mode .text-orange-600 {
+            color: #fbbf24 !important;
+        }
+        
+        .dark-mode .bg-purple-50 {
+            background-color: #581c87 !important;
+        }
+        
+        .dark-mode .text-purple-600 {
+            color: #a78bfa !important;
+        }
+        
+        /* Dark mode for form elements */
+        .dark-mode input[type="text"],
+        .dark-mode input[type="email"],
+        .dark-mode input[type="password"],
+        .dark-mode select,
+        .dark-mode textarea {
+            background-color: #334155 !important;
+            border-color: #475569 !important;
+            color: #f1f5f9 !important;
+        }
+        
+        .dark-mode input[type="text"]:focus,
+        .dark-mode input[type="email"]:focus,
+        .dark-mode input[type="password"]:focus,
+        .dark-mode select:focus,
+        .dark-mode textarea:focus {
+            border-color: #60a5fa !important;
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1) !important;
+        }
+        
+        /* Dark mode for tables */
+        .dark-mode table {
+            background-color: #1e293b !important;
+        }
+        
+        .dark-mode th {
+            background-color: #334155 !important;
+            color: #f1f5f9 !important;
+        }
+        
+        .dark-mode td {
+            background-color: #1e293b !important;
+            color: #e2e8f0 !important;
+        }
+        
+        .dark-mode tr:hover td {
+            background-color: #334155 !important;
+        }
+        
+        /* Dark mode for modals */
+        .dark-mode .modal {
+            background-color: #1e293b !important;
+        }
+        
+        .dark-mode .modal-content {
+            background-color: #334155 !important;
+            border-color: #475569 !important;
+        }
+        
+        /* Dark mode for Quick Actions */
+        .dark-mode .bg-blue-50 {
+            background-color: #1e3a8a !important;
+        }
+        
+        .dark-mode .bg-indigo-50 {
+            background-color: #312e81 !important;
+        }
+        
+        .dark-mode .bg-green-50 {
+            background-color: #065f46 !important;
+        }
+        
+        .dark-mode .bg-emerald-50 {
+            background-color: #064e3b !important;
+        }
+        
+        .dark-mode .bg-purple-50 {
+            background-color: #581c87 !important;
+        }
+        
+        .dark-mode .bg-pink-50 {
+            background-color: #831843 !important;
+        }
+        
+        .dark-mode .border-blue-200 {
+            border-color: #312e81 !important;
+        }
+        
+        .dark-mode .border-green-200 {
+            border-color: #064e3b !important;
+        }
+        
+        .dark-mode .border-purple-200 {
+            border-color: #581c87 !important;
+        }
+        
+        .dark-mode .hover\:from-blue-100:hover {
+            background-color: #1e40af !important;
+        }
+        
+        .dark-mode .hover\:to-indigo-100:hover {
+            background-color: #3730a3 !important;
+        }
+        
+        .dark-mode .hover\:from-green-100:hover {
+            background-color: #047857 !important;
+        }
+        
+        .dark-mode .hover\:to-emerald-100:hover {
+            background-color: #065f46 !important;
+        }
+        
+        .dark-mode .hover\:from-purple-100:hover {
+            background-color: #6d28d9 !important;
+        }
+        
+        .dark-mode .hover\:to-pink-100:hover {
+            background-color: #9f1239 !important;
+        }
+        
+        /* Dark mode for gradient backgrounds in Quick Actions */
+        .dark-mode .bg-gradient-to-r.from-blue-50.to-indigo-50 {
+            background: linear-gradient(to right, #1e3a8a, #312e81) !important;
+        }
+        
+        .dark-mode .bg-gradient-to-r.from-green-50.to-emerald-50 {
+            background: linear-gradient(to right, #065f46, #064e3b) !important;
+        }
+        
+        .dark-mode .bg-gradient-to-r.from-purple-50.to-pink-50 {
+            background: linear-gradient(to right, #581c87, #831843) !important;
+        }
+        
+        .dark-mode .hover\:from-blue-100.hover\:to-indigo-100:hover {
+            background: linear-gradient(to right, #1e40af, #3730a3) !important;
+        }
+        
+        .dark-mode .hover\:from-green-100.hover\:to-emerald-100:hover {
+            background: linear-gradient(to right, #047857, #065f46) !important;
+        }
+        
+        .dark-mode .hover\:from-purple-100.hover\:to-pink-100:hover {
+            background: linear-gradient(to right, #6d28d9, #9f1239) !important;
         }
     </style>
 </head>
-<body>
-    <nav class="navbar">
-        <div class="container mx-auto flex justify-between items-center">
-            <div class="flex items-center">
-                <h1 class="text-2xl font-bold text-gray-800">PPE Logger</h1>
-            </div>
-            <div class="flex space-x-4">
-                <a href="{{ url_for('routes.ppe_logger') }}" class="nav-link">Home</a>
-                <a href="{{ url_for('routes.ppe_logger_data_entry') }}" class="nav-link active">Data Entry</a>
-                <a href="{{ url_for('routes.ppe_logger_reporting') }}" class="nav-link">Reporting</a>
-                <a href="{{ url_for('routes.dashboard') }}" class="nav-link">Dashboard</a>
-            </div>
-        </div>
-    </nav>
-
-    <div class="container mt-8">
-        <div class="card">
-            <h2 class="text-3xl font-bold text-gray-800 mb-4">PPE Data Entry</h2>
-            <p class="text-gray-600 mb-6">This page is under construction. Here you will be able to enter and manage PPE data.</p>
-            <a href="{{ url_for('routes.ppe_logger') }}" class="text-blue-600 hover:text-blue-800 font-medium"><i class="fas fa-arrow-left mr-1"></i> Back to PPE Logger Home</a>
-        </div>
+<body class="min-h-screen font-inter">
+    
+    <!-- Background layer -->
+    <div class="{% if company == 'fdec' %}dark-mode fdec-rain-background{% else %}bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100{% endif %} fixed inset-0 z-0"></div>
+    
+    <!-- Animated Background Pattern -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-blue-300/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
     </div>
+
+    <div class="relative z-10 flex min-h-screen">
+        {% include '_sidebar.html' %}
+
+        <!-- Main Content -->
+        <main class="flex-1 p-8 ml-20">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h1 class="text-4xl font-bold text-gray-900 mb-2">PPE Data Entry</h1>
+                    <p class="text-gray-600 text-lg">Enter and manage PPE data</p>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="flex space-x-3">
+                    <a href="{{ url_for('routes.ppe_logger') }}" class="px-6 py-3 bg-white text-gray-700 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-gray-200">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Back to PPE Logger
+                    </a>
+                </div>
+            </div>
+
+            <!-- Main Card -->
+            <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">Under Construction</h2>
+                <p class="text-gray-600 mb-6">This page is under construction. Here you will be able to enter and manage PPE data.</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function refreshDashboard() {
+            location.reload();
+        }
+        
+        function updateDefaultCompany(company) {
+            // Store the default company preference in localStorage
+            localStorage.setItem('defaultCompany', company);
+            
+            // Show success notification
+            showNotification(`Default company set to ${company}`, 'success');
+            
+            // Update the radio button states
+            document.querySelectorAll('input[name="defaultCompany"]').forEach(radio => {
+                radio.checked = radio.value === company;
+            });
+        }
+        
+        function showNotification(message, type) {
+            // Remove existing notifications
+            const existingNotifications = document.querySelectorAll('.notification');
+            existingNotifications.forEach(notif => notif.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `notification fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all duration-300 ${
+                type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+            }`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        function switchToFDEC() {
+            // Make API call to switch database
+            fetch('/switch_database', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ database: 'fdec' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    localStorage.setItem('activeDatabase', 'FDEC');
+                    // Automatically apply dark mode for FDEC
+                    document.body.classList.add('dark-mode');
+                    localStorage.setItem('darkMode', 'enabled');
+                    showNotification(data.message, 'success');
+                    console.log('Switched to FDEC, POR count:', data.por_count);
+                    
+                    // Verify the switch worked before reloading
+                    setTimeout(() => {
+                        fetch('/test_database')
+                        .then(response => response.json())
+                        .then(verifyData => {
+                            if (verifyData.success && verifyData.current_database === 'fdec') {
+                                console.log('Database switch verified, reloading page...');
+                                location.reload();
+                            } else {
+                                console.error('Database switch verification failed:', verifyData);
+                                showNotification('Database switch verification failed', 'error');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Verification error:', error);
+                            showNotification('Database switch verification failed', 'error');
+                        });
+                    }, 1000);
+                } else {
+                    showNotification('Error switching database: ' + data.error, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Error switching database', 'error');
+            });
+        }
+        
+        function switchToAP() {
+            // Make API call to switch database
+            fetch('/switch_database', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ database: 'a&p' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    localStorage.setItem('activeDatabase', 'A&P');
+                    // Automatically remove dark mode for A&P
+                    document.body.classList.remove('dark-mode');
+                    localStorage.setItem('darkMode', 'disabled');
+                    showNotification(data.message, 'success');
+                    console.log('Switched to A&P, POR count:', data.por_count);
+                    
+                    // Verify the switch worked before reloading
+                    setTimeout(() => {
+                        fetch('/test_database')
+                        .then(response => response.json())
+                        .then(verifyData => {
+                            if (verifyData.success && verifyData.current_database === 'a&p') {
+                                console.log('Database switch verified, reloading page...');
+                                location.reload();
+                            } else {
+                                console.error('Database switch verification failed:', verifyData);
+                                showNotification('Database switch verification failed', 'error');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Verification error:', error);
+                            showNotification('Database switch verification failed', 'error');
+                        });
+                    }, 1000);
+                } else {
+                    showNotification('Error switching database: ' + data.error, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Error switching database', 'error');
+            });
+        }
+        
+        function loadDatabaseInfo() {
+            fetch('/get_database_info')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update database info display
+                    const dbInfoElement = document.getElementById('currentDatabaseInfo');
+                    if (dbInfoElement) {
+                        dbInfoElement.innerHTML = `
+                            <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-medium text-blue-900">Current Database</span>
+                                    <span class="text-blue-600 font-semibold">${data.display_name}</span>
+                                </div>
+                                <div class="mt-2 text-sm text-blue-700">
+                                    ${data.total_pors} PORs • £${data.total_value.toFixed(2)}
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error loading database info:', error);
+            });
+        }
+        
+        // Load default company preference on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedCompany = localStorage.getItem('defaultCompany');
+            if (savedCompany) {
+                const radio = document.querySelector(`input[value="${savedCompany}"]`);
+                if (radio) {
+                    radio.checked = true;
+                }
+            }
+            
+            // Load active database preference and apply theme automatically
+            const currentCompany = '{{ company }}';
+            if (currentCompany === 'fdec') {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('darkMode', 'enabled');
+                localStorage.setItem('activeDatabase', 'FDEC');
+            } else {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('darkMode', 'disabled');
+                localStorage.setItem('activeDatabase', 'A&P');
+            }
+
+            // Load and display database info
+            loadDatabaseInfo();
+        });
+    </script>
 </body>
 </html>

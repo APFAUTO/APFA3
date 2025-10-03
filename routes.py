@@ -216,7 +216,8 @@ def dashboard():
                              fdec_count=0,
                              recent_activity=[],
                              company=current_db,
-                             company_info=company_info)
+                             company_info=company_info,
+                             active_page='dashboard')
 
 
 
@@ -643,7 +644,8 @@ def view():
                              current_position=current_position,
                              timestamp=timestamp,
                              company=current_db,
-                             company_info=company_info)
+                             company_info=company_info,
+                             active_page='view')
                              
     except Exception as e:
         logger.error(f"View error: {str(e)}")
@@ -666,7 +668,7 @@ def view():
         # For error case, always use modern_view.html since we're not showing a specific POR
         return render_template("modern_view.html", por=None, current_po=current_po_value, 
                              total_records=0, current_position=0, timestamp=int(time.time()), 
-                             company=current_db, company_info=company_info)
+                             company=current_db, company_info=company_info, active_page='view')
 
 
 
@@ -972,7 +974,7 @@ def attach_files(por_id):
         
         db_session.close()
         
-        return render_template("modern_attach_files.html", por=por, attached_files=attached_files, attachment_icons=attachment_icons, from_search=from_search)
+        return render_template("modern_attach_files.html", por=por, attached_files=attached_files, attachment_icons=attachment_icons, from_search=from_search, active_page='view')
         
     except Exception as e:
         logger.error(f"Error in attach_files: {str(e)}")
