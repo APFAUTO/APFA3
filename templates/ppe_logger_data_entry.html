@@ -68,7 +68,11 @@
         .dark-mode .hover\:bg-gray-100:hover {
             background-color: #475569 !important;
         }
-        
+
+        .dark-mode .hover\:bg-gray-50:hover {
+            background-color: #475569 !important;
+        }
+
         /* Enhanced dark mode for all UI elements */
         .dark-mode .bg-white {
             background-color: #1e293b !important;
@@ -251,6 +255,41 @@
         
         .dark-mode .hover\:from-purple-100.hover\:to-pink-100:hover {
             background: linear-gradient(to right, #6d28d9, #9f1239) !important;
+        }
+
+        /* Dark mode for quantity buttons */
+        .dark-mode .quantity-btn {
+            background-color: #4b5563 !important; /* bg-gray-600 */
+            color: #f9fafb !important; /* text-gray-50 */
+        }
+
+        .dark-mode .quantity-btn:hover {
+            background-color: #6b7280 !important; /* bg-gray-500 */
+        }
+
+        /* Dark mode for notifications */
+        .dark-mode .bg-red-50 {
+            background-color: #7f1d1d !important; /* darker red for legibility */
+        }
+
+        .dark-mode .bg-green-50 {
+            background-color: #14532d !important; /* darker green */
+        }
+
+        .dark-mode .bg-blue-50 {
+            background-color: #1e3a8a !important; /* already dark */
+        }
+
+        /* Dark mode for quantity input */
+        .dark-mode .quantity-input {
+            background-color: #374151 !important; /* bg-gray-700 */
+            border-color: #4b5563 !important; /* border-gray-600 */
+            color: #f9fafb !important; /* text-gray-50 */
+        }
+
+        .dark-mode .quantity-input:focus {
+            border-color: #60a5fa !important; /* border-blue-400 */
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1) !important;
         }
     </style>
 </head>

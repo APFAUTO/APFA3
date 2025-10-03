@@ -1,7 +1,8 @@
-- [x] Update employee selection container styling to remove relative z-30 and match PPE container
-- [x] Style employee results display as a scrollable list similar to PPE list (max-h-60 overflow-y-auto border rounded bg-white)
-- [x] Update employee result items styling to match PPE list items (p-3 border-b hover:bg-gray-50)
-- [x] Adjust selected employee summary styling to match PPE basket item style (bg-gray-50 rounded-lg border border-gray-200/50)
-- [x] Update JavaScript renderEmployeeResults function to use div instead of ul/li for consistency
-- [x] Add initial rendering of all employees to match PPE list behavior
-- [x] Test the updated styling for consistency (app running on port 5000, changes applied successfully)
+# TODO: Fix PPE Data Entry Issues
+
+## Tasks
+- [x] Add datetime import to ppe_api.py
+- [x] Add dark mode styles for quantity buttons in template
+- [x] Update notification styles for dark mode legibility in template
+- [x] Test submission to ensure no datetime error
+- [x] Verify button and message legibility in dark mode
