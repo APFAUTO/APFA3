@@ -258,10 +258,10 @@
         }
     </style>
 </head>
-<body class="min-h-screen font-inter">
+<body class="min-h-screen font-inter {% if company == 'fdec' %}dark-mode{% endif %}">
     
     <!-- Background layer -->
-    <div class="{% if company == 'fdec' %}dark-mode fdec-rain-background{% else %}bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100{% endif %} fixed inset-0 z-0"></div>
+    <div class="{% if company == 'fdec' %}fdec-rain-background{% else %}bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100{% endif %} fixed inset-0 z-0"></div>
     
     <!-- Animated Background Pattern -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none">
@@ -277,8 +277,8 @@
             <!-- Header -->
             <div class="flex items-center justify-between mb-8">
                 <div>
-                    <h1 class="text-4xl font-bold text-gray-900 mb-2">PPE Reporting</h1>
-                    <p class="text-gray-600 text-lg">Generate reports on PPE data</p>
+                    <h1 class="text-4xl font-bold text-gray-900 mb-2 {% if company == 'fdec' %}text-white{% endif %}">PPE Reporting</h1>
+                    <p class="text-gray-600 text-lg {% if company == 'fdec' %}text-gray-300{% endif %}">Generate reports on PPE data</p>
                 </div>
                 
                 <!-- Quick Actions -->
