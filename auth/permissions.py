@@ -33,6 +33,21 @@ def permission_required(permission_name):
             if permission_name in ['dashboard_view', 'system_settings']:
                 return f(*args, **kwargs)
             
+            # Special handling for file_validation: if user has po_uploader, they also have file_validation
+            if permission_name == 'file_validation':
+                po_uploader_permission = db.session.query(Permission).filter(
+                    Permission.name == 'po_uploader',
+                    Permission.is_active == True
+                ).first()
+                if po_uploader_permission:
+                    user_has_po_uploader = db.session.query(UserPermission).filter(
+                        UserPermission.user_id == user_id,
+                        UserPermission.permission_id == po_uploader_permission.id,
+                        UserPermission.is_active == True
+                    ).first()
+                    if user_has_po_uploader:
+                        return f(*args, **kwargs)
+
             # Check specific permission
             permission = db.session.query(Permission).filter(
                 Permission.name == permission_name,
@@ -77,6 +92,21 @@ def has_permission(permission_name):
     # Dashboard and System Settings permissions are mandatory for all active users
     if permission_name in ['dashboard_view', 'system_settings']:
         return True
+    
+    # Special handling for file_validation: if user has po_uploader, they also have file_validation
+    if permission_name == 'file_validation':
+        po_uploader_permission = db.session.query(Permission).filter(
+            Permission.name == 'po_uploader',
+            Permission.is_active == True
+        ).first()
+        if po_uploader_permission:
+            user_has_po_uploader = db.session.query(UserPermission).filter(
+                UserPermission.user_id == user_id,
+                UserPermission.permission_id == po_uploader_permission.id,
+                UserPermission.is_active == True
+            ).first()
+            if user_has_po_uploader:
+                return True
     
     # Check specific permission
     permission = db.session.query(Permission).filter(
@@ -133,6 +163,7 @@ def get_user_permissions_for_template():
     
     # Group by category
     categorized_permissions = {
+        'Core': [], # Added new category
         'upload': [],
         'view': [],
         'diagnostic': [],
@@ -210,6 +241,7 @@ def get_all_permissions():
     
     # Group by category
     categorized_permissions = {
+        'Core': [], # Added new category
         'upload': [],
         'view': [],
         'diagnostic': [],
@@ -265,9 +297,9 @@ def grant_user_type_permissions(user_id, user_type):
         if not type_defaults:
             print(f"⚠️ No database defaults found for {user_type}, using fallback")
             fallback_permissions = {
-                'admin': ['dashboard_view', 'por_search', 'por_detail', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view', 'system_logs', 'database_access', 'user_management', 'system_settings', 'ppe_logger_view'],
-                'buyer': ['dashboard_view', 'system_settings', 'po_uploader', 'batch_management', 'file_validation', 'analytics_view', 'ppe_logger_view'],
-                'user': ['dashboard_view', 'system_settings']
+                'admin': ['dashboard_view', 'por_search', 'por_detail', 'po_uploader', 'batch_management', 'analytics_view', 'system_logs', 'database_access', 'user_management', 'system_settings', 'ppe_logger_view', 'por_detail_view'],
+                'buyer': ['dashboard_view', 'system_settings', 'po_uploader', 'batch_management', 'analytics_view', 'ppe_logger_view', 'por_detail_view'],
+                'user': ['dashboard_view', 'system_settings', 'por_detail_view']
             }
             
             permissions_to_grant = db.session.query(Permission).filter(

@@ -277,25 +277,38 @@ def toggle_user_status(user_id):
 @admin_required_view
 def permissions():
     """Permission management page"""
-    session = get_auth_session()
+    auth_session = get_auth_session()
     
     try:
-        # Get all permissions
-        permissions = session.query(Permission).all()
+        # Get all permissions and categorize them
+        all_permissions = auth_session.query(Permission).filter(Permission.is_active == True).all()
+        categorized_permissions = {}
+        for perm in all_permissions:
+            if perm.category not in categorized_permissions:
+                categorized_permissions[perm.category] = []
+            categorized_permissions[perm.category].append(perm)
         
-        # Get all users with their permissions
-        users = session.query(User).all()
+        # Sort permissions within each category
+        core_permission_order = ['dashboard_view', 'system_settings', 'diagnostic_views', 'por_detail_view']
+        for category in categorized_permissions:
+            if category == 'Core':
+                categorized_permissions[category].sort(key=lambda p: core_permission_order.index(p.name) if p.name in core_permission_order else len(core_permission_order))
+            else:
+                categorized_permissions[category].sort(key=lambda p: p.name)
+
+        # Get all users
+        users = auth_session.query(User).all()
         
-        # Get user permissions grouped by user
-        user_permissions = {}
+        # Get user permissions grouped by user (for initial display)
+        user_permissions_map = {}
         for user in users:
-            user_perms = session.query(UserPermission).filter(UserPermission.user_id == user.id).all()
-            user_permissions[user.id] = [up.permission.name for up in user_perms if up.permission]
+            user_perms = auth_session.query(UserPermission).filter(UserPermission.user_id == user.id, UserPermission.is_active == True).all()
+            user_permissions_map[user.id] = {up.permission.name for up in user_perms if up.permission}
         
         return render_template('admin/permissions.html',
-                             permissions=permissions,
+                             categorized_permissions=categorized_permissions,
                              users=users,
-                             user_permissions=user_permissions)
+                             user_permissions_map=user_permissions_map)
     
     except Exception as e:
         current_app.logger.error(f"Error loading permissions page: {str(e)}")
@@ -303,7 +316,7 @@ def permissions():
         return redirect(url_for('admin.dashboard'))
     
     finally:
-        session.close()
+        auth_session.close()
 
 @admin_bp.route('/permissions/update_user_type', methods=['POST'])
 @admin_required_view

@@ -201,46 +201,59 @@ def init_default_permissions(db_instance):
     session = db_instance.session
     
     try:
-        # Check if permissions already exist
-        existing_count = session.query(Permission).count()
-        if existing_count > 0:
-            print(f"Permissions already exist ({existing_count} found)")
-            return
+        updated_count = 0
+        added_count = 0
+        print(f"DEBUG: Initialized updated_count={updated_count}, added_count={added_count}") # Added debug print
         
-        # Default permissions
-        default_permissions = [
+        # Default permissions to ensure existence and update details
+        default_permissions_data = [
             # Core Permissions
             ('dashboard_view', 'View main dashboard', 'Core'),
-            ('system_settings', 'Modify system settings (includes audit logs, database management, company switching)', 'Core'),
-            ('diagnostic_views', 'Access diagnostic views', 'Core'),
+            ('system_settings', 'System Settings', 'Core'), # Simplified description
 
             # Management Permissions
-            ('po_uploader', 'Upload Purchase Order files and view POR details', 'Management'),
+            ('por_detail_view', 'View POR details', 'Management'), # Moved to Management
+            ('po_uploader', 'Upload PO files', 'Management'), # Updated description
             ('batch_management', 'Manage batch numbers', 'Management'),
-            ('file_validation', 'Validate uploaded files', 'Management'),
-            ('user_management', 'Manage users', 'Management'),
             ('ppe_logger_view', 'View and manage PPE logs', 'Management'),
 
-            # System Permissions
-
             # Admin Permissions
+            ('diagnostic_views', 'Access diagnostic views', 'Admin'), # Moved to Admin
+            ('user_management', 'Manage users', 'Admin'),
             ('admin_access', 'Access the admin console', 'Admin'),
             ('permission_management', 'Manage user permissions', 'Admin'),
             ('user_creation', 'Create new user accounts', 'Admin'),
             ('system_monitoring', 'Monitor system health and performance', 'Admin')
         ]
         
-        # Create permissions
-        for name, description, category in default_permissions:
-            permission = Permission(
-                name=name,
-                description=description,
-                category=category
-            )
-            session.add(permission)
+        for name, description, category in default_permissions_data:
+            permission = session.query(Permission).filter_by(name=name).first()
+            
+            if permission:
+                # Update existing permission if details have changed
+                if permission.description != description or permission.category != category:
+                    permission.description = description
+                    permission.category = category
+                    session.add(permission)
+                    updated_count += 1
+            else:
+                # Add new permission
+                permission = Permission(
+                    name=name,
+                    description=description,
+                    category=category
+                )
+                session.add(permission)
+                added_count += 1
         
-        session.commit()
-        print(f"Created {len(default_permissions)} default permissions")
+        if updated_count > 0 or added_count > 0:
+            session.commit()
+            if added_count > 0:
+                print(f"Added {added_count} new default permissions.")
+            if updated_count > 0:
+                print(f"Updated {updated_count} existing permissions.")
+        else:
+            print("No new or updated default permissions.")
         
     except Exception as e:
         session.rollback()

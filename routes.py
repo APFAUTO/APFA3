@@ -522,7 +522,7 @@ def check_updates():
 
 @routes.route('/view')
 @login_required
-@permission_required('po_uploader')
+@permission_required('por_detail_view')
 def view():
     """Display single POR record with navigation."""
     import time
