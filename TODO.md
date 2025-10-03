@@ -1,18 +1,7 @@
-# TODO for PPE Selection Redesign and Fix
-
-- [ ] Fix basket collapse issue:
-  - Ensure "empty-basket-message" is hidden when basket has items.
-  - Ensure basket container remains visible and styled properly.
-
-- [ ] Redesign PPE selection element:
-  - Replace current text input with a multi-select dropdown or tag input for PPE items.
-  - Improve search and selection experience.
-  - Enhance basket display with clearer item listing and quantity controls.
-
-- [ ] Testing:
-  - Perform thorough testing of PPE selection element and basket functionality.
-  - Verify basket does not collapse and items remain visible after multiple additions.
-  - Test quantity increment/decrement and removal.
-  - Test search and selection usability.
-
-- [ ] Final review and cleanup.
+- [x] Update employee selection container styling to remove relative z-30 and match PPE container
+- [x] Style employee results display as a scrollable list similar to PPE list (max-h-60 overflow-y-auto border rounded bg-white)
+- [x] Update employee result items styling to match PPE list items (p-3 border-b hover:bg-gray-50)
+- [x] Adjust selected employee summary styling to match PPE basket item style (bg-gray-50 rounded-lg border border-gray-200/50)
+- [x] Update JavaScript renderEmployeeResults function to use div instead of ul/li for consistency
+- [x] Add initial rendering of all employees to match PPE list behavior
+- [x] Test the updated styling for consistency (app running on port 5000, changes applied successfully)

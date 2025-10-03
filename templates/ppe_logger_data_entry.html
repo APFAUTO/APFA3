@@ -291,7 +291,7 @@
                 <!-- Left Column: Employee Selection & PPE Basket -->
                 <div class="lg:col-span-2 space-y-8">
                     <!-- Employee Selection -->
-                    <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 relative z-30">
+                    <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50">
                         <div class="flex justify-between items-center mb-4">
                             <h2 class="text-2xl font-bold text-gray-900">Employee Selection</h2>
                             <select id="department-filter" class="bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5">
@@ -299,12 +299,15 @@
                             </select>
                         </div>
                         <input type="text" id="employee-search" class="w-full p-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-gray-900" placeholder="Search employee by name or ID...">
-                        <div id="employee-results" class="relative mt-2">
+                        <div id="employee-results" class="mt-4 max-h-60 overflow-y-auto border border-gray-300 rounded-lg bg-white">
                             <!-- Employee search results will appear here -->
                         </div>
-                        <div id="selected-employee-summary" class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200 hidden">
-                            <p class="text-blue-900 font-semibold"><span id="summary-employee-name"></span> (<span id="summary-employee-id"></span>)</p>
-                            <p class="text-blue-700 text-sm"><span id="summary-department"></span></p>
+
+                        <div class="mt-6">
+                            <h3 class="text-xl font-bold text-gray-900 mb-3">Selected Employee</h3>
+                            <div id="selected-employee-summary" class="p-3 bg-gray-50 rounded-lg border border-gray-200/50 hidden">
+                                <span class="text-gray-900 font-medium"><span id="summary-employee-name"></span> (<span id="summary-employee-id"></span>) - <span id="summary-department"></span></span>
+                            </div>
                         </div>
                     </div>
 
@@ -450,6 +453,7 @@
                     departmentFilter.appendChild(option);
                 });
 
+                renderEmployeeResults('', ''); // Render all employees initially
                 renderPpeList(''); // Render all PPE items initially
             } catch (error) {
                 console.error('Error fetching filter data:', error);
@@ -461,7 +465,6 @@
         function renderEmployeeResults(query, department) {
             const resultsDiv = document.getElementById('employee-results');
             resultsDiv.innerHTML = '';
-            if (query.length < 2) return;
 
             const filteredEmployees = allEmployees.filter(emp => {
                 const matchesQuery = emp.employee_name.toLowerCase().includes(query.toLowerCase()) ||
@@ -471,16 +474,13 @@
             });
 
             if (filteredEmployees.length > 0) {
-                const ul = document.createElement('ul');
-                ul.className = 'absolute z-20 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto';
                 filteredEmployees.forEach(emp => {
-                    const li = document.createElement('li');
-                    li.className = 'p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-200 last:border-b-0';
-                    li.innerHTML = `<p class="font-semibold text-gray-900">${emp.employee_name} (${emp.employee_id})</p><p class="text-sm text-gray-600">${emp.department}</p>`;
-                    li.onclick = () => selectEmployee(emp);
-                    ul.appendChild(li);
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-200 last:border-b-0';
+                    itemDiv.innerHTML = `<p class="font-semibold text-gray-900">${emp.employee_name} (${emp.employee_id})</p><p class="text-sm text-gray-600">${emp.department}</p>`;
+                    itemDiv.onclick = () => selectEmployee(emp);
+                    resultsDiv.appendChild(itemDiv);
                 });
-                resultsDiv.appendChild(ul);
             } else {
                 resultsDiv.innerHTML = '<p class="p-3 text-gray-500">No employees found.</p>';
             }
