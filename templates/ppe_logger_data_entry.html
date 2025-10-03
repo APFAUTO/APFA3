@@ -311,9 +311,9 @@
                     <!-- PPE Selection & Basket -->
                     <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50">
                         <h2 class="text-2xl font-bold text-gray-900 mb-4">PPE Selection</h2>
-                        <input type="text" id="ppe-search" class="w-full p-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-gray-900" placeholder="Search PPE item by name or code...">
-                        <div id="ppe-results" class="relative mt-2">
-                            <!-- PPE search results will appear here -->
+                        <input type="text" id="ppe-search" class="w-full p-3 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-gray-900" placeholder="Search PPE items...">
+                        <div id="ppe-list" class="mt-4 max-h-60 overflow-y-auto border border-gray-300 rounded-lg bg-white">
+                            <!-- PPE items list will appear here -->
                         </div>
                         
                         <div class="mt-6">
@@ -441,7 +441,7 @@
                 const data = await response.json();
                 allEmployees = data.employees;
                 allPpeItems = data.ppe_items;
-                
+
                 const departmentFilter = document.getElementById('department-filter');
                 data.departments.forEach(dept => {
                     const option = document.createElement('option');
@@ -449,6 +449,8 @@
                     option.textContent = dept;
                     departmentFilter.appendChild(option);
                 });
+
+                renderPpeList(''); // Render all PPE items initially
             } catch (error) {
                 console.error('Error fetching filter data:', error);
                 showNotification('error', 'Data Error', 'Failed to load employee and PPE data.');
@@ -496,29 +498,29 @@
             document.getElementById('selected-employee-summary').classList.remove('hidden');
         }
 
-        // Render PPE search results
-        function renderPpeResults(query) {
-            const resultsDiv = document.getElementById('ppe-results');
-            resultsDiv.innerHTML = '';
-            if (query.length < 2) return;
+        // Render PPE list
+        function renderPpeList(query) {
+            const listDiv = document.getElementById('ppe-list');
+            listDiv.innerHTML = '';
 
-            const filteredPpe = allPpeItems.filter(item => 
+            const filteredPpe = allPpeItems.filter(item =>
                 item.toLowerCase().includes(query.toLowerCase())
             );
 
             if (filteredPpe.length > 0) {
-                const ul = document.createElement('ul');
-                ul.className = 'absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto';
                 filteredPpe.forEach(item => {
-                    const li = document.createElement('li');
-                    li.className = 'p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-200 last:border-b-0';
-                    li.textContent = item;
-                    li.onclick = () => addPpeToBasket(item);
-                    ul.appendChild(li);
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'flex items-center justify-between p-3 border-b border-gray-200 last:border-b-0 hover:bg-gray-50';
+                    itemDiv.innerHTML = `
+                        <span class="text-gray-900 font-medium">${item}</span>
+                        <button class="add-ppe-btn px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors" data-ppe-item="${item}">
+                            <i class="fas fa-plus mr-1"></i>Add
+                        </button>
+                    `;
+                    listDiv.appendChild(itemDiv);
                 });
-                resultsDiv.appendChild(ul);
             } else {
-                resultsDiv.innerHTML = '<p class="p-3 text-gray-500">No PPE items found.</p>';
+                listDiv.innerHTML = '<p class="p-3 text-gray-500 text-center">No PPE items found.</p>';
             }
         }
 
@@ -526,7 +528,7 @@
         function addPpeToBasket(item) {
             const normalizedItem = item.trim().toLowerCase(); // Normalize the item string
             const existingItemIndex = ppeBasket.findIndex(p => p.ppe_item.toLowerCase() === normalizedItem); // Get index
-            
+
             if (existingItemIndex !== -1) {
                 // Item exists, create a new array with updated quantity
                 const updatedBasket = [...ppeBasket];
@@ -537,21 +539,17 @@
                 ppeBasket = [...ppeBasket, { ppe_item: item, quantity: 1 }];
             }
             document.getElementById('ppe-search').value = '';
-            document.getElementById('ppe-results').innerHTML = ''; // Close dropdown
             renderPpeBasket();
         }
 
         // Render PPE basket
         function renderPpeBasket() {
             const basketDiv = document.getElementById('ppe-basket');
-            const emptyMessage = document.getElementById('empty-basket-message');
             basketDiv.innerHTML = ''; // Clear existing
-            
+
             if (ppeBasket.length === 0) {
-                emptyMessage.classList.remove('hidden');
+                basketDiv.innerHTML = '<div class="text-gray-500 text-center py-4" id="empty-basket-message">No PPE items added yet.</div>';
                 return;
-            } else {
-                emptyMessage.classList.add('hidden');
             }
 
             ppeBasket.forEach((item) => { // Removed index from forEach
@@ -722,7 +720,16 @@
             });
 
             document.getElementById('ppe-search').addEventListener('input', (event) => {
-                renderPpeResults(event.target.value);
+                renderPpeList(event.target.value);
+            });
+
+            // Event listener for PPE list add buttons
+            document.getElementById('ppe-list').addEventListener('click', (event) => {
+                if (event.target.classList.contains('add-ppe-btn') || event.target.closest('.add-ppe-btn')) {
+                    const button = event.target.closest('.add-ppe-btn');
+                    const ppeItem = button.dataset.ppeItem;
+                    addPpeToBasket(ppeItem);
+                }
             });
 
             document.getElementById('submit-ppe').addEventListener('click', submitPpeUsage);
@@ -731,17 +738,10 @@
             document.addEventListener('click', function(event) {
                 const employeeSearchInput = document.getElementById('employee-search');
                 const employeeResultsDiv = document.getElementById('employee-results');
-                const ppeSearchInput = document.getElementById('ppe-search');
-                const ppeResultsDiv = document.getElementById('ppe-results');
 
                 // For employee search
                 if (!employeeSearchInput.contains(event.target) && !employeeResultsDiv.contains(event.target)) {
                     employeeResultsDiv.innerHTML = ''; // Clear employee search results
-                }
-
-                // For PPE search
-                if (!ppeSearchInput.contains(event.target) && !ppeResultsDiv.contains(event.target)) {
-                    ppeResultsDiv.innerHTML = ''; // Clear PPE search results
                 }
             });
         });
