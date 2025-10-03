@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,6 +9,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -201,7 +205,7 @@
         }
         
         .dark-mode .border-purple-200 {
-            border-color: #581c87 !important;
+            border-color: #581c87 !importan;
         }
         
         .dark-mode .hover\:from-blue-100:hover {
@@ -286,196 +290,374 @@
                 </div>
             </div>
 
-            <!-- Main Card -->
-            <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50">
-                <h2 class="text-2xl font-bold text-gray-900 mb-4">Under Construction</h2>
-                <p class="text-gray-600 mb-6">This page is under construction. Here you will be able to generate reports on PPE data.</p>
+            <!-- Reporting Dashboard -->
+            <div class="flex space-x-4">
+                <!-- Main Chart -->
+                <div class="w-3/4">
+                    <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-900">PPE Usage</h2>
+                            </div>
+                            <div class="flex space-x-2">
+                                <select id="chart-type" class="bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                                    <option value="line">Line</option>
+                                    <option value="bar">Bar</option>
+                                    <option value="pie">Pie</option>
+                                </select>
+                                <button id="export-pdf" class="px-4 py-2 bg-red-500 text-white font-semibold rounded-lg shadow-md hover:bg-red-600 transition-colors duration-300">
+                                    <i class="fas fa-file-pdf mr-2"></i>PDF
+                                </button>
+                                <button id="export-csv" class="px-4 py-2 bg-green-500 text-white font-semibold rounded-lg shadow-md hover:bg-green-600 transition-colors duration-300">
+                                    <i class="fas fa-file-csv mr-2"></i>CSV
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="ppe-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Right Sidebar -->
+                <div class="w-1/4">
+                    <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">Filters</h3>
+
+                        <!-- Department Filter -->
+                        <div class="mb-4">
+                            <label for="department-filter" class="block mb-2 text-sm font-medium text-gray-900">Department</label>
+                            <select id="department-filter" multiple class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"></select>
+                            <div class="flex items-center mt-2">
+                                <input id="compare-departments" type="checkbox" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+                                <label for="compare-departments" class="ml-2 text-sm font-medium text-gray-900">Compare Departments</label>
+                            </div>
+                        </div>
+
+                        <!-- PPE Item Filter -->
+                        <div class="mb-4">
+                            <label for="ppe-item-filter" class="block mb-2 text-sm font-medium text-gray-900">PPE Item</label>
+                            <select id="ppe-item-filter" multiple class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"></select>
+                        </div>
+
+                        <!-- Employee Filter -->
+                        <div class="mb-4">
+                            <label for="employee-filter" class="block mb-2 text-sm font-medium text-gray-900">Employee</label>
+                            <input type="text" id="employee-filter" list="employee-list" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Search by name or ID">
+                            <datalist id="employee-list"></datalist>
+                            <div class="flex items-center mt-2">
+                                <input id="compare-to-department" type="checkbox" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+                                <label for="compare-to-department" class="ml-2 text-sm font-medium text-gray-900">Compare with Department Average</label>
+                            </div>
+                        </div>
+
+                        <!-- Date Range Filter -->
+                        <div class="mb-4">
+                            <label class="block mb-2 text-sm font-medium text-gray-900">Date Range</label>
+                            <div class="flex space-x-2">
+                                <input type="date" id="start-date-filter" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                                <input type="date" id="end-date-filter" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                            </div>
+                        </div>
+
+                        <button id="reset-filters" class="w-full px-4 py-2 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-600 transition-colors duration-300">Reset Filters</button>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
 
     <script>
-        function refreshDashboard() {
-            location.reload();
-        }
-        
-        function updateDefaultCompany(company) {
-            // Store the default company preference in localStorage
-            localStorage.setItem('defaultCompany', company);
-            
-            // Show success notification
-            showNotification(`Default company set to ${company}`, 'success');
-            
-            // Update the radio button states
-            document.querySelectorAll('input[name="defaultCompany"]').forEach(radio => {
-                radio.checked = radio.value === company;
-            });
-        }
-        
-        function showNotification(message, type) {
-            // Remove existing notifications
-            const existingNotifications = document.querySelectorAll('.notification');
-            existingNotifications.forEach(notif => notif.remove());
-            
-            const notification = document.createElement('div');
-            notification.className = `notification fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all duration-300 ${
-                type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-            }`;
-            notification.textContent = message;
-            
-            document.body.appendChild(notification);
-            
-            // Auto-remove after 3 seconds
-            setTimeout(() => {
-                notification.remove();
-            }, 3000);
-        }
-        
-        function switchToFDEC() {
-            // Make API call to switch database
-            fetch('/switch_database', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ database: 'fdec' })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    localStorage.setItem('activeDatabase', 'FDEC');
-                    // Automatically apply dark mode for FDEC
-                    document.body.classList.add('dark-mode');
-                    localStorage.setItem('darkMode', 'enabled');
-                    showNotification(data.message, 'success');
-                    console.log('Switched to FDEC, POR count:', data.por_count);
-                    
-                    // Verify the switch worked before reloading
-                    setTimeout(() => {
-                        fetch('/test_database')
-                        .then(response => response.json())
-                        .then(verifyData => {
-                            if (verifyData.success && verifyData.current_database === 'fdec') {
-                                console.log('Database switch verified, reloading page...');
-                                location.reload();
-                            } else {
-                                console.error('Database switch verification failed:', verifyData);
-                                showNotification('Database switch verification failed', 'error');
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Verification error:', error);
-                            showNotification('Database switch verification failed', 'error');
-                        });
-                    }, 1000);
-                } else {
-                    showNotification('Error switching database: ' + data.error, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Error switching database', 'error');
-            });
-        }
-        
-        function switchToAP() {
-            // Make API call to switch database
-            fetch('/switch_database', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ database: 'a&p' })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    localStorage.setItem('activeDatabase', 'A&P');
-                    // Automatically remove dark mode for A&P
-                    document.body.classList.remove('dark-mode');
-                    localStorage.setItem('darkMode', 'disabled');
-                    showNotification(data.message, 'success');
-                    console.log('Switched to A&P, POR count:', data.por_count);
-                    
-                    // Verify the switch worked before reloading
-                    setTimeout(() => {
-                        fetch('/test_database')
-                        .then(response => response.json())
-                        .then(verifyData => {
-                            if (verifyData.success && verifyData.current_database === 'a&p') {
-                                console.log('Database switch verified, reloading page...');
-                                location.reload();
-                            } else {
-                                console.error('Database switch verification failed:', verifyData);
-                                showNotification('Database switch verification failed', 'error');
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Verification error:', error);
-                            showNotification('Database switch verification failed', 'error');
-                        });
-                    }, 1000);
-                } else {
-                    showNotification('Error switching database: ' + data.error, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Error switching database', 'error');
-            });
-        }
-        
-        function loadDatabaseInfo() {
-            fetch('/get_database_info')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Update database info display
-                    const dbInfoElement = document.getElementById('currentDatabaseInfo');
-                    if (dbInfoElement) {
-                        dbInfoElement.innerHTML = `
-                            <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                <div class="flex items-center justify-between">
-                                    <span class="font-medium text-blue-900">Current Database</span>
-                                    <span class="text-blue-600 font-semibold">${data.display_name}</span>
-                                </div>
-                                <div class="mt-2 text-sm text-blue-700">
-                                    ${data.total_pors} PORs • £${data.total_value.toFixed(2)}
-                                </div>
-                            </div>
-                        `;
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error loading database info:', error);
-            });
-        }
-        
-        // Load default company preference on page load
         document.addEventListener('DOMContentLoaded', function() {
-            const savedCompany = localStorage.getItem('defaultCompany');
-            if (savedCompany) {
-                const radio = document.querySelector(`input[value="${savedCompany}"]`);
-                if (radio) {
-                    radio.checked = true;
+            const ctx = document.getElementById('ppe-chart').getContext('2d');
+            let ppeChart;
+
+            // Function to fetch data and update the chart
+            function updateChart() {
+                // Collect filter values
+                const department = Array.from(document.getElementById('department-filter').selectedOptions).map(option => option.value);
+                const ppeItem = Array.from(document.getElementById('ppe-item-filter').selectedOptions).map(option => option.value);
+                const employeeId = document.getElementById('employee-filter').value;
+                const startDate = document.getElementById('start-date-filter').value;
+                const endDate = document.getElementById('end-date-filter').value;
+                const chartType = document.getElementById('chart-type').value;
+                const compareDepartments = document.getElementById('compare-departments').checked;
+                const compareToDepartment = document.getElementById('compare-to-department').checked;
+
+                // Build the API URL
+                let url = '/api/ppe/usage?';
+                let departmentUrl = '/api/ppe/usage?';
+
+                if (department.length > 0) {
+                    const departmentParams = `department=${department.join(',')}&`;
+                    url += departmentParams;
+                    departmentUrl += departmentParams;
                 }
-            }
-            
-            // Load active database preference and apply theme automatically
-            const currentCompany = '{{ company }}';
-            if (currentCompany === 'fdec') {
-                document.body.classList.add('dark-mode');
-                localStorage.setItem('darkMode', 'enabled');
-                localStorage.setItem('activeDatabase', 'FDEC');
-            } else {
-                document.body.classList.remove('dark-mode');
-                localStorage.setItem('darkMode', 'disabled');
-                localStorage.setItem('activeDatabase', 'A&P');
+                if (ppeItem.length > 0) {
+                    const ppeItemParams = `ppe_item=${ppeItem.join(',')}&`;
+                    url += ppeItemParams;
+                    departmentUrl += ppeItemParams;
+                }
+                if (startDate) {
+                    const startDateParams = `start_date=${startDate}&`;
+                    url += startDateParams;
+                    departmentUrl += startDateParams;
+                }
+                if (endDate) {
+                    const endDateParams = `end_date=${endDate}&`;
+                    url += endDateParams;
+                    departmentUrl += endDateParams;
+                }
+
+                if (employeeId) {
+                    url += `employee_id=${employeeId}&`;
+                }
+
+                // Fetch data from the API
+                Promise.all([fetch(url).then(res => res.json()), compareToDepartment && employeeId ? fetch(departmentUrl).then(res => res.json()) : Promise.resolve(null)])
+                    .then(([data, departmentData]) => {
+                        if (ppeChart) {
+                            ppeChart.destroy();
+                        }
+
+                        // Process data for the chart
+                        const labels = [...new Set(data.map(item => item.date))].sort();
+                        const datasets = [];
+
+                        if (chartType === 'pie') {
+                            const pieData = {};
+                            data.forEach(item => {
+                                const key = compareDepartments ? item.department : 'All Departments';
+                                if (!pieData[key]) {
+                                    pieData[key] = 0;
+                                }
+                                pieData[key] += item.quantity;
+                            });
+
+                            datasets.push({
+                                data: Object.values(pieData),
+                                backgroundColor: [
+                                    'rgba(255, 99, 132, 0.7)',
+                                    'rgba(54, 162, 235, 0.7)',
+                                    'rgba(255, 206, 86, 0.7)',
+                                    'rgba(75, 192, 192, 0.7)',
+                                    'rgba(153, 102, 255, 0.7)',
+                                    'rgba(255, 159, 64, 0.7)'
+                                ],
+                            });
+
+                            ppeChart = new Chart(ctx, {
+                                type: 'pie',
+                                data: {
+                                    labels: Object.keys(pieData),
+                                    datasets: datasets
+                                }
+                            });
+
+                        } else { // Line and Bar charts
+                            if (compareToDepartment && employeeId && departmentData) {
+                                const employeeData = {};
+                                data.forEach(item => {
+                                    if (!employeeData[item.date]) {
+                                        employeeData[item.date] = 0;
+                                    }
+                                    employeeData[item.date] += item.quantity;
+                                });
+
+                                const departmentAverage = {};
+                                const departmentUsage = {};
+                                departmentData.forEach(item => {
+                                    if (!departmentUsage[item.date]) {
+                                        departmentUsage[item.date] = { total: 0, count: 0 };
+                                    }
+                                    departmentUsage[item.date].total += item.quantity;
+                                    departmentUsage[item.date].count++;
+                                });
+
+                                for (const date in departmentUsage) {
+                                    departmentAverage[date] = departmentUsage[date].total / departmentUsage[date].count;
+                                }
+
+                                const employeeValues = labels.map(label => employeeData[label] || 0);
+                                const departmentAverageValues = labels.map(label => departmentAverage[label] || 0);
+
+                                datasets.push({
+                                    label: `Employee ${employeeId}`,
+                                    data: employeeValues,
+                                    borderColor: 'rgba(255, 99, 132, 1)',
+                                    backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                                    fill: false
+                                });
+
+                                datasets.push({
+                                    label: 'Department Average',
+                                    data: departmentAverageValues,
+                                    borderColor: 'rgba(54, 162, 235, 1)',
+                                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                                    fill: false
+                                });
+
+                            } else if (compareDepartments) {
+                                const dataByDepartment = {};
+                                data.forEach(item => {
+                                    if (!dataByDepartment[item.department]) {
+                                        dataByDepartment[item.department] = {};
+                                    }
+                                    if (!dataByDepartment[item.department][item.date]) {
+                                        dataByDepartment[item.department][item.date] = 0;
+                                    }
+                                    dataByDepartment[item.department][item.date] += item.quantity;
+                                });
+
+                                const colors = [
+                                    'rgba(255, 99, 132, 1)',
+                                    'rgba(54, 162, 235, 1)',
+                                    'rgba(255, 206, 86, 1)',
+                                    'rgba(75, 192, 192, 1)',
+                                    'rgba(153, 102, 255, 1)',
+                                    'rgba(255, 159, 64, 1)'
+                                ];
+
+                                let colorIndex = 0;
+                                for (const dept in dataByDepartment) {
+                                    const departmentData = labels.map(label => dataByDepartment[dept][label] || 0);
+                                    datasets.push({
+                                        label: dept,
+                                        data: departmentData,
+                                        borderColor: colors[colorIndex % colors.length],
+                                        backgroundColor: colors[colorIndex % colors.length].replace('1)', '0.7)'),
+                                        fill: false
+                                    });
+                                    colorIndex++;
+                                }
+                            } else {
+                                const aggregatedData = {};
+                                data.forEach(item => {
+                                    if (!aggregatedData[item.date]) {
+                                        aggregatedData[item.date] = 0;
+                                    }
+                                    aggregatedData[item.date] += item.quantity;
+                                });
+
+                                const aggregatedValues = labels.map(label => aggregatedData[label] || 0);
+                                datasets.push({
+                                    label: 'All Selected Departments',
+                                    data: aggregatedValues,
+                                    borderColor: 'rgba(75, 192, 192, 1)',
+                                    backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                                    fill: false
+                                });
+                            }
+
+                            ppeChart = new Chart(ctx, {
+                                type: chartType,
+                                data: {
+                                    labels: labels,
+                                    datasets: datasets
+                                },
+                                options: {
+                                    responsive: true,
+                                    scales: {
+                                        x: {
+                                            display: true,
+                                            title: {
+                                                display: true,
+                                                text: 'Date'
+                                            }
+                                        },
+                                        y: {
+                                            display: true,
+                                            title: {
+                                                display: true,
+                                                text: 'Quantity'
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    });
             }
 
-            // Load and display database info
-            loadDatabaseInfo();
+            // Function to populate filter dropdowns
+            function populateFilters() {
+                fetch('/api/ppe/filters')
+                    .then(response => response.json())
+                    .then(data => {
+                        const departmentFilter = document.getElementById('department-filter');
+                        data.departments.forEach(dept => {
+                            const option = document.createElement('option');
+                            option.value = dept;
+                            option.textContent = dept;
+                            departmentFilter.appendChild(option);
+                        });
+
+                        const ppeItemFilter = document.getElementById('ppe-item-filter');
+                        data.ppe_items.forEach(item => {
+                            const option = document.createElement('option');
+                            option.value = item;
+                            option.textContent = item;
+                            ppeItemFilter.appendChild(option);
+                        });
+
+                        const employeeList = document.getElementById('employee-list');
+                        data.employees.forEach(employee => {
+                            const option = document.createElement('option');
+                            option.value = employee.employee_id;
+                            option.textContent = `${employee.employee_name} (${employee.employee_id})`;
+                            employeeList.appendChild(option);
+                        });
+                    });
+            }
+
+            // Event listeners for filters
+            document.getElementById('department-filter').addEventListener('change', updateChart);
+            document.getElementById('ppe-item-filter').addEventListener('change', updateChart);
+            document.getElementById('employee-filter').addEventListener('input', updateChart);
+            document.getElementById('start-date-filter').addEventListener('change', updateChart);
+            document.getElementById('end-date-filter').addEventListener('change', updateChart);
+            document.getElementById('chart-type').addEventListener('change', updateChart);
+            document.getElementById('compare-departments').addEventListener('change', updateChart);
+            document.getElementById('compare-to-department').addEventListener('change', updateChart);
+
+            document.getElementById('reset-filters').addEventListener('click', () => {
+                document.getElementById('department-filter').selectedIndex = -1;
+                document.getElementById('ppe-item-filter').selectedIndex = -1;
+                document.getElementById('employee-filter').value = '';
+                document.getElementById('start-date-filter').value = '';
+                document.getElementById('end-date-filter').value = '';
+                updateChart();
+            });
+
+            document.getElementById('export-csv').addEventListener('click', () => {
+                const department = Array.from(document.getElementById('department-filter').selectedOptions).map(option => option.value);
+                const ppeItem = Array.from(document.getElementById('ppe-item-filter').selectedOptions).map(option => option.value);
+                const employeeId = document.getElementById('employee-filter').value;
+                const startDate = document.getElementById('start-date-filter').value;
+                const endDate = document.getElementById('end-date-filter').value;
+
+                let url = '/api/ppe/export/csv?';
+                if (department.length > 0) url += `department=${department.join(',')}&`;
+                if (ppeItem.length > 0) url += `ppe_item=${ppeItem.join(',')}&`;
+                if (employeeId) url += `employee_id=${employeeId}&`;
+                if (startDate) url += `start_date=${startDate}&`;
+                if (endDate) url += `end_date=${endDate}&`;
+
+                window.location.href = url;
+            });
+
+            document.getElementById('export-pdf').addEventListener('click', () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                html2canvas(document.querySelector("#ppe-chart")).then(canvas => {
+                    const imgData = canvas.toDataURL('image/png');
+                    doc.addImage(imgData, 'PNG', 10, 10, 180, 100);
+                    doc.save('ppe_report.pdf');
+                });
+            });
+
+            // Initial chart load and filter population
+            populateFilters();
+            updateChart();
         });
     </script>
 </body>
