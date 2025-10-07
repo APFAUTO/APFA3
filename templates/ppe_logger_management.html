@@ -1,0 +1,41 @@
+{% extends "ppe_logger.html" %}
+
+{% block title %}PPE Logger - Management{% endblock %}
+
+{% block content %}
+<div class="relative z-10 flex-1 pl-8 pr-8 pt-6 ml-20">
+    <!-- Header -->
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2 {% if company == 'fdec' %}text-white{% endif %}">PPE Management</h1>
+        <p class="text-gray-600 {% if company == 'fdec' %}text-gray-300{% endif %}">System configuration and settings</p>
+    </div>
+
+    <!-- Main Content -->
+    <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-8 shadow-xl border border-gray-200/50">
+        <div class="border-4 border-dashed border-gray-200 rounded-lg h-96 flex items-center justify-center">
+            <div class="text-center p-8">
+                <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                <h3 class="mt-4 text-xl font-medium text-gray-900">Management Portal</h3>
+                <p class="mt-2 text-gray-600">This section is currently under construction.</p>
+                <p class="text-gray-600">Check back soon for updates!</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('PPE Management page loaded');
+        // Mark the management menu item as active
+        const managementBtn = document.querySelector('[data-href="{{ url_for("routes.ppe_logger_management") }}"]');
+        if (managementBtn) {
+            managementBtn.classList.add('ring-2', 'ring-purple-500');
+        }
+    });
+</script>
+{% endblock %}

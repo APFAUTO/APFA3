@@ -1785,17 +1785,24 @@ def ppe_logger():
 @permission_required('ppe_logger_view') # Assuming ppe_logger_view covers data entry
 def ppe_logger_data_entry():
     current_db = get_current_database()
-    company_info = get_company_config(current_db)
     return render_template('ppe_logger_data_entry.html', company=current_db, company_info=company_info, active_page='ppe_logger_data_entry')
 
-@routes.route('/ppe_logger/reporting')
+@routes.route('/ppe_logger_management')
 @login_required
-@permission_required('ppe_logger_view') # Assuming ppe_logger_view covers reporting
-def ppe_logger_reporting():
-    import sqlite3
-    import json
-    from pathlib import Path
+@permission_required('ppe_logger_view')
+def ppe_logger_management():
+    current_db = get_current_database()
+    company_info = get_company_config(current_db)
+    
+    return render_template('ppe_logger_management.html',
+                         company=current_db,
+                         company_info=company_info,
+                         active_page='ppe_logger_management')
 
+@routes.route('/ppe_logger_reporting')
+@login_required
+@permission_required('ppe_logger_view')
+def ppe_logger_reporting():
     current_db = get_current_database()
     company_info = get_company_config(current_db)
 

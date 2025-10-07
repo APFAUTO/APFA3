@@ -286,11 +286,12 @@
                 </div>
             </div>
 
+            {% if not request.endpoint == 'routes.ppe_logger_management' %}
             <!-- Quick Actions -->
             <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 mb-8">
                 <h2 class="text-xl font-bold text-gray-900 mb-4">Modules</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button onclick="window.location.href='{{ url_for('routes.ppe_logger_data_entry') }}'" class="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 hover:from-blue-100 hover:to-indigo-100 transition-all duration-300 group">
+                    <button data-href="{{ url_for('routes.ppe_logger_data_entry') }}" class="module-button p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 hover:from-blue-100 hover:to-indigo-100 transition-all duration-300 group">
                         <div class="flex items-center space-x-3">
                             <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
                                 <i class="fas fa-keyboard text-white"></i>
@@ -302,7 +303,7 @@
                         </div>
                     </button>
                     
-                    <button onclick="window.location.href='{{ url_for('routes.ppe_logger_reporting') }}'" class="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200 hover:from-green-100 hover:to-emerald-100 transition-all duration-300 group">
+                    <button data-href="{{ url_for('routes.ppe_logger_reporting') }}" class="module-button p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200 hover:from-green-100 hover:to-emerald-100 transition-all duration-300 group">
                         <div class="flex items-center space-x-3">
                             <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
                                 <i class="fas fa-chart-pie text-white"></i>
@@ -313,194 +314,47 @@
                             </div>
                         </div>
                     </button>
+                    
+                    <button data-href="{{ url_for('routes.ppe_logger_management') }}" class="module-button p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 hover:from-purple-100 hover:to-pink-100 transition-all duration-300 group">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-tools text-white"></i>
+                            </div>
+                            <div class="text-left">
+                                <p class="font-semibold text-gray-900">Management</p>
+                                <p class="text-sm text-gray-600">System configuration</p>
+                            </div>
+                        </div>
+                    </button>
                 </div>
             </div>
+            {% endif %}
+            {% block content %}
+            <!-- Default content will be shown if not overridden -->
+            {% endblock %}
         </main>
     </div>
-
     <script>
         function refreshDashboard() {
             location.reload();
         }
         
-        function updateDefaultCompany(company) {
-            // Store the default company preference in localStorage
-            localStorage.setItem('defaultCompany', company);
-            
-            // Show success notification
-            showNotification(`Default company set to ${company}`, 'success');
-            
-            // Update the radio button states
-            document.querySelectorAll('input[name="defaultCompany"]').forEach(radio => {
-                radio.checked = radio.value === company;
-            });
-        }
-        
-        function showNotification(message, type) {
-            // Remove existing notifications
-            const existingNotifications = document.querySelectorAll('.notification');
-            existingNotifications.forEach(notif => notif.remove());
-            
-            const notification = document.createElement('div');
-            notification.className = `notification fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all duration-300 ${
-                type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-            }`;
-            notification.textContent = message;
-            
-            document.body.appendChild(notification);
-            
-            // Auto-remove after 3 seconds
-            setTimeout(() => {
-                notification.remove();
-            }, 3000);
-        }
-        
-        function switchToFDEC() {
-            // Make API call to switch database
-            fetch('/switch_database', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ database: 'fdec' })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    localStorage.setItem('activeDatabase', 'FDEC');
-                    // Automatically apply dark mode for FDEC
-                    document.body.classList.add('dark-mode');
-                    localStorage.setItem('darkMode', 'enabled');
-                    showNotification(data.message, 'success');
-                    console.log('Switched to FDEC, POR count:', data.por_count);
-                    
-                    // Verify the switch worked before reloading
-                    setTimeout(() => {
-                        fetch('/test_database')
-                        .then(response => response.json())
-                        .then(verifyData => {
-                            if (verifyData.success && verifyData.current_database === 'fdec') {
-                                console.log('Database switch verified, reloading page...');
-                                location.reload();
-                            } else {
-                                console.error('Database switch verification failed:', verifyData);
-                                showNotification('Database switch verification failed', 'error');
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Verification error:', error);
-                            showNotification('Database switch verification failed', 'error');
-                        });
-                    }, 1000);
-                } else {
-                    showNotification('Error switching database: ' + data.error, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Error switching database', 'error');
-            });
-        }
-        
-        function switchToAP() {
-            // Make API call to switch database
-            fetch('/switch_database', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ database: 'a&p' })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    localStorage.setItem('activeDatabase', 'A&P');
-                    // Automatically remove dark mode for A&P
-                    document.body.classList.remove('dark-mode');
-                    localStorage.setItem('darkMode', 'disabled');
-                    showNotification(data.message, 'success');
-                    console.log('Switched to A&P, POR count:', data.por_count);
-                    
-                    // Verify the switch worked before reloading
-                    setTimeout(() => {
-                        fetch('/test_database')
-                        .then(response => response.json())
-                        .then(verifyData => {
-                            if (verifyData.success && verifyData.current_database === 'a&p') {
-                                console.log('Database switch verified, reloading page...');
-                                location.reload();
-                            } else {
-                                console.error('Database switch verification failed:', verifyData);
-                                showNotification('Database switch verification failed', 'error');
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Verification error:', error);
-                            showNotification('Database switch verification failed', 'error');
-                        });
-                    }, 1000);
-                } else {
-                    showNotification('Error switching database: ' + data.error, 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Error switching database', 'error');
-            });
-        }
-        
-        function loadDatabaseInfo() {
-            fetch('/get_database_info')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Update database info display
-                    const dbInfoElement = document.getElementById('currentDatabaseInfo');
-                    if (dbInfoElement) {
-                        dbInfoElement.innerHTML = `
-                            <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                <div class="flex items-center justify-between">
-                                    <span class="font-medium text-blue-900">Current Database</span>
-                                    <span class="text-blue-600 font-semibold">${data.display_name}</span>
-                                </div>
-                                <div class="mt-2 text-sm text-blue-700">
-                                    ${data.total_pors} PORs • £${data.total_value.toFixed(2)}
-                                </div>
-                            </div>
-                        `;
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error loading database info:', error);
-            });
-        }
-        
-        // Load default company preference on page load
+        // Initialize module buttons
         document.addEventListener('DOMContentLoaded', function() {
-            const savedCompany = localStorage.getItem('defaultCompany');
-            if (savedCompany) {
-                const radio = document.querySelector(`input[value="${savedCompany}"]`);
-                if (radio) {
-                    radio.checked = true;
-                }
-            }
-            
-            // Load active database preference and apply theme automatically
-            const currentCompany = '{{ company }}';
-            if (currentCompany === 'fdec') {
-                document.body.classList.add('dark-mode');
-                localStorage.setItem('darkMode', 'enabled');
-                localStorage.setItem('activeDatabase', 'FDEC');
-            } else {
-                document.body.classList.remove('dark-mode');
-                localStorage.setItem('darkMode', 'disabled');
-                localStorage.setItem('activeDatabase', 'A&P');
-            }
-
-            // Load and display database info
-            loadDatabaseInfo();
+            document.querySelectorAll('.module-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const href = this.getAttribute('data-href');
+                    if (href) {
+                        window.location.href = href;
+                    } else {
+                        console.error('No data-href attribute found on button');
+                    }
+                });
+            });
         });
     </script>
+    {% block scripts %}
+    <!-- Additional scripts can be added by child templates -->
+    {% endblock %}
 </body>
 </html>
