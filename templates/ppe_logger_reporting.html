@@ -433,17 +433,28 @@
             // Trigger the change event on load to set the initial state
             filterToggle.dispatchEvent(new Event('change'));
 
-            function renderChecklist(container, items, searchInput, checkAll) {
-                const searchTerm = searchInput.value.toLowerCase();
+            function renderChecklist(container, items, searchInput, checkAll, type) {
                 container.innerHTML = '';
-                items.filter(item => item.name.toLowerCase().includes(searchTerm)).forEach(item => {
+                items.forEach(item => {
                     const div = document.createElement('div');
-                    div.className = 'flex items-center';
+                    div.className = 'flex items-center item-container';
                     div.innerHTML = `
-                        <input type="checkbox" id="item-${item.id}" value="${item.id}" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 item-checkbox" data-type="${item.type}">
+                        <input type="checkbox" id="item-${item.id}" value="${item.id}" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 item-checkbox" data-type="${type}">
                         <label for="item-${item.id}" class="ml-2 text-sm font-medium text-gray-900">${item.name}</label>
                     `;
                     container.appendChild(div);
+                });
+
+                searchInput.addEventListener('input', () => {
+                    const searchTerm = searchInput.value.toLowerCase();
+                    container.querySelectorAll('.item-container').forEach(itemDiv => {
+                        const label = itemDiv.querySelector('label');
+                        if (label.textContent.toLowerCase().includes(searchTerm)) {
+                            itemDiv.style.display = 'flex';
+                        } else {
+                            itemDiv.style.display = 'none';
+                        }
+                    });
                 });
 
                 checkAll.addEventListener('change', () => {
@@ -608,8 +619,8 @@
                         allDepartments = data.departments.map(d => ({ id: d, name: d, type: 'department' }));
                         allEmployees = data.employees.map(e => ({ id: e.employee_id, name: e.employee_name, type: 'employee' }));
                         
-                        renderChecklist(departmentList, allDepartments, departmentSearch, departmentCheckAll);
-                        renderChecklist(employeeList, allEmployees, employeeSearch, employeeCheckAll);
+                        renderChecklist(departmentList, allDepartments, departmentSearch, departmentCheckAll, 'department');
+                        renderChecklist(employeeList, allEmployees, employeeSearch, employeeCheckAll, 'employee');
                         
                         departmentList.addEventListener('change', updateChart);
                         employeeList.addEventListener('change', updateChart);
@@ -634,8 +645,6 @@
             }
 
             // Event Listeners
-            departmentSearch.addEventListener('input', () => renderChecklist(departmentList, allDepartments, departmentSearch, departmentCheckAll));
-            employeeSearch.addEventListener('input', () => renderChecklist(employeeList, allEmployees, employeeSearch, employeeCheckAll));
             chartTypeSelect.addEventListener('change', updateChart);
             reportBySelect.addEventListener('change', updateChart);
             timeframeSelect.addEventListener('change', (e) => {
@@ -648,8 +657,10 @@
             resetFiltersBtn.addEventListener('click', () => {
                 departmentSearch.value = '';
                 employeeSearch.value = '';
-                renderChecklist(departmentList, allDepartments, departmentSearch, departmentCheckAll);
-                renderChecklist(employeeList, allEmployees, employeeSearch, employeeCheckAll);
+                
+                departmentList.querySelectorAll('.item-checkbox').forEach(checkbox => checkbox.checked = false);
+                employeeList.querySelectorAll('.item-checkbox').forEach(checkbox => checkbox.checked = false);
+
                 departmentCheckAll.checked = false;
                 employeeCheckAll.checked = false;
                 timeframeSelect.value = 'all';
