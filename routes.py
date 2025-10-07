@@ -1790,9 +1790,234 @@ def ppe_logger_data_entry():
 @login_required
 @permission_required('ppe_logger_view') # Assuming ppe_logger_view covers reporting
 def ppe_logger_reporting():
+    import sqlite3
+    import json
+    from pathlib import Path
+
     current_db = get_current_database()
     company_info = get_company_config(current_db)
-    return render_template('ppe_logger_reporting.html', company=current_db, company_info=company_info, active_page='ppe_logger_reporting')
+
+    db_path = Path(__file__).resolve().parents[0] / 'ppe_reporting.db'
+    ppe_data = []
+    try:
+        if db_path.exists():
+            conn = sqlite3.connect(str(db_path))
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute('SELECT employee_id, known_as, surname, department, items, date FROM ppe_entries')
+            rows = cur.fetchall()
+            for r in rows:
+                items = json.loads(r['items']) if r['items'] else {}
+                entry = {
+                    'Employee Id': r['employee_id'],
+                    'Known As': r['known_as'],
+                    'Surname': r['surname'],
+                    'Department': r['department'],
+                    'Date': r['date']
+                }
+                # merge item counts into the entry
+                entry.update(items)
+                ppe_data.append(entry)
+            conn.close()
+        else:
+            logger.warning(f"PPE reporting DB not found at {db_path}")
+    except Exception as e:
+        logger.error(f"Error reading PPE reporting DB: {e}")
+        flash(f"Error reading PPE reporting DB: {e}", 'error')
+
+    return render_template('ppe_logger_reporting.html', company=current_db, company_info=company_info, active_page='ppe_logger_reporting', ppe_data=json.dumps(ppe_data))
+
+
+@routes.route('/api/ppe/filters')
+@login_required
+@permission_required('ppe_logger_view')
+def api_ppe_filters():
+    """Return departments, ppe_items and employees for filter dropdowns."""
+    import sqlite3
+    from pathlib import Path
+    import json
+
+    db_path = Path(__file__).resolve().parents[0] / 'ppe_reporting.db'
+    departments = set()
+    ppe_items = set()
+    employees = []
+    try:
+        if db_path.exists():
+            conn = sqlite3.connect(str(db_path))
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute('SELECT employee_id, known_as, surname, department, items FROM ppe_entries')
+            rows = cur.fetchall()
+            seen_emp = set()
+            for r in rows:
+                if r['department']:
+                    departments.add(r['department'])
+                items = json.loads(r['items']) if r['items'] else {}
+                for k in items.keys():
+                    ppe_items.add(k)
+                empid = r['employee_id']
+                if empid and empid not in seen_emp:
+                    employees.append({'employee_id': empid, 'employee_name': f"{r['known_as']} {r['surname']}"})
+                    seen_emp.add(empid)
+            conn.close()
+    except Exception as e:
+        logger.error(f"Error building PPE filters: {e}")
+        return jsonify({'departments': [], 'ppe_items': [], 'employees': []})
+
+    return jsonify({
+        'departments': sorted(list(departments)),
+        'ppe_items': sorted(list(ppe_items)),
+        'employees': employees
+    })
+
+
+@routes.route('/api/ppe/usage')
+@login_required
+@permission_required('ppe_logger_view')
+def api_ppe_usage():
+    """Return usage rows suitable for charting.
+
+    Query params supported: department (comma list), ppe_item (comma list), start_date, end_date, employee_id (comma list)
+    """
+    import sqlite3
+    from pathlib import Path
+    import json
+
+    qs = request.args
+    dept_filter = qs.get('department')
+    item_filter = qs.get('ppe_item')
+    start_date = qs.get('start_date')
+    end_date = qs.get('end_date')
+    employee_id_filter = qs.get('employee_id')
+
+    dept_set = set(d.strip() for d in dept_filter.split(',')) if dept_filter else None
+    item_set = set(i.strip() for i in item_filter.split(',')) if item_filter else None
+    employee_id_set = set(e.strip() for e in employee_id_filter.split(',')) if employee_id_filter else None
+
+    db_path = Path(__file__).resolve().parents[0] / 'ppe_reporting.db'
+    out = []
+    if not db_path.exists():
+        return jsonify(out)
+
+    try:
+        conn = sqlite3.connect(str(db_path))
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+
+        sql = """
+        SELECT p.date as date, p.department as department,
+               p.employee_id as employee_id, p.known_as as known_as, p.surname as surname,
+               kv.key as ppe_item, kv.value as quantity
+        FROM ppe_entries p, json_each(p.items) kv
+        WHERE 1=1
+        """
+
+        params = []
+        if dept_set:
+            placeholders = ','.join('?' for _ in dept_set)
+            sql += f" AND p.department IN ({placeholders})"
+            params.extend(list(dept_set))
+        if item_set:
+            placeholders = ','.join('?' for _ in item_set)
+            sql += f" AND kv.key IN ({placeholders})"
+            params.extend(list(item_set))
+        if employee_id_set:
+            placeholders = ','.join('?' for _ in employee_id_set)
+            sql += f" AND p.employee_id IN ({placeholders})"
+            params.extend(list(employee_id_set))
+        if start_date:
+            sql += " AND p.date >= ?"
+            params.append(start_date)
+        if end_date:
+            sql += " AND p.date <= ?"
+            params.append(end_date)
+
+        cur.execute(sql, params)
+        rows = cur.fetchall()
+        for r in rows:
+            try:
+                q = int(r['quantity'])
+            except (ValueError, TypeError):
+                try:
+                    q = int(float(r['quantity']))
+                except (ValueError, TypeError):
+                    q = 0
+            out.append({
+                'date': r['date'],
+                'department': r['department'],
+                'ppe_item': r['ppe_item'],
+                'quantity': q,
+                'employee_id': r['employee_id'],
+                'known_as': r['known_as'],
+                'surname': r['surname'],
+            })
+        conn.close()
+        return jsonify(out)
+
+    except sqlite3.OperationalError as e:
+        logger.warning(f"SQLite JSON1 not available, falling back to Python filtering: {e}")
+    except Exception as e:
+        logger.error(f"Error querying PPE usage via SQL: {e}")
+
+    # Fallback to Python filtering
+    try:
+        conn = sqlite3.connect(str(db_path))
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute('SELECT employee_id, known_as, surname, department, items, date FROM ppe_entries')
+        rows = cur.fetchall()
+        conn.close()
+
+        for r in rows:
+            date = r['date']
+            if start_date and date < start_date:
+                continue
+            if end_date and date > end_date:
+                continue
+            if dept_set and r['department'] not in dept_set:
+                continue
+            if employee_id_set and r['employee_id'] not in employee_id_set:
+                continue
+
+            items = json.loads(r['items']) if r['items'] else {}
+            for name, qty in items.items():
+                if item_set and name not in item_set:
+                    continue
+                try:
+                    q = int(qty)
+                except (ValueError, TypeError):
+                    try:
+                        q = int(float(qty))
+                    except (ValueError, TypeError):
+                        q = 0
+                out.append({
+                    'date': date,
+                    'department': r['department'],
+                    'ppe_item': name,
+                    'quantity': q,
+                    'employee_id': r['employee_id'],
+                    'known_as': r['known_as'],
+                    'surname': r['surname'],
+                })
+        return jsonify(out)
+    except Exception as e:
+        logger.error(f"Error querying PPE usage with Python fallback: {e}")
+        return jsonify([])
+    except Exception as e:
+        logger.error(f"Fallback error building PPE usage: {e}")
+        return jsonify([])
+
+
+@routes.route('/debug/ppe/filters')
+def debug_ppe_filters():
+    # debug endpoint removed
+    return jsonify({'error': 'debug endpoint removed'})
+
+
+@routes.route('/debug/ppe/usage')
+def debug_ppe_usage():
+    # debug endpoint removed
+    return jsonify({'error': 'debug endpoint removed'})
 
 
 @routes.route('/logs')
