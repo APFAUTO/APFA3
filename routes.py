@@ -1,5 +1,7 @@
 import os
 import logging
+import io
+import csv
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -2006,6 +2008,89 @@ def api_ppe_usage():
     except Exception as e:
         logger.error(f"Fallback error building PPE usage: {e}")
         return jsonify([])
+
+
+@routes.route('/api/ppe/export/csv')
+@login_required
+@permission_required('ppe_logger_view')
+def api_ppe_export_csv():
+    """Export PPE usage data to a CSV file."""
+    import sqlite3
+    from pathlib import Path
+    import json
+
+    qs = request.args
+    dept_filter = qs.get('department')
+    item_filter = qs.get('ppe_item')
+    start_date = qs.get('start_date')
+    end_date = qs.get('end_date')
+    employee_id_filter = qs.get('employee_id')
+
+    dept_set = set(d.strip() for d in dept_filter.split(',')) if dept_filter else None
+    item_set = set(i.strip() for i in item_filter.split(',')) if item_filter else None
+    employee_id_set = set(e.strip() for e in employee_id_filter.split(',')) if employee_id_filter else None
+
+    db_path = Path(__file__).resolve().parents[0] / 'ppe_reporting.db'
+    if not db_path.exists():
+        return "Database not found", 404
+
+    try:
+        conn = sqlite3.connect(str(db_path))
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+
+        sql = """
+        SELECT p.date as date, p.department as department,
+               p.employee_id as employee_id, p.known_as as known_as, p.surname as surname,
+               kv.key as ppe_item, kv.value as quantity
+        FROM ppe_entries p, json_each(p.items) kv
+        WHERE 1=1
+        """
+
+        params = []
+        if dept_set:
+            placeholders = ','.join('?' for _ in dept_set)
+            sql += f" AND p.department IN ({placeholders})"
+            params.extend(list(dept_set))
+        if item_set:
+            placeholders = ','.join('?' for _ in item_set)
+            sql += f" AND kv.key IN ({placeholders})"
+            params.extend(list(item_set))
+        if employee_id_set:
+            placeholders = ','.join('?' for _ in employee_id_set)
+            sql += f" AND p.employee_id IN ({placeholders})"
+            params.extend(list(employee_id_set))
+        if start_date:
+            sql += " AND p.date >= ?"
+            params.append(start_date)
+        if end_date:
+            sql += " AND p.date <= ?"
+            params.append(end_date)
+
+        cur.execute(sql, params)
+        rows = cur.fetchall()
+        conn.close()
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        writer.writerow(['Date', 'Department', 'Employee ID', 'Employee Name', 'PPE Item', 'Quantity'])
+
+        for r in rows:
+            writer.writerow([r['date'], r['department'], r['employee_id'], f"{r['known_as']} {r['surname']}", r['ppe_item'], r['quantity']])
+
+        output.seek(0)
+        
+        return send_file(
+            io.BytesIO(output.getvalue().encode('utf-8')),
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name='ppe_usage_report.csv'
+        )
+
+    except Exception as e:
+        logger.error(f"Error exporting PPE usage to CSV: {e}")
+        return "An error occurred while generating the CSV file.", 500
 
 
 @routes.route('/debug/ppe/filters')

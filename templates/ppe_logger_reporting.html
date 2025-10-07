@@ -255,6 +255,17 @@
         .dark-mode .hover\:from-purple-100.hover\:to-pink-100:hover {
             background: linear-gradient(to right, #6d28d9, #9f1239) !important;
         }
+
+        /* Specific backgrounds for filter bar */
+        .fdec-filter-background {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460) !important;
+            color: #e2e8f0 !important;
+        }
+
+        .ap-filter-background {
+            background: linear-gradient(135deg, #0f3460, #16213e, #1a1a2e) !important; /* A blue gradient for A&P */
+            color: #e2e8f0 !important;
+        }
     </style>
 </head>
 <body class="min-h-screen font-inter {% if company == 'fdec' %}dark-mode{% endif %}">
@@ -291,59 +302,6 @@
 
             <!-- Reporting Dashboard -->
             <div class="grid grid-cols-12 gap-6">
-                <!-- Filters -->
-                <div class="col-span-3">
-                    <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50 space-y-6">
-                        <h3 class="text-xl font-bold text-gray-900">Filters</h3>
-
-                        <div class="flex items-center justify-center py-4">
-                            <span class="mr-3 text-sm font-medium text-gray-900">Employee</span>
-                            <label for="filter-toggle" class="inline-flex relative items-center cursor-pointer">
-                                <input type="checkbox" value="" id="filter-toggle" class="sr-only peer" checked>
-                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                            </label>
-                            <span class="ml-3 text-sm font-medium text-gray-900">Department</span>
-                        </div>
-
-                        <!-- Department Filter -->
-                        <div id="department-filter-container">
-                            <label for="department-search" class="block mb-2 text-sm font-medium text-gray-900">Department</label>
-                            <input type="text" id="department-search" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Search departments...">
-                            <div class="mt-2 max-h-40 overflow-y-auto border rounded-lg">
-                                <div class="p-2 border-b sticky top-0 bg-gray-50">
-                                    <input type="checkbox" id="department-check-all" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
-                                    <label for="department-check-all" class="ml-2 text-sm font-medium text-gray-900">Select All</label>
-                                </div>
-                                <div id="department-list" class="p-2 space-y-1"></div>
-                            </div>
-                        </div>
-
-                        <!-- Employee Filter -->
-                        <div id="employee-filter-container">
-                            <label for="employee-search" class="block mb-2 text-sm font-medium text-gray-900">Employee</label>
-                            <input type="text" id="employee-search" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Search employees...">
-                            <div class="mt-2 max-h-40 overflow-y-auto border rounded-lg">
-                                <div class="p-2 border-b sticky top-0 bg-gray-50">
-                                    <input type="checkbox" id="employee-check-all" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
-                                    <label for="employee-check-all" class="ml-2 text-sm font-medium text-gray-900">Select All</label>
-                                </div>
-                                <div id="employee-list" class="p-2 space-y-1"></div>
-                            </div>
-                        </div>
-                        
-                        <!-- Custom Date Range -->
-                        <div>
-                            <button id="custom-range-toggle" class="text-sm font-medium text-blue-600 hover:underline">Custom Range</button>
-                            <div id="custom-range-filters" class="hidden mt-2 space-y-2">
-                                <input type="date" id="start-date-filter" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
-                                <input type="date" id="end-date-filter" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
-                            </div>
-                        </div>
-
-                        <button id="reset-filters" class="w-full px-4 py-2 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-600 transition-colors duration-300">Reset Filters</button>
-                    </div>
-                </div>
-
                 <!-- Main Chart and Data -->
                 <div class="col-span-9">
                     <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-200/50">
@@ -381,6 +339,59 @@
                             <p>NO FILTERS SELECTED</p>
                         </div>
                         <canvas id="ppe-chart" class="mb-6"></canvas>
+                    </div>
+                </div>
+                <!-- Filters -->
+                <div class="col-span-3">
+                    <div class="rounded-2xl p-6 shadow-xl border border-gray-200/50 space-y-6
+                                {% if company == 'fdec' %}bg-gray-800/80 text-white{% else %}bg-white/80 text-gray-900{% endif %} backdrop-blur-xl">
+                        <h3 class="text-xl font-bold {% if company == 'fdec' %}text-white{% else %}text-gray-900{% endif %}">Filters</h3>
+
+                        <div class="flex items-center justify-center py-4">
+                            <span class="mr-3 text-sm font-medium {% if company == 'fdec' %}text-white{% else %}text-gray-900{% endif %}">Employee</span>
+                            <label for="filter-toggle" class="inline-flex relative items-center cursor-pointer">
+                                <input type="checkbox" value="" id="filter-toggle" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                            </label>
+                            <span class="ml-3 text-sm font-medium {% if company == 'fdec' %}text-white{% else %}text-gray-900{% endif %}">Department</span>
+                        </div>
+
+                        <!-- Department Filter -->
+                        <div id="department-filter-container">
+                            <label for="department-search" class="block mb-2 text-sm font-medium {% if company == 'fdec' %}text-white{% else %}text-gray-900{% endif %}">Department</label>
+                            <input type="text" id="department-search" class="{% if company == 'fdec' %}bg-gray-700 border-gray-600 text-white{% else %}bg-gray-50 border-gray-300 text-gray-900{% endif %} text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Search departments...">
+                            <div class="mt-2 max-h-40 overflow-y-auto border rounded-lg {% if company == 'fdec' %}border-gray-600{% else %}border-gray-200{% endif %}">
+                                <div class="p-2 border-b {% if company == 'fdec' %}border-gray-600 sticky top-0 bg-gray-700{% else %}border-gray-200 sticky top-0 bg-gray-50{% endif %}">
+                                    <input type="checkbox" id="department-check-all" class="w-4 h-4 text-blue-600 {% if company == 'fdec' %}bg-gray-600 border-gray-500{% else %}bg-gray-100 border-gray-300{% endif %} rounded focus:ring-blue-500">
+                                    <label for="department-check-all" class="ml-2 text-sm font-medium {% if company == 'fdec' %}text-white{% else %}text-gray-900{% endif %}">Select All</label>
+                                </div>
+                                <div id="department-list" class="p-2 space-y-1"></div>
+                            </div>
+                        </div>
+
+                        <!-- Employee Filter -->
+                        <div id="employee-filter-container">
+                            <label for="employee-search" class="block mb-2 text-sm font-medium {% if company == 'fdec' %}text-white{% else %}text-gray-900{% endif %}">Employee</label>
+                            <input type="text" id="employee-search" class="{% if company == 'fdec' %}bg-gray-700 border-gray-600 text-white{% else %}bg-gray-50 border-gray-300 text-gray-900{% endif %} text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Search employees...">
+                            <div class="mt-2 max-h-40 overflow-y-auto border rounded-lg {% if company == 'fdec' %}border-gray-600{% else %}border-gray-200{% endif %}">
+                                <div class="p-2 border-b {% if company == 'fdec' %}border-gray-600 sticky top-0 bg-gray-700{% else %}border-gray-200 sticky top-0 bg-gray-50{% endif %}">
+                                    <input type="checkbox" id="employee-check-all" class="w-4 h-4 text-blue-600 {% if company == 'fdec' %}bg-gray-600 border-gray-500{% else %}bg-gray-100 border-gray-300{% endif %} rounded focus:ring-blue-500">
+                                    <label for="employee-check-all" class="ml-2 text-sm font-medium {% if company == 'fdec' %}text-white{% else %}text-gray-900{% endif %}">Select All</label>
+                                </div>
+                                <div id="employee-list" class="p-2 space-y-1"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Custom Date Range -->
+                        <div>
+                            <button id="custom-range-toggle" class="text-sm font-medium {% if company == 'fdec' %}text-blue-400{% else %}text-blue-600{% endif %} hover:underline">Custom Range</button>
+                            <div id="custom-range-filters" class="hidden mt-2 space-y-2">
+                                <input type="date" id="start-date-filter" class="{% if company == 'fdec' %}bg-gray-700 border-gray-600 text-white{% else %}bg-gray-50 border-gray-300 text-gray-900{% endif %} text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                                <input type="date" id="end-date-filter" class="{% if company == 'fdec' %}bg-gray-700 border-gray-600 text-white{% else %}bg-gray-50 border-gray-300 text-gray-900{% endif %} text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                            </div>
+                        </div>
+
+                        <button id="reset-filters" class="w-full px-4 py-2 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-600 transition-colors duration-300">Reset Filters</button>
                     </div>
                 </div>
             </div>
@@ -440,7 +451,7 @@
                     div.className = 'flex items-center item-container';
                     div.innerHTML = `
                         <input type="checkbox" id="item-${item.id}" value="${item.id}" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 item-checkbox" data-type="${type}">
-                        <label for="item-${item.id}" class="ml-2 text-sm font-medium text-gray-900">${item.name}</label>
+                        <label for="item-${item.id}" class="ml-2 text-sm font-medium {% if company == 'fdec' %}text-white{% else %}text-gray-900{% endif %}">${item.name}</label>
                     `;
                     container.appendChild(div);
                 });
@@ -666,6 +677,40 @@
                 timeframeSelect.value = 'all';
                 setTimeframe('all');
                 updateChart();
+            });
+
+            document.getElementById('export-csv').addEventListener('click', () => {
+                const selectedDepartments = getSelected('department');
+                const selectedEmployees = getSelected('employee');
+                const startDate = startDateFilter.value;
+                const endDate = endDateFilter.value;
+                const displayBy = filterToggle.checked ? 'department' : 'employee';
+
+                let url = '/api/ppe/export/csv?';
+                if (displayBy === 'department' && selectedDepartments.length > 0) {
+                    url += `department=${selectedDepartments.join(',')}&`;
+                } else if (displayBy === 'employee' && selectedEmployees.length > 0) {
+                    url += `employee_id=${selectedEmployees.join(',')}&`;
+                }
+                if (startDate) url += `start_date=${startDate}&`;
+                if (endDate) url += `end_date=${endDate}&`;
+
+                window.location.href = url;
+            });
+
+            document.getElementById('export-pdf').addEventListener('click', () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                const chartCanvas = document.getElementById('ppe-chart');
+
+                doc.text("PPE Usage Report", 14, 15);
+                doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+
+                html2canvas(chartCanvas).then(canvas => {
+                    const imgData = canvas.toDataURL('image/png');
+                    doc.addImage(imgData, 'PNG', 10, 30, 180, 100);
+                    doc.save('ppe_report.pdf');
+                });
             });
 
             // Initial Load
